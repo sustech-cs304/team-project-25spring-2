@@ -1,4 +1,10 @@
+<div align="center">
+
 # PeachIDE
+
+:book: Language: English • <a href="https://github.com/sustech-cs304/team-project-25spring-2/blob/main/README.zh.md">中文</a>
+
+</div>
 
 ## Group Members
 
