@@ -517,6 +517,12 @@ fabric.properties
 ### WebStorm Patch ###
 # Comment Reason: https://github.com/joeblau/gitignore.io/issues/186#issuecomment-215987721
 
+.idea/inspectionProfiles/Project_Default.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/team-project-25spring-2.iml
+.idea/vcs.xml
+
 # *.iml
 # modules.xml
 # .idea/misc.xml
