@@ -28,10 +28,8 @@ export default function RootLayout({
                         "--sidebar-width": "3rem"
                     } as React.CSSProperties}>
                         <AppSidebar />
-                        <SidebarInset>
-                            <div className="p-5">
-                                {children}
-                            </div>
+                        <SidebarInset className="p-3">
+                            {children}
                         </SidebarInset>
                     </SidebarProvider>
                 </ThemeProvider>
