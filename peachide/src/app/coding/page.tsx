@@ -2,6 +2,6 @@ import React from "react";
 
 export default function Coding() {
     return (
-            <div>Coding</div>
+            <div>Loading Code Environment Failed. Code Environment does not exist.</div>
     );
 }

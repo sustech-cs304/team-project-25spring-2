@@ -88,10 +88,10 @@ function FirstSidebar() {
 
 export function AppSidebar() {
     return (
-            <Sidebar
-                    className="h-full border-none"
-            >
-                <FirstSidebar />
-            </Sidebar>
+        <Sidebar
+                className="h-full border-none"
+        >
+            <FirstSidebar />
+        </Sidebar>
     );
 }
