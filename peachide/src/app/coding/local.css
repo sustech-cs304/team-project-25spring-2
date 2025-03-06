@@ -1,7 +1,3 @@
-@import "../../components/coding/file-icons/css/colors.css";
-@import "../../components/coding/file-icons/css/fonts.css";
-@import "../../components/coding/file-icons/css/icons.css";
-
 .file-tree__tree-item {
     display: flex;
     align-items: center;
@@ -12,7 +8,12 @@
 }
   
 .file-tree__icon {
-    margin-right: 5px;
+    display: flex;
+    align-items: center;
+    justify-items: center;
+    place-items: center;
+    padding-right: 2px;
+    margin-right: 2px;
 }
 
 .database-icon::before {

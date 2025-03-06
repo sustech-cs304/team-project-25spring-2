@@ -3,7 +3,6 @@ import React, { forwardRef, useState } from "react";
 import { File, Folder } from "lucide-react";
 import { AutoSizer, List, ListRowProps } from "react-virtualized";
 import FileItem from "./FileItem";
-import FileItemWithFileIcon from "./FileItemWithFileIcon";
 import { TreeNode, TreeItem, TreeItemProps } from "@/components/data/CodeEnvType";
 import { calcLevel, flatTreeData, getFileName } from "./FileUtils";
 
@@ -69,8 +68,7 @@ function defaultEmptyRenderer() {
 }
 
 function defaultItemRenderer(treeNode: TreeNode) {
-  const emoji =
-    treeNode.type === "directory" ? <Folder size={10} /> : <File size={10} />;
+  const emoji = treeNode.type === "directory" ? <Folder size={16} /> : <File size={16} />;
   return <FileItem icon={emoji} filename={getFileName(treeNode.uri)} />;
 }
 
@@ -124,7 +122,7 @@ export const FileTree = forwardRef<List, FileTreeProps>(
         {({ height, width }) => (
           <List
             ref={ref}
-            className="file-tree"
+            className="file-tree pl-4 pr-4 pt-2 pb-2"
             height={height}
             width={width}
             overscanRowCount={30}

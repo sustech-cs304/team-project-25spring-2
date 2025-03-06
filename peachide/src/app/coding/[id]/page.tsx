@@ -3,15 +3,11 @@
 import React, { useState, useEffect } from "react";
 import { BookCopy, SquareTerminal } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useTheme } from "next-themes";
 import { TreeNode } from "@/components/data/CodeEnvType";
 import { FileTreeProps, FileTree } from "@/components/coding/FileStructure";
 import { assignTreeNode } from "@/components/coding/FileUtils";
-import FileItemWithFileIcon from "@/components/coding/FileItemWithFileIcon";
 
 function FileSystemBar({ props, isVisible }: { props: React.ComponentProps<any>; isVisible: boolean }) {
-    // const { theme, setTheme } = useTheme();
-
     const [tree, setTree] = useState<TreeNode|undefined>();
 
     const loadTree = () => {
@@ -32,15 +28,13 @@ function FileSystemBar({ props, isVisible }: { props: React.ComponentProps<any>;
         );
     };
 
-    const itemRenderer = (treeNode: TreeNode) => <FileItemWithFileIcon treeNode={treeNode} />
-
     return (
-        <div className={`border-1 rounded-[var(--radius)] pl-4
-            transition-all duration-300 ${isVisible ? 'w-1/6 mr-3 opacity-100' : 'w-0 opacity-0'} 
+        <div className={`border-1 rounded-[var(--radius)]
+            transition-all duration-300 ${isVisible ? 'w-1/5 mr-3 opacity-100' : 'w-0 opacity-0'} 
             overflow-hidden`}>
-            <div className="pt-4 pr-4 pb-4">CodeSpace</div>
+            <div className="p-4">CodeSpace</div>
             <hr className="border-1" />
-            <FileTree tree={tree} onItemClick={toggleExpanded} itemRenderer={itemRenderer} />
+            <FileTree tree={tree} onItemClick={toggleExpanded} />
         </div>
     );
 }
