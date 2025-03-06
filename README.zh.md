@@ -2,7 +2,7 @@
 
 # PeachIDE
 
-:book: Language: <a href="https://github.com/sustech-cs304/team-project-25spring-2/blob/main/README.zh.md">English</a> • 中文
+:book: Language: <a href="https://github.com/sustech-cs304/team-project-25spring-2">English</a> • 中文
 
 </div>
 

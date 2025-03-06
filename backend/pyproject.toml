@@ -1,0 +1,10 @@
+[project]
+name = "peachide-backend"
+version = "0.1.0"
+description = "Backend for PeachIDE"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi[standard]>=0.115.11",
+    "uvicorn[standard]>=0.34.0",
+]
