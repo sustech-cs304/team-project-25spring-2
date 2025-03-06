@@ -26,9 +26,9 @@ export default function RootLayout({
                 >
                     <SidebarProvider style={{
                         "--sidebar-width": "3rem"
-                    } as React.CSSProperties}>
+                    } as React.CSSProperties} className="h-full">
                         <AppSidebar />
-                        <SidebarInset className="p-3">
+                        <SidebarInset className="p-3 h-full">
                             {children}
                         </SidebarInset>
                     </SidebarProvider>

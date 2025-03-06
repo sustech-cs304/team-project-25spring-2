@@ -8,6 +8,10 @@
     --color-foreground: var(--foreground);
 }
 
+html, body {
+    height: 100% !important;
+}
+
 @layer base {
     *,
     ::after,
