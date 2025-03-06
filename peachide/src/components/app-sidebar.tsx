@@ -1,6 +1,6 @@
 "use client";
 
-import {CodeXml, ComponentIcon, Home, Library} from "lucide-react";
+import {CodeXml, ComponentIcon, Home} from "lucide-react";
 
 import {
     Sidebar,
@@ -9,26 +9,18 @@ import {
     SidebarGroup,
     SidebarGroupContent,
     SidebarHeader,
-    SidebarInput,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import {NavUser} from "@/components/sidebar/nav-user";
-import React, {useMemo} from "react";
-import {SidebarContentBody} from "@/components/sidebar/content";
-import {usePathname} from "next/navigation";
+import React from "react";
 
 const items = [
     {
-        title: "Home",
+        title: "Classes",
         url: "/",
         icon: Home,
-    },
-    {
-        title: "Classes",
-        url: "/classes",
-        icon: Library,
     },
     {
         title: "Coding",
@@ -36,8 +28,8 @@ const items = [
         icon: CodeXml,
     },
     {
-        title: "My Group",
-        url: "/groups",
+        title: "Slides",
+        url: "/slides",
         icon: ComponentIcon
     }
 ];
@@ -57,7 +49,7 @@ function PeachSidebarHeader() {
 }
 
 function FirstSidebar() {
-    return (<Sidebar collapsible="none"
+    return (<Sidebar collapsible="icon"
             className="w-[calc(var(--sidebar-width-icon))]! border-r-1">
         <SidebarHeader>
             <PeachSidebarHeader />
@@ -94,38 +86,12 @@ function FirstSidebar() {
     </Sidebar>);
 }
 
-function SecondSidebar(props: React.ComponentProps<any>) {
-    const title = useMemo(() => {
-        const item = items.find((item) => item.url === props.pathname);
-        return item ? item.title : "Unknown";
-    }, [props.pathname, items]);
-
-    return (<Sidebar collapsible="none"
-            className="hidden flex-1 md:flex ml-3 my-3 h-[calc(100%-6*var(--spacing))] rounded-[var(--radius)] border-1">
-        <SidebarHeader className="gap-3.5 border-b p-4">
-            <div className="text-base font-medium text-foreground" suppressHydrationWarning>
-                {title}
-            </div>
-            <SidebarInput placeholder="Type to search..." />
-        </SidebarHeader>
-        <SidebarContent>
-            <SidebarGroup className="px-0">
-                <SidebarGroupContent>
-                    <SidebarContentBody pathname={props.pathname} />
-                </SidebarGroupContent>
-            </SidebarGroup>
-        </SidebarContent>
-    </Sidebar>);
-}
-
 export function AppSidebar() {
     return (
             <Sidebar
-                    collapsible="icon"
-                    className="overflow-hidden [&>[data-sidebar=sidebar]]:flex-row w-fit-content h-full border-none"
+                    className="h-full border-none"
             >
                 <FirstSidebar />
-                <SecondSidebar pathname={usePathname()} />
             </Sidebar>
     );
 }
