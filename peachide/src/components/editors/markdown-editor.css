@@ -1,0 +1,41 @@
+.mdxeditor {
+    blockquote {
+        font-style: italic;
+        opacity: 80%;
+    }
+
+    blockquote:before {
+        content: '| ';
+        font-style: normal;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        font-weight: bolder;
+    }
+
+    h5 {
+        font-size: large;
+    }
+
+    h4 {
+        font-size: larger;
+    }
+
+    h3 {
+        font-size: x-large;
+    }
+
+    h2 {
+        font-size: xx-large;
+    }
+
+    h1 {
+        font-size: xxx-large;
+    }
+
+    button[role="combobox"] {
+        width: 100px;
+        background-color: transparent;
+        border: 1px solid var(--foreground-opacity-50);
+    }
+}

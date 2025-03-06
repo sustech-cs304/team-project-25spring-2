@@ -1,9 +1,17 @@
+'use client';
+
 import {Avatar} from "@radix-ui/react-avatar";
-import React from "react";
+import React, {Suspense} from "react";
 import {AvatarFallback} from "@/components/ui/avatar";
 import {MessageSquareQuote, Reply} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {ResizableHandle, ResizablePanel, ResizablePanelGroup} from "@/components/ui/resizable";
+import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
+import dynamic from "next/dynamic";
+
+const EditorComp = dynamic(() =>
+        import('../../components/editors/markdown-editor'), {ssr: false});
+
 
 function ReplyBox({title, content, children = null}:
                           { title: string, content: string, children?: any | null }) {
@@ -19,7 +27,8 @@ function ReplyBox({title, content, children = null}:
                             {content}
                         </div>
                         <div className="flex justify-content-center">
-                            <span className="text-xs opacity-50">{new Date().toLocaleString()}</span>
+                            <span className="text-xs opacity-50"
+                                    suppressHydrationWarning>{new Date().toLocaleString()}</span>
                             <Button variant="ghost" size="icon" className="size-4 ml-2">
                                 <Reply />
                             </Button>
@@ -78,8 +87,23 @@ export default function Slides() {
                         <CommentsSection />
                     </ResizablePanel>
                     <ResizableHandle />
-                    <ResizablePanel defaultSize={30} className="pl-5">
-                        Right
+                    <ResizablePanel defaultSize={30} className="pl-5 h-full">
+                        <Tabs defaultValue="notes" className="w-full h-full">
+                            <TabsList>
+                                <TabsTrigger value="snippets">Code Snippets</TabsTrigger>
+                                <TabsTrigger value="notes">Notes</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="snippets" className="h-full">
+                                Code snippets here.
+                            </TabsContent>
+                            <TabsContent value="notes" className="h-full">
+                                <Suspense fallback={null}>
+                                    <EditorComp heightMode="auto" markdown={`
+                                        Hello **world**!
+                                    `} />
+                                </Suspense>
+                            </TabsContent>
+                        </Tabs>
                     </ResizablePanel>
                 </ResizablePanelGroup>
             </div>
