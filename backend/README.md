@@ -19,6 +19,17 @@ uv venv
 source .venv/bin/activate
 ```
 
+3. Run the server
+
+> [!WARNING]
+> Make sure to run the backend on server with K8s and Docker.
+
+```bash
+uvicorn app.main:app --reload
+```
+
+View OpenAPI document on `/docs`.
+
 ### Code Style
 
 ```
