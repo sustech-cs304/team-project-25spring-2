@@ -67,3 +67,13 @@
     content: '\f15c';
     font-size: 16px;
 }
+
+.placeholder {
+  font-family: Arial;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--background);
+  box-sizing: border-box;
+}

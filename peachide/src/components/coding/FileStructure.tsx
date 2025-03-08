@@ -1,6 +1,6 @@
 "use client";
 import React, { forwardRef, useState } from "react";
-import { File, Folder } from "lucide-react";
+import { File, Folder, FolderOpen } from "lucide-react";
 import { AutoSizer, List, ListRowProps } from "react-virtualized";
 import FileItem from "./FileItem";
 import { TreeNode, TreeItem, TreeItemProps } from "@/components/data/CodeEnvType";
@@ -68,7 +68,7 @@ function defaultEmptyRenderer() {
 }
 
 function defaultItemRenderer(treeNode: TreeNode) {
-  const emoji = treeNode.type === "directory" ? <Folder size={16} /> : <File size={16} />;
+  const emoji = treeNode.type === "directory" ? (treeNode.expanded === true ? <FolderOpen size={16} /> : <Folder size={16} />): <File size={16} />;
   return <FileItem icon={emoji} filename={getFileName(treeNode.uri)} />;
 }
 
