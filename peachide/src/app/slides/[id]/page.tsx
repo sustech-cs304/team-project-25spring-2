@@ -9,14 +9,18 @@ import {ResizableHandle, ResizablePanel, ResizablePanelGroup} from "@/components
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
 import dynamic from "next/dynamic";
 import {PDFPart} from "@/components/pdf/PDFPart";
+import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog";
+import {PDFProvider, usePDFContext} from "@/components/pdf/PDFEnvProvider";
+import {Textarea} from "@/components/ui/textarea";
 
 
 const EditorComp = dynamic(() =>
         import('../../../components/editors/markdown-editor'), {ssr: false});
 
 
-function ReplyBox({title, content, children = null}:
-                          { title: string, content: string, children?: any | null }) {
+function ReplyBox({id, title, content, children = null}:
+                          { id: string, title: string, content: string, children?: any | null }) {
+    const {pageNumber} = usePDFContext();
     return (
             <div className="flex flex-col m-2">
                 <div className="flex flex-row">
@@ -31,9 +35,10 @@ function ReplyBox({title, content, children = null}:
                         <div className="flex justify-content-center">
                             <span className="text-xs opacity-50"
                                     suppressHydrationWarning>{new Date().toLocaleString()}</span>
-                            <Button variant="ghost" size="icon" className="size-4 ml-2">
-                                <Reply />
-                            </Button>
+                            <ReplyDialog trigger={
+                                <Button variant="ghost" size="icon" className="size-4 ml-2">
+                                    <Reply />
+                                </Button>} props={{page: pageNumber, type: "reply", id: id}} />
                         </div>
                     </div>
                 </div>
@@ -46,40 +51,65 @@ function ReplyBox({title, content, children = null}:
     );
 }
 
+type ReplyProps = {
+    page: number,
+    type: 'comment' | 'reply',
+    id?: string,
+}
+
+function ReplyDialog({trigger, props}: { trigger: React.ReactNode, props: ReplyProps }) {
+    return (<Dialog>
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Add {props.type === 'reply' ? 'Reply' : 'Comment'}</DialogTitle>
+            </DialogHeader>
+            <Textarea placeholder="Type your message here." />
+            <DialogFooter>
+                <Button type="submit">Submit</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>);
+}
+
 function CommentsSection() {
+    const {pageNumber} = usePDFContext();
+
     return (<div className="h-1/3 flex flex-col">
         <hr className="my-2" />
         <div className="font-bold text-lg w-full grid grid-cols-2">
             <div>Comments</div>
             <div className={"text-right"}>
-                <Button variant="ghost" size="icon">
-                    <MessageSquareQuote />
-                </Button>
+                <ReplyDialog trigger={
+                    <Button variant="ghost" size="icon">
+                        <MessageSquareQuote />
+                    </Button>
+                } props={{page: pageNumber, type: "comment"}} />
             </div>
         </div>
         <div className="overflow-scroll grow">
-            <ReplyBox title="Title 1" content="Content 1">
-                <ReplyBox title="Nested Title 1.1" content="Nested Content 1.1">
-                    <ReplyBox title="Nested Title 1.1.1"
+            <ReplyBox id="1" title="Title 1" content="Content 1">
+                <ReplyBox id="2" title="Nested Title 1.1" content="Nested Content 1.1">
+                    <ReplyBox id="3" title="Nested Title 1.1.1"
                             content="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed pretium molestie felis, vitae elementum nulla cursus vel. Aliquam ut nunc molestie, tempor augue vehicula, dapibus dui. Mauris quis est ac arcu rhoncus suscipit. Morbi malesuada lacus magna, ut eleifend dolor luctus sit amet. Pellentesque faucibus, nibh non rhoncus tincidunt, dolor dui volutpat massa, ac accumsan mauris sapien ut nunc. Nam ut est quis sem blandit viverra. " />
                 </ReplyBox>
-                <ReplyBox title="Nested Title 1.2" content="Nested Content 1.2" />
+                <ReplyBox id="4" title="Nested Title 1.2" content="Nested Content 1.2" />
             </ReplyBox>
-            <ReplyBox title="Title 2" content="Content 2" />
+            <ReplyBox id="5" title="Title 2" content="Content 2" />
         </div>
     </div>);
 }
 
 function PDFSection() {
-    const [pageNumber, setPageNumber] = useState<number>(1);
-    const [numPages, setNumPages] = useState<number>(1);
+    const {pageNumber, setPageNumber, numPages, setNumPages} = usePDFContext();
     const [width, setWidth] = useState<number>(200);
     const containerRef = React.createRef<HTMLDivElement>();
     const handleFeedback = (feedback: any) => {
-        if (feedback.pageNumber)
+        if (feedback.pageNumber) {
             setPageNumber(feedback.pageNumber);
-        if (feedback.numPages)
-            setNumPages(feedback.numPages);
+            if (feedback.numPages)
+                setNumPages(feedback.numPages);
+        }
     };
     useEffect(() => {
         if (!containerRef.current) return;
@@ -107,33 +137,34 @@ function PDFSection() {
 
 export default function Slides() {
     return (
-            <div className="p-5 rounded-[var(--radius)] border-1 h-full">
-                <ResizablePanelGroup direction="horizontal">
-                    <ResizablePanel defaultSize={70} className="col-span-2 h-full flex flex-col pr-5">
-                        <PDFSection />
-                        <CommentsSection />
-                    </ResizablePanel>
-                    <ResizableHandle />
-                    <ResizablePanel defaultSize={30} className="pl-5 h-full">
-                        <Tabs defaultValue="notes" className="w-full h-full">
-                            <TabsList>
-                                <TabsTrigger value="snippets">Code Snippets</TabsTrigger>
-                                <TabsTrigger value="notes">Notes</TabsTrigger>
-                            </TabsList>
-                            <TabsContent value="snippets" className="h-full">
-                                Code snippets here.
-                            </TabsContent>
-                            <TabsContent value="notes" className="h-full">
-                                <Suspense fallback={null}>
-                                    <EditorComp heightMode="auto" markdown={`
+            <PDFProvider>
+                <div className="p-5 rounded-[var(--radius)] border-1 h-full">
+                    <ResizablePanelGroup direction="horizontal">
+                        <ResizablePanel defaultSize={70} className="col-span-2 h-full flex flex-col pr-5">
+                            <PDFSection />
+                            <CommentsSection />
+                        </ResizablePanel>
+                        <ResizableHandle />
+                        <ResizablePanel defaultSize={30} className="pl-5 h-full">
+                            <Tabs defaultValue="notes" className="w-full h-full">
+                                <TabsList>
+                                    <TabsTrigger value="snippets">Code Snippets</TabsTrigger>
+                                    <TabsTrigger value="notes">Notes</TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="snippets" className="h-full">
+                                    Code snippets here.
+                                </TabsContent>
+                                <TabsContent value="notes" className="h-full">
+                                    <Suspense fallback={null}>
+                                        <EditorComp heightMode="auto" markdown={`
                                         Hello **world**!
                                     `} />
-                                </Suspense>
-                            </TabsContent>
-                        </Tabs>
-                    </ResizablePanel>
-                </ResizablePanelGroup>
-            </div>
-
+                                    </Suspense>
+                                </TabsContent>
+                            </Tabs>
+                        </ResizablePanel>
+                    </ResizablePanelGroup>
+                </div>
+            </PDFProvider>
     );
 }
