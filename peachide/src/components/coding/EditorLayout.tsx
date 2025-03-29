@@ -6,7 +6,6 @@ import MonacoEditorComponent from "@/components/coding/MonacoEditor";
 import TerminalComponent from "@/components/coding/Terminal";
 import { TreeNode } from "@/components/data/CodeEnvType";
 import EditorToolbar from "./EditorToolbar";
-import { getTreeNodeByUri } from "@/components/coding/FileUtils";
 
 // Default layout configuration
 const defaultLayout = {
@@ -136,8 +135,17 @@ export default function EditorLayout({ onToggleFileSystemBar, selectedFile }: Ed
 
     if (component === "editor") {
       const initialData = openFiles[filePath] || "";
-      return <MonacoEditorComponent initialData={initialData} language={language} />;
-    }else if (component === "terminal") {
+      // Use a unique key with a timestamp to ensure component is always recreated when moved
+      const nodeId = `${node.getId()}-${Date.now()}`;
+      return (
+        <div key={nodeId} className="h-full w-full">
+          <MonacoEditorComponent 
+            initialData={initialData} 
+            language={language} 
+          />
+        </div>
+      );
+    } else if (component === "terminal") {
       return <TerminalComponent />;
     }
 
@@ -274,6 +282,36 @@ export default function EditorLayout({ onToggleFileSystemBar, selectedFile }: Ed
     setModel(newModel);
   };
 
+  // Add a custom action handler to properly manage component lifecycle
+  const onAction = (action: any) => {
+    // Check if the action is related to layout changes that require editor refresh
+    if (action.type === Actions.MOVE_NODE) {
+      
+      // For move operations, we want to make sure editors have time to re-render before being accessed
+      const result = action;
+      
+      // Schedule a layout refresh for all editors
+      setTimeout(() => {
+        // Find all Monaco editor instances and reset their layout
+        document.querySelectorAll('.monaco-editor').forEach(editor => {
+          try {
+            const editorInstance = (editor as any)._dataEditor;
+            if (editorInstance && typeof editorInstance.layout === 'function') {
+              editorInstance.layout();
+            }
+          } catch (err) {
+            // Ignore errors, just a safety mechanism
+          }
+        });
+      }, 100);
+      
+      return result;
+    }
+    
+    // For any other action, just return it unchanged
+    return action;
+  };
+
   // Handle drag events
   const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -324,6 +362,7 @@ export default function EditorLayout({ onToggleFileSystemBar, selectedFile }: Ed
         model={model}
         factory={factory}
         onModelChange={handleModelChange}
+        onAction={onAction}
       />
     </div>
   );
