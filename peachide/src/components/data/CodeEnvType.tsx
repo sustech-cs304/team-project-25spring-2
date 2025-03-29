@@ -74,8 +74,31 @@ export const TreeItem: FC<TreeItemProps> = memo(
           e.currentTarget.classList.remove("file-tree__tree-item--dragover");
         }}
         onDragStart={(e) => {
-          // e.dataTransfer.dropEffect = "move";
           e.dataTransfer.setData("text/plain", treeNode.uri);
+          e.dataTransfer.setData("text/file-type", treeNode.type);
+          e.currentTarget.classList.add("file-tree__tree-item--dragging");
+          
+          // Create a drag image with a more subtle appearance
+          const ghostElement = e.currentTarget.cloneNode(true) as HTMLElement;
+          ghostElement.style.opacity = "0.7";
+          ghostElement.style.transform = "scale(0.95)";
+          ghostElement.style.position = "absolute";
+          ghostElement.style.top = "-1000px";
+          document.body.appendChild(ghostElement);
+          
+          e.dataTransfer.setDragImage(ghostElement, 0, 0);
+          
+          // Clean up the ghost element after dragging ends
+          setTimeout(() => {
+            document.body.removeChild(ghostElement);
+          }, 0);
+        }}
+        onDragEnd={(e) => {
+          e.currentTarget.classList.remove("file-tree__tree-item--dragging");
+          // Remove any lingering dragover classes from all items
+          document.querySelectorAll(".file-tree__tree-item--dragover").forEach(el => {
+            el.classList.remove("file-tree__tree-item--dragover");
+          });
         }}
         onClick={() => onClick?.(treeNode)}
         style={{
@@ -92,27 +115,28 @@ export const TreeItem: FC<TreeItemProps> = memo(
   }
 );
 
+
 export const treeData: TreeNode = {
-    type: "directory",
-    uri: "/",
-    children: [
-        {
-        type: "directory",
-        uri: "/src",
-        children: [
-            {
-            type: "file",
-            uri: "/src/index.ts",
-            },
-            {
-            type: "file",
-            uri: "/src/index2.ts",
-            },
-        ],
-        },
-        {
-        type: "file",
-        uri: "/.gitignore",
-        },
-    ],
+  type: "directory",
+  uri: "/",
+  children: [
+      {
+      type: "directory",
+      uri: "/src",
+      children: [
+          {
+          type: "file",
+          uri: "/src/index.ts",
+          },
+          {
+          type: "file",
+          uri: "/src/index2.ts",
+          },
+      ],
+      },
+      {
+      type: "file",
+      uri: "/.gitignore",
+      },
+  ],
 }

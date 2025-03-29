@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import 'xterm/css/xterm.css';
+import { useTheme } from 'next-themes';
 
 interface TerminalComponentProps {
   initialCommand?: string;
@@ -11,10 +12,47 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({ initialCommand, o
   const xtermRef = useRef<any | null>(null);
   const fitAddonRef = useRef<any | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const { resolvedTheme } = useTheme();
+  
+  // Define theme colors based on the current color scheme
+  const terminalTheme = {
+    dark: {
+      background: '#1e1e1e',
+      foreground: '#ffffff',
+      cursor: '#ffffff',
+      cursorAccent: '#ffffff',
+    },
+    light: {
+      background: '#f0f0f0', // Light gray background
+      foreground: '#000000', // Black text for light mode
+      cursor: '#000000',
+      cursorAccent: '#000000',
+    }
+  };
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // Watch for theme changes and update the terminal theme
+  useEffect(() => {
+    if (xtermRef.current && resolvedTheme) {
+      const currentTheme = resolvedTheme === 'dark' ? terminalTheme.dark : terminalTheme.light;
+      xtermRef.current.options.theme = currentTheme;
+      
+      // Need to force a redraw for the theme to take effect
+      try {
+        // This is a way to trigger a refresh of the terminal's appearance
+        const terminal = xtermRef.current;
+        if (terminal) {
+          terminal.clearSelection();
+          terminal.refresh(0, terminal.rows - 1);
+        }
+      } catch (e) {
+        console.error("Failed to update terminal theme:", e);
+      }
+    }
+  }, [resolvedTheme]);
 
   useEffect(() => {
     if (!terminalRef.current || !isClient) return;
@@ -25,13 +63,13 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({ initialCommand, o
       const { FitAddon } = await import('xterm-addon-fit');
       const { WebLinksAddon } = await import('xterm-addon-web-links');
 
+      // Get the current theme colors
+      const currentTheme = resolvedTheme === 'dark' ? terminalTheme.dark : terminalTheme.light;
+
       // Initialize xterm.js
       const terminal = new Terminal({
         cursorBlink: true,
-        theme: {
-          background: '#1e1e1e',
-          foreground: '#ffffff',
-        },
+        theme: currentTheme,
       });
       const fitAddon = new FitAddon();
       const webLinksAddon = new WebLinksAddon();
@@ -125,7 +163,7 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({ initialCommand, o
     };
 
     loadTerminal();
-  }, [initialCommand, onInput, isClient]);
+  }, [initialCommand, onInput, isClient]); // Removed resolvedTheme dependency to avoid recreating terminal on theme change
 
   // Basic command handling - this would be replaced with a connection to your backend
   const handleCommand = (command: string) => {
@@ -155,9 +193,12 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({ initialCommand, o
     }
   };
 
+  // Determine the background color based on theme
+  const bgColor = resolvedTheme === 'dark' ? '#1e1e1e' : '#f0f0f0';
+
   return (
-    <div className="h-full w-full bg-[#1e1e1e] overflow-hidden flex flex-col">
-      {isClient && <div ref={terminalRef} className="h-full w-full flex-grow" />}
+    <div className="h-full w-full overflow-hidden flex flex-col" style={{ backgroundColor: bgColor }}>
+      {isClient && <div ref={terminalRef} className="h-full w-full flex-grow p-2" />}
     </div>
   );
 };

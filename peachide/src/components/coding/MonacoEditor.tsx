@@ -1,13 +1,10 @@
 import React, { useCallback, useRef, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
-import hash from 'object-hash';
 import { useTheme } from 'next-themes';
-import debounce from 'lodash/debounce';
 
 interface MonacoEditorProps {
     initialData: string;
     language?: string;
-    setCode: (code: string) => void;
 }
 
 const MonacoEditorComponent: React.FC<MonacoEditorProps> = ({

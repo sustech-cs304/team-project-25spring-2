@@ -14,6 +14,11 @@ export interface FileTreeProps {
 
   tree?: TreeNode;
 
+  /**
+   * Whether to hide the root node and show only its children
+   */
+  hideRoot?: boolean;
+
   activatedUri?: string;
   /**
    * 点击条目
@@ -77,6 +82,7 @@ export const FileTree = forwardRef<List, FileTreeProps>(
     {
       tree,
       draggable,
+      hideRoot,
       indent,
       rowHeight,
       indentUnit,
@@ -91,7 +97,12 @@ export const FileTree = forwardRef<List, FileTreeProps>(
     },
     ref
   ) => {
-    const items = flatTreeData(tree ? [tree] : [], sorter);
+    // If hideRoot is true and tree has children, use those instead
+    const treeNodes = hideRoot && tree?.children ? 
+      tree.children : 
+      (tree ? [tree] : []);
+    
+    const items = flatTreeData(treeNodes, sorter);
 
     const itemRender = itemRenderer
       ? (treeNode: TreeNode) => itemRenderer?.(treeNode)
@@ -99,12 +110,13 @@ export const FileTree = forwardRef<List, FileTreeProps>(
     const rowRenderer = (params: ListRowProps) => {
       const treeNode = items[params.index];
       const indentNum = indent || 10;
+      const baseLevel = hideRoot ? -1 : 0; // Reduce indent level if hiding root
       return (
         <TreeItem
           draggable={draggable}
           key={treeNode.uri}
           indentUnit={indentUnit || "px"}
-          indent={indentNum * calcLevel(treeNode.uri, tree?.uri || "")}
+          indent={indentNum * Math.max(0, calcLevel(treeNode.uri, tree?.uri || "") + baseLevel)}
           style={params.style}
           treeNode={treeNode}
           onContextMenu={onContextMenu}
