@@ -3,7 +3,7 @@
 import {Avatar} from "@radix-ui/react-avatar";
 import React, {Suspense, useEffect, useState} from "react";
 import {AvatarFallback} from "@/components/ui/avatar";
-import {MessageSquareQuote, Reply} from "lucide-react";
+import {MessageSquareQuote, Play, Reply} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {ResizableHandle, ResizablePanel, ResizablePanelGroup} from "@/components/ui/resizable";
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
@@ -12,6 +12,7 @@ import {PDFPart} from "@/components/pdf/PDFPart";
 import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog";
 import {PDFProvider, usePDFContext} from "@/components/pdf/PDFEnvProvider";
 import {Textarea} from "@/components/ui/textarea";
+import MonacoEditorComponent from "@/components/coding/MonacoEditor";
 
 
 const EditorComp = dynamic(() =>
@@ -100,7 +101,7 @@ function CommentsSection() {
     </div>);
 }
 
-function PDFSection() {
+function PDFSection({url}: { url: string }) {
     const {pageNumber, setPageNumber, numPages, setNumPages} = usePDFContext();
     const [width, setWidth] = useState<number>(200);
     const containerRef = React.createRef<HTMLDivElement>();
@@ -127,7 +128,7 @@ function PDFSection() {
         };
     }, []);
     return (<div className="h-2/3 flex flex-col" ref={containerRef}>
-        <PDFPart props={{url: '/example.pdf', pageNumber: pageNumber, width: width}}
+        <PDFPart props={{url: url, pageNumber: pageNumber, width: width}}
                 onFeedbackAction={handleFeedback} />
         <p className="pl-0.5 mt-2">
             Page {pageNumber} / {numPages}
@@ -135,30 +136,75 @@ function PDFSection() {
     </div>);
 }
 
+type CodeSnippetProps = {
+    defaultValue: string,
+    lang: string,
+    page: number,
+    id: string,
+}
+
+function CodeSnippetEditor({props}: { props: CodeSnippetProps }) {
+    const [code, setCode] = useState<string>(props.defaultValue);
+    const [title, setTitle] = useState<string>('');
+
+    useEffect(() => {
+        if (props.page === 0 || props.id === '') {
+            setCode('');
+            setTitle('Please select a snippet to edit');
+            return;
+        } else {
+            setTitle(`Snippet ${props.id} on page ${props.page}`);
+        }
+    }, [props.page, props.id]);
+
+    return (
+            <div className={"h-full flex flex-col w-full"}>
+                <div className="text-sm mb-3 grid grid-cols-4 w-full">
+                    <div className="col-span-3">{title}</div>
+                    <div className={"text-right"}>
+                        <Button variant="ghost" size="icon" className="ml-2 size-4">
+                            <Play />
+                        </Button>
+                    </div>
+                </div>
+                <MonacoEditorComponent initialData={code} language={props.lang} setCode={setCode} />
+            </div>
+    );
+}
+
 export default function Slides() {
+    const [url, setUrl] = useState<string>('/example.pdf');
+    const [mdNote, setMdNote] = useState<string>(`Hello **world**!`);
+    const [codeContent, setCodeContent] = useState<string>(``);
+    const [codeLang, setCodeLang] = useState<string>('');
+    const [snippetPage, setSnippetPage] = useState<number>(0);
+    const [snippetId, setSnippetId] = useState<string>('');
     return (
             <PDFProvider>
                 <div className="p-5 rounded-[var(--radius)] border-1 h-full">
                     <ResizablePanelGroup direction="horizontal">
                         <ResizablePanel defaultSize={70} className="col-span-2 h-full flex flex-col pr-5">
-                            <PDFSection />
+                            <PDFSection url={url} />
                             <CommentsSection />
                         </ResizablePanel>
                         <ResizableHandle />
                         <ResizablePanel defaultSize={30} className="pl-5 h-full">
-                            <Tabs defaultValue="notes" className="w-full h-full">
+                            <Tabs defaultValue="snippets" className="w-full h-full">
                                 <TabsList>
                                     <TabsTrigger value="snippets">Code Snippets</TabsTrigger>
                                     <TabsTrigger value="notes">Notes</TabsTrigger>
                                 </TabsList>
                                 <TabsContent value="snippets" className="h-full">
-                                    Code snippets here.
+                                    <CodeSnippetEditor props={{
+                                        defaultValue: codeContent,
+                                        lang: codeLang,
+                                        page: snippetPage,
+                                        id: snippetId
+                                    }} />
                                 </TabsContent>
                                 <TabsContent value="notes" className="h-full">
                                     <Suspense fallback={null}>
-                                        <EditorComp heightMode="auto" markdown={`
-                                        Hello **world**!
-                                    `} />
+                                        <EditorComp heightMode="auto" markdown={mdNote} />
                                     </Suspense>
                                 </TabsContent>
                             </Tabs>
