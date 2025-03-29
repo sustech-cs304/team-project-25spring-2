@@ -31,9 +31,10 @@ export const PDFPart: React.FC<PDFPartProps> = ({props, onFeedbackAction}) => {
     }
 
     const onPageLoadSuccess = (page: any) => {
+        const containerWidth = pdfContainerRef.current?.clientWidth;
         const pdfWidth = page?.originalWidth;
-        if (props.width && pdfWidth && scale === 1) // in initial load, set scale to fit the width
-            setScale(props.width / pdfWidth);
+        if (containerWidth && pdfWidth && scale === 1) // in initial load, set scale to fit the width
+            setScale(containerWidth / pdfWidth);
     };
 
     const options = useMemo(() => ({

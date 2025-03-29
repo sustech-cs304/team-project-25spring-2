@@ -125,12 +125,16 @@ export const treeData: TreeNode = {
       uri: "/src",
       children: [
           {
-          type: "file",
-          uri: "/src/index.ts",
+            type: "file",
+            uri: "/src/index.js",
           },
           {
-          type: "file",
-          uri: "/src/index2.ts",
+            type: "file",
+            uri: "/src/index2.ts",
+          },
+          {
+            type: "file",
+            uri: "/example.pdf",
           },
       ],
       },

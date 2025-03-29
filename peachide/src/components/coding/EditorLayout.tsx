@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Layout, Model, TabNode, Actions, DockLocation } from 'flexlayout-react';
 import MonacoEditorComponent from "@/components/coding/MonacoEditor";
 import TerminalComponent from "@/components/coding/Terminal";
 import { TreeNode } from "@/components/data/CodeEnvType";
 import EditorToolbar from "./EditorToolbar";
+import { PDFPart } from "@/components/pdf/PDFPart";
 
 // Default layout configuration
 const defaultLayout = {
@@ -121,7 +122,8 @@ export default function EditorLayout({ onToggleFileSystemBar, selectedFile }: Ed
       'c': 'c',
       'cpp': 'cpp',
       'h': 'cpp',
-      'hpp': 'cpp'
+      'hpp': 'cpp',
+      'pdf': 'pdf'
     };
     return languageMap[ext] || 'plaintext';
   };
@@ -147,6 +149,18 @@ export default function EditorLayout({ onToggleFileSystemBar, selectedFile }: Ed
       );
     } else if (component === "terminal") {
       return <TerminalComponent />;
+    } else if (component === "pdf") {
+      return (
+        <div className="h-full w-full">
+          <PDFPart 
+            props={{
+              url: config.url || filePath,
+              pageNumber: config.pageNumber || 1,
+            }} 
+            onFeedbackAction={() => {}} 
+          />
+        </div>
+      );
     }
 
     return <div>{node.getName()}</div>;
@@ -196,6 +210,7 @@ export default function EditorLayout({ onToggleFileSystemBar, selectedFile }: Ed
       
       // Determine language based on file extension
       const language = getLanguageFromFileName(filePath);
+      const isPDF = language === 'pdf';
 
       // Check if file is already open by looking for a matching filePath in configs
       let existingTabId: string | undefined;
@@ -211,8 +226,8 @@ export default function EditorLayout({ onToggleFileSystemBar, selectedFile }: Ed
         return true;
       });
 
-      // Load file content if not already loaded
-      if (!openFiles[filePath]) {
+      // Load file content if not already loaded (for non-PDF files)
+      if (!openFiles[filePath] && !isPDF) {
         try {
           const content = await loadFileContent(filePath);
           setOpenFiles(prev => ({
@@ -255,8 +270,8 @@ export default function EditorLayout({ onToggleFileSystemBar, selectedFile }: Ed
           const newTabJson = {
             type: "tab",
             name: fileName,
-            component: "editor",
-            config: { filePath },
+            component: isPDF ? "pdf" : "editor",
+            config: { filePath, url: isPDF ? filePath : undefined },
             language
           };
           
