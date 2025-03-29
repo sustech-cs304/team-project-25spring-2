@@ -1,6 +1,6 @@
 "use client";
 
-import {CodeXml, ComponentIcon, Home} from "lucide-react";
+import {CodeXml, ComponentIcon, Home, Book} from "lucide-react";
 
 import {
     Sidebar,
@@ -18,9 +18,14 @@ import React from "react";
 
 const items = [
     {
-        title: "Classes",
+        title: "Home",
         url: "/",
         icon: Home,
+    },
+    {
+        title: "Classes",
+        url: "/classes",
+        icon: Book,
     },
     {
         title: "Coding",
