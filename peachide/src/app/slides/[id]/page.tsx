@@ -3,7 +3,7 @@
 import {Avatar} from "@radix-ui/react-avatar";
 import React, {Suspense, useEffect, useState} from "react";
 import {AvatarFallback} from "@/components/ui/avatar";
-import {MessageSquareQuote, Play, Reply} from "lucide-react";
+import {MessageSquareQuote, Play, Reply, Save} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {ResizableHandle, ResizablePanel, ResizablePanelGroup} from "@/components/ui/resizable";
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
@@ -102,14 +102,22 @@ function CommentsSection() {
 }
 
 function PDFSection({url}: { url: string }) {
-    const {pageNumber, setPageNumber, numPages, setNumPages} = usePDFContext();
+    const {pageNumber, setPageNumber, numPages, setNumPages, setCurrentSnippet} = usePDFContext();
     const [width, setWidth] = useState<number>(200);
     const containerRef = React.createRef<HTMLDivElement>();
+    const [snippets, setSnippets] = useState<SnippetsData>(
+            [{text: 'console.log(\'Hello\')', position: {x: 100, y: 100}, page: 1, id: '1', lang: 'javascript'}]);
     const handleFeedback = (feedback: any) => {
         if (feedback.pageNumber) {
             setPageNumber(feedback.pageNumber);
             if (feedback.numPages)
                 setNumPages(feedback.numPages);
+        }
+        if (feedback.snippets) {
+            setSnippets(feedback.snippets);
+        }
+        if (feedback.currentSnippet) {
+            setCurrentSnippet(feedback.currentSnippet);
         }
     };
     useEffect(() => {
@@ -122,13 +130,12 @@ function PDFSection({url}: { url: string }) {
         });
 
         resizeObserver.observe(containerRef.current);
-
         return () => {
             resizeObserver.disconnect();
         };
     }, []);
     return (<div className="h-2/3 flex flex-col" ref={containerRef}>
-        <PDFPart props={{url: url, pageNumber: pageNumber, width: width}}
+        <PDFPart props={{url: url, pageNumber: pageNumber, width: width, snippets: snippets}}
                 onFeedbackAction={handleFeedback} />
         <p className="pl-0.5 mt-2">
             Page {pageNumber} / {numPages}
@@ -136,26 +143,22 @@ function PDFSection({url}: { url: string }) {
     </div>);
 }
 
-type CodeSnippetProps = {
-    defaultValue: string,
-    lang: string,
-    page: number,
-    id: string,
-}
-
-function CodeSnippetEditor({props}: { props: CodeSnippetProps }) {
-    const [code, setCode] = useState<string>(props.defaultValue);
+function CodeSnippetEditor() {
+    const {currentSnippet} = usePDFContext();
     const [title, setTitle] = useState<string>('');
+    const [editor, setEditor] = useState<any>(null);
 
     useEffect(() => {
-        if (props.page === 0 || props.id === '') {
-            setCode('');
+        console.log(currentSnippet);
+        if (currentSnippet.page === 0 || currentSnippet.id === '') {
             setTitle('Please select a snippet to edit');
             return;
         } else {
-            setTitle(`Snippet ${props.id} on page ${props.page}`);
+            setTitle(`Snippet ${currentSnippet.id} on page ${currentSnippet.page}`);
         }
-    }, [props.page, props.id]);
+        setEditor(<MonacoEditorComponent initialData={currentSnippet.text}
+                language={currentSnippet.lang} />);
+    }, [currentSnippet]);
 
     return (
             <div className={"h-full flex flex-col w-full"}>
@@ -163,11 +166,14 @@ function CodeSnippetEditor({props}: { props: CodeSnippetProps }) {
                     <div className="col-span-3">{title}</div>
                     <div className={"text-right"}>
                         <Button variant="ghost" size="icon" className="ml-2 size-4">
+                            <Save />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="ml-2 size-4">
                             <Play />
                         </Button>
                     </div>
                 </div>
-                <MonacoEditorComponent initialData={code} language={props.lang} setCode={setCode} />
+                {editor}
             </div>
     );
 }
@@ -175,10 +181,6 @@ function CodeSnippetEditor({props}: { props: CodeSnippetProps }) {
 export default function Slides() {
     const [url, setUrl] = useState<string>('/example.pdf');
     const [mdNote, setMdNote] = useState<string>(`Hello **world**!`);
-    const [codeContent, setCodeContent] = useState<string>(``);
-    const [codeLang, setCodeLang] = useState<string>('');
-    const [snippetPage, setSnippetPage] = useState<number>(0);
-    const [snippetId, setSnippetId] = useState<string>('');
     return (
             <PDFProvider>
                 <div className="p-5 rounded-[var(--radius)] border-1 h-full">
@@ -195,12 +197,7 @@ export default function Slides() {
                                     <TabsTrigger value="notes">Notes</TabsTrigger>
                                 </TabsList>
                                 <TabsContent value="snippets" className="h-full">
-                                    <CodeSnippetEditor props={{
-                                        defaultValue: codeContent,
-                                        lang: codeLang,
-                                        page: snippetPage,
-                                        id: snippetId
-                                    }} />
+                                    <CodeSnippetEditor />
                                 </TabsContent>
                                 <TabsContent value="notes" className="h-full">
                                     <Suspense fallback={null}>

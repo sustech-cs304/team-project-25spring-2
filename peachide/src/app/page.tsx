@@ -22,7 +22,7 @@ export default function Home() {
     const fetchUserData = async () => {
       try {
         // Replace with your actual API endpoint
-        const response = await fetch('/api/user');
+        const response = await fetch('/fetchUserInfo');
         if (!response.ok) {
           throw new Error('Failed to fetch user data');
         }
@@ -67,7 +67,7 @@ export default function Home() {
         >
           <Card className="border shadow-lg">
             <CardHeader>
-              <CardTitle className="text-center">User Profile</CardTitle>
+              <CardTitle className="text-center">Your Profile</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col items-center">
               {loading ? (
