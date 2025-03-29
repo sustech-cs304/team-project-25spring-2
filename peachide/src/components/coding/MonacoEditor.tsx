@@ -13,28 +13,13 @@ interface MonacoEditorProps {
 const MonacoEditorComponent: React.FC<MonacoEditorProps> = ({
   initialData,
   language = 'javascript',
-  setCode,
 }) => {
-    const initialStates = {
-        codeText: initialData
-    };
-    const [state, setState] = React.useState(initialStates.codeText);
+    const [state, setState] = React.useState(initialData);
     const handleEditorChange = (value: string | undefined, event: any) => {
-        // settingState("codeText", value);
-        // value = value.replace(/\n/g, '')
         if (value !== undefined) {
             setState(value);
         }
     };
-
-    // const handleCodeChange = useCallback(
-    //     debounce((value: string | undefined) => {
-    //         if (value !== undefined) {
-    //         setCode(value);
-    //         }
-    //     }, 300), // 300ms 防抖延迟
-    //     []
-    // );
     const { theme } = useTheme();
 
     return (
