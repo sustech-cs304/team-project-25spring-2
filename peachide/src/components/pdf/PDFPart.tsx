@@ -4,29 +4,26 @@ import {Document as PDFDocument, Page, pdfjs} from "react-pdf";
 import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import React, {useEffect, useMemo, useRef, useState} from "react";
-import {Minus, Plus} from "lucide-react";
+import {Minus, Play, Plus} from "lucide-react";
 import {Button} from "@/components/ui/button";
-
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
         'pdfjs-dist/build/pdf.worker.min.mjs',
         import.meta.url,
 ).toString();
 
-interface PDFPartProps {
-    props: {
-        url: string;
-        pageNumber: number;
-        numPages?: number;
-        width?: number;
-    },
-    onFeedbackAction: (feedback: any) => void;
-}
 
 export const PDFPart: React.FC<PDFPartProps> = ({props, onFeedbackAction}) => {
     const [numPages, setNumPages] = useState<number>();
     const [scale, setScale] = useState(1);
     const pdfContainerRef = useRef<HTMLDivElement>(null);
+    const [snippets, setSnippets] = useState<SnippetsData>([]);
+
+    useEffect(() => {
+        if (props.snippets) {
+            setSnippets(props.snippets);
+        }
+    }, [props.snippets]);
 
     function onDocumentLoadSuccess({numPages}: { numPages: number }): void {
         setNumPages(numPages);
@@ -70,7 +67,33 @@ export const PDFPart: React.FC<PDFPartProps> = ({props, onFeedbackAction}) => {
                     {Array.from(new Array(numPages), (el, index) => (
                             <Page key={`page_${index + 1}`} pageNumber={index + 1} scale={scale}
                                     onLoadSuccess={onPageLoadSuccess}
-                            />
+                            >
+                                <div className="react-pdf__Page__textContent textLayer" data-main-rotation="0"
+                                        style={{
+                                            width: 'round(down, var(--scale-factor) * 960px, var(--scale-round-x, 1px))',
+                                            height: 'round(down, var(--scale-factor) * 540px, var(--scale-round-y, 1px))',
+                                            pointerEvents: 'none',
+                                        }}>
+                                    {snippets.map((snippet, idx) => (
+                                            snippet.page === index + 1 &&
+                                            <div key={idx}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        left: snippet.position.x,
+                                                        top: snippet.position.y,
+                                                        pointerEvents: 'auto',
+                                                    }}>
+                                                <Button variant="outline" size="icon" className="size-6 ml-2 mb-2"
+                                                        onClick={() => onFeedbackAction({
+                                                            ...props,
+                                                            currentSnippet: snippet
+                                                        })}>
+                                                    <Play />
+                                                </Button>
+                                            </div>
+                                    ))}
+                                </div>
+                            </Page>
                     ))}
                 </PDFDocument>
                 <div className="sticky bottom-0 left-0 z-[1000]">

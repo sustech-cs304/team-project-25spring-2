@@ -7,7 +7,6 @@ import debounce from 'lodash/debounce';
 interface MonacoEditorProps {
     initialData: string;
     language?: string;
-    setCode: (code: string) => void;
 }
 
 const MonacoEditorComponent: React.FC<MonacoEditorProps> = ({
