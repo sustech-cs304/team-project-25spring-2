@@ -28,6 +28,7 @@ export default function Coding({ params }: { params: Promise<{ id: string }> }) 
       />
       <EditorLayout 
         onToggleFileSystemBar={toggleFileSystemBar}
+        selectedFile={selectedFile}
       />
     </div>
   );
