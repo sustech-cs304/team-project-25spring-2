@@ -1,4 +1,6 @@
-import React, { CSSProperties, FC, memo } from "react";
+import React, {CSSProperties, FC, memo} from "react";
+
+export const SERVER = "http://127.0.0.1:4523/m1/5988343-5676752-default";
 
 export type TreeNodeType = "directory" | "file";
 

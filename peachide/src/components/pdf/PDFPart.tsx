@@ -6,24 +6,67 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import React, {useEffect, useMemo, useRef, useState} from "react";
 import {Minus, Play, Plus} from "lucide-react";
 import {Button} from "@/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogTitle,
+    DialogTrigger
+} from "@/components/ui/dialog";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
         'pdfjs-dist/build/pdf.worker.min.mjs',
         import.meta.url,
 ).toString();
 
+const DeleteSnippetButton: React.FC<{
+    snippet: SnippetInfo,
+    setSnippets: React.Dispatch<React.SetStateAction<SnippetsData>>,
+    onFeedbackAction: (feedback: any) => void,
+    props: any,
+    buttonClassName: string
+}> = ({snippet, setSnippets, onFeedbackAction, props, buttonClassName}) => {
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+    const handleDelete = () => {
+        setSnippets((prevSnippets: SnippetsData) =>
+                prevSnippets.filter((s: SnippetInfo) => s !== snippet)
+        );
+        onFeedbackAction({
+            snippets: props.snippets.filter((s: any) => s !== snippet),
+        });
+        setIsDialogOpen(false);
+    };
+
+    return (
+            <>
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" size="icon" className={buttonClassName}>
+                            <Minus />
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogTitle>Sure to delete?</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete this code snippet?
+                        </DialogDescription>
+                        <DialogFooter>
+                            <Button variant="ghost" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                            <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </>
+    );
+};
 
 export const PDFPart: React.FC<PDFPartProps> = ({props, onFeedbackAction}) => {
     const [numPages, setNumPages] = useState<number>();
     const [scale, setScale] = useState(1);
     const pdfContainerRef = useRef<HTMLDivElement>(null);
     const [snippets, setSnippets] = useState<SnippetsData>([]);
-
-    useEffect(() => {
-        if (props.snippets) {
-            setSnippets(props.snippets);
-        }
-    }, [props.snippets]);
 
     function onDocumentLoadSuccess({numPages}: { numPages: number }): void {
         setNumPages(numPages);
@@ -55,9 +98,22 @@ export const PDFPart: React.FC<PDFPartProps> = ({props, onFeedbackAction}) => {
             }
         };
 
+        if (props.snippets) {
+            setSnippets(props.snippets);
+        }
+
         container.addEventListener('scroll', handleScroll);
         return () => container.removeEventListener('scroll', handleScroll);
     }, [numPages, props, onFeedbackAction]);
+
+    const handleClick = (e: React.MouseEvent<HTMLDivElement>, pageNumber: number) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const position = {x, y};
+        onFeedbackAction({clickPosition: position, pageNumber: pageNumber});
+        // Do not stop propagation to allow other elements to handle the event
+    };
 
     return (
             <div ref={pdfContainerRef}
@@ -67,7 +123,7 @@ export const PDFPart: React.FC<PDFPartProps> = ({props, onFeedbackAction}) => {
                         onLoadSuccess={onDocumentLoadSuccess}>
                     {Array.from(new Array(numPages), (el, index) => (
                             <Page key={`page_${index + 1}`} pageNumber={index + 1} scale={scale}
-                                    onLoadSuccess={onPageLoadSuccess}
+                                    onLoadSuccess={onPageLoadSuccess} onClick={(e) => handleClick(e, index + 1)}
                             >
                                 <div className="react-pdf__Page__textContent textLayer" data-main-rotation="0"
                                         style={{
@@ -91,6 +147,9 @@ export const PDFPart: React.FC<PDFPartProps> = ({props, onFeedbackAction}) => {
                                                         })}>
                                                     <Play />
                                                 </Button>
+                                                <DeleteSnippetButton snippet={snippet} setSnippets={setSnippets}
+                                                        onFeedbackAction={onFeedbackAction} props={props}
+                                                        buttonClassName="size-3 ml-2 mb-2 text-red-500 absolute top-0 right-0 transform translate-x-2 -translate-y-2" />
                                             </div>
                                     ))}
                                 </div>

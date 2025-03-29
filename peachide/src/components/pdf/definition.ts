@@ -18,6 +18,7 @@ interface PDFPartProps {
         width?: number;
         snippets?: SnippetsData;
         currentSnippet?: string;
+        snippetsLength?: number;
     },
     onFeedbackAction: (feedback: any) => void;
 }

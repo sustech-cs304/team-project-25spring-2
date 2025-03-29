@@ -13,7 +13,8 @@ import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTr
 import {PDFProvider, usePDFContext} from "@/components/pdf/PDFEnvProvider";
 import {Textarea} from "@/components/ui/textarea";
 import MonacoEditorComponent from "@/components/coding/MonacoEditor";
-
+import {motion} from "framer-motion";
+import {random} from "lodash";
 
 const EditorComp = dynamic(() =>
         import('../../../components/editors/markdown-editor'), {ssr: false});
@@ -102,11 +103,18 @@ function CommentsSection() {
 }
 
 function PDFSection({url}: { url: string }) {
-    const {pageNumber, setPageNumber, numPages, setNumPages, setCurrentSnippet} = usePDFContext();
+    const {
+        pageNumber,
+        setPageNumber,
+        numPages,
+        setNumPages,
+        setCurrentSnippet,
+        snippets,
+        setSnippets
+    } = usePDFContext();
     const [width, setWidth] = useState<number>(200);
     const containerRef = React.createRef<HTMLDivElement>();
-    const [snippets, setSnippets] = useState<SnippetsData>(
-            [{text: 'console.log(\'Hello\')', position: {x: 100, y: 100}, page: 1, id: '1', lang: 'javascript'}]);
+    const [isAddingSnippet, setIsAddingSnippet] = useState<boolean>(false);
     const handleFeedback = (feedback: any) => {
         if (feedback.pageNumber) {
             setPageNumber(feedback.pageNumber);
@@ -114,10 +122,24 @@ function PDFSection({url}: { url: string }) {
                 setNumPages(feedback.numPages);
         }
         if (feedback.snippets) {
+            console.log(feedback.snippets, "SNPP", feedback);
             setSnippets(feedback.snippets);
         }
         if (feedback.currentSnippet) {
             setCurrentSnippet(feedback.currentSnippet);
+        }
+        if (feedback.clickPosition) {
+            if (isAddingSnippet) {
+                console.log(feedback);
+                setSnippets([...snippets, {
+                    text: 'console.log(\'Hello\')',
+                    position: feedback.clickPosition,
+                    page: feedback.pageNumber,
+                    id: String(random(1000, 9999)),
+                    lang: 'javascript'
+                }]);
+                setIsAddingSnippet(false);
+            }
         }
     };
     useEffect(() => {
@@ -137,9 +159,16 @@ function PDFSection({url}: { url: string }) {
     return (<div className="h-2/3 flex flex-col" ref={containerRef}>
         <PDFPart props={{url: url, pageNumber: pageNumber, width: width, snippets: snippets}}
                 onFeedbackAction={handleFeedback} />
-        <p className="pl-0.5 mt-2">
-            Page {pageNumber} / {numPages}
-        </p>
+        <div className="pl-0.5 mt-2 grid grid-cols-3">
+            <div className="col-span-2">
+                Page {pageNumber} / {numPages}
+            </div>
+            <div className="text-right">
+                <Button className="h-6 text-xs" onClick={() => setIsAddingSnippet(!isAddingSnippet)}>
+                    Add Snippet
+                </Button>
+            </div>
+        </div>
     </div>);
 }
 
@@ -149,7 +178,6 @@ function CodeSnippetEditor() {
     const [editor, setEditor] = useState<any>(null);
 
     useEffect(() => {
-        console.log(currentSnippet);
         if (currentSnippet.page === 0 || currentSnippet.id === '') {
             setTitle('Please select a snippet to edit');
             return;
@@ -165,10 +193,10 @@ function CodeSnippetEditor() {
                 <div className="text-sm mb-3 grid grid-cols-4 w-full">
                     <div className="col-span-3">{title}</div>
                     <div className={"text-right"}>
-                        <Button variant="ghost" size="icon" className="ml-2 size-4">
+                        <Button variant="ghost" size="icon" className="ml-2 size-4" disabled={editor == null}>
                             <Save />
                         </Button>
-                        <Button variant="ghost" size="icon" className="ml-2 size-4">
+                        <Button variant="ghost" size="icon" className="ml-2 size-4" disabled={editor == null}>
                             <Play />
                         </Button>
                     </div>
@@ -183,7 +211,10 @@ export default function Slides() {
     const [mdNote, setMdNote] = useState<string>(`Hello **world**!`);
     return (
             <PDFProvider>
-                <div className="p-5 rounded-[var(--radius)] border-1 h-full">
+                <motion.div className="p-5 rounded-[var(--radius)] border-1 h-full"
+                        initial={{opacity: 0, y: -20}}
+                        animate={{opacity: 1, y: 0}}
+                        transition={{duration: 0.5}}>
                     <ResizablePanelGroup direction="horizontal">
                         <ResizablePanel defaultSize={70} className="col-span-2 h-full flex flex-col pr-5">
                             <PDFSection url={url} />
@@ -207,7 +238,7 @@ export default function Slides() {
                             </Tabs>
                         </ResizablePanel>
                     </ResizablePanelGroup>
-                </div>
+                </motion.div>
             </PDFProvider>
     );
 }

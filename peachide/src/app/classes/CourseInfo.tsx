@@ -10,18 +10,13 @@ import {
   Info, 
   Clock 
 } from "lucide-react";
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger
-} from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {SERVER} from "@/components/data/CodeEnvType";
 
 interface CourseSchedule {
   date: string;
@@ -53,19 +48,18 @@ export default function CourseInfo({ courseId }: CourseInfoProps) {
       try {
         setLoading(true);
         // In a real app, you would fetch from your actual API endpoint
-        const response = await fetch(`http://127.0.0.1:4523/m1/5988343-5676752-default
-/classes/${courseId}/course_info`);
-        
+        const response = await fetch(SERVER + `/classes/${courseId}/course_info`);
+
         if (!response.ok) {
           throw new Error(`Failed to fetch course info: ${response.status}`);
         }
-        
+
         const data = await response.json();
         setCourseData(data);
       } catch (error) {
         console.error("Error fetching course info:", error);
         setError("Failed to load course information. Please try again later.");
-        
+
         // For development purposes, use mock data
         setCourseData({
           course_id: "b20be0be-57f5-4db3-91ea-8a961c443134",
@@ -105,11 +99,11 @@ export default function CourseInfo({ courseId }: CourseInfoProps) {
 
   // Convert string dates to Date objects
   const scheduleDates = courseData?.schedules.map(schedule => new Date(schedule.date)) || [];
-  
+
   // Find section name for a specific date
   const getSectionForDate = (date: Date): string | undefined => {
     if (!courseData) return undefined;
-    
+
     const dateString = date.toISOString().split('T')[0];
     const schedule = courseData.schedules.find(s => s.date === dateString);
     return schedule?.section_name;
@@ -118,7 +112,7 @@ export default function CourseInfo({ courseId }: CourseInfoProps) {
   // Function to determine if a date has a scheduled class
   const isScheduledDate = (date: Date): boolean => {
     return scheduleDates.some(
-      scheduledDate => 
+      scheduledDate =>
         scheduledDate.getFullYear() === date.getFullYear() &&
         scheduledDate.getMonth() === date.getMonth() &&
         scheduledDate.getDate() === date.getDate()
@@ -128,18 +122,18 @@ export default function CourseInfo({ courseId }: CourseInfoProps) {
   // Custom day rendering for the calendar
   const renderDay = (date: Date, modifiers: any) => {
     const isScheduled = isScheduledDate(date);
-    
+
     if (!isScheduled) {
       return <div className="h-full w-full flex items-center justify-center">{date.getDate()}</div>;
     }
-    
+
     const sectionName = getSectionForDate(date);
-    
+
     return (
       <Popover>
         <PopoverTrigger asChild>
-          <div 
-            className="h-full w-full flex items-center justify-center rounded-md bg-primary/20 border border-primary 
+          <div
+            className="h-full w-full flex items-center justify-center rounded-md bg-primary/20 border border-primary
               font-bold text-primary hover:bg-primary/30 cursor-pointer"
           >
             {date.getDate()}
@@ -148,9 +142,9 @@ export default function CourseInfo({ courseId }: CourseInfoProps) {
         <PopoverContent className="w-auto p-2">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium">
-              {date.toLocaleDateString('en-US', { 
-                month: 'short', 
-                day: 'numeric' 
+              {date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric'
               })}
             </p>
             <div className="flex items-center gap-1 text-sm">
@@ -246,11 +240,11 @@ export default function CourseInfo({ courseId }: CourseInfoProps) {
                 <CardContent className="pt-4">
                   <div className="flex items-center justify-between">
                     <h3 className="font-medium text-lg">
-                      {selectedDate.toLocaleDateString('en-US', { 
-                        weekday: 'long', 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
+                      {selectedDate.toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
                       })}
                     </h3>
                     <Badge>{getSectionForDate(selectedDate)}</Badge>
