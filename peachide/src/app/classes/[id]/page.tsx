@@ -7,6 +7,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 
+// Import tab components
+import CourseInfo from "../CourseInfo";
+import Instructors from "../Instructors";
+import Lecture from "../Lecture";
+import Assignment from "../Assignment";
+
 // Course type definition based on API response
 interface Course {
   course_id: string;
@@ -215,20 +221,20 @@ function ClassesRightBar({
 
     switch (activeTab) {
       case 'course-info':
-        return <div className="p-4">Course information will be loaded here</div>;
+        return <CourseInfo courseId={selectedCourse.course_id} />;
       case 'instructors':
-        return <div className="p-4">Instructor information will be loaded here</div>;
-      case 'lecture':
-        return <div className="p-4">Lecture content will be loaded here</div>;
-      case 'assignment':
-        return <div className="p-4">Assignment details will be loaded here</div>;
+      //   return <Instructors courseId={selectedCourse.course_id} />;
+      // case 'lecture':
+      //   return <Lecture courseId={selectedCourse.course_id} />;
+      // case 'assignment':
+      //   return <Assignment courseId={selectedCourse.course_id} />;
       default:
         return null;
     }
   };
 
   return (
-    <div className="flex-1 border rounded-lg shadow-sm h-full flex flex-col">
+    <div className="flex-1 border rounded-lg shadow-sm h-full flex flex-col overflow-hidden">
       {selectedCourse ? (
         <>
           <div className="flex-row items-center flex-none p-4 border-b">
@@ -261,7 +267,7 @@ function ClassesRightBar({
               Assignment
             </TabButton>
           </div>
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden">
             {renderTabContent()}
           </div>
         </>
@@ -312,7 +318,7 @@ export default function Classes() {
   };
 
   return (
-    <div className="flex h-full gap-2">
+    <div className="flex h-full gap-4">
       <ClassesLeftBar 
         props={{ id: "1", pathname: "/coding/1" }} 
         isVisible={true} 
