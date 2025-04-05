@@ -11,5 +11,4 @@ class Note(Base):
     material_id = Column(String, nullable=False)
     is_snippet = Column(Boolean, default=False)
     content = Column(String, nullable=False)
-    snippet_id = Column(String, nullable=True)
-    original = Column(String, nullable=True) # corresponding to the material_id, but whole material in the api
+    code_snippet = Column(String, nullable=True) # corresponding to the code_snippet id, but whole code_snippet in the api

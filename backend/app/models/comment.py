@@ -11,4 +11,4 @@ class Comment(Base):
     user_id = Column(String, nullable=False)
     material_id = Column(String, nullable=False)
     page = Column(Integer, nullable=False)
-    replies = Column(ARRAY(String), nullable=True)  # corresponding to the comment_id, but whole comment in the api
+    ancestor_id = Column(String, nullable=True)
