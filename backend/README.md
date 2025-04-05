@@ -17,6 +17,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ```bash
 uv venv
 source .venv/bin/activate
+uv sync
 ```
 
 3. Run the server
@@ -25,6 +26,8 @@ source .venv/bin/activate
 > Make sure to run the backend on server with K8s and Docker.
 
 ```bash
+fastapi dev app
+# or
 uvicorn app.main:app --reload
 ```
 
