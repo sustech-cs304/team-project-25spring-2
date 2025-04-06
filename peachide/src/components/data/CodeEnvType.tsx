@@ -76,8 +76,18 @@ export const TreeItem: FC<TreeItemProps> = memo(
           e.currentTarget.classList.remove("file-tree__tree-item--dragover");
         }}
         onDragStart={(e) => {
+          console.log("onDragStart", treeNode);
+          
+          // Store file info as JSON that can be accessed during dragenter
+          const fileInfo = {
+            uri: treeNode.uri,
+            type: treeNode.type,
+            name: treeNode.uri.split('/').pop() || treeNode.uri
+          };
+          
+          // Set both the plain text (for compatibility) and custom format
           e.dataTransfer.setData("text/plain", treeNode.uri);
-          e.dataTransfer.setData("text/file-type", treeNode.type);
+          e.dataTransfer.setData("application/json", JSON.stringify(fileInfo));
           e.currentTarget.classList.add("file-tree__tree-item--dragging");
           
           // Create a drag image with a more subtle appearance
@@ -96,6 +106,7 @@ export const TreeItem: FC<TreeItemProps> = memo(
           }, 0);
         }}
         onDragEnd={(e) => {
+          console.log("onDragEnd", treeNode);
           e.currentTarget.classList.remove("file-tree__tree-item--dragging");
           // Remove any lingering dragover classes from all items
           document.querySelectorAll(".file-tree__tree-item--dragover").forEach(el => {
@@ -134,15 +145,33 @@ export const treeData: TreeNode = {
             type: "file",
             uri: "/src/index2.ts",
           },
-          {
-            type: "file",
-            uri: "/example.pdf",
-          },
       ],
       },
       {
-      type: "file",
-      uri: "/.gitignore",
+        type: "file",
+        uri: "/.gitignore",
+      },
+      {
+        type: "file",
+        uri: "/example.pdf",
       },
   ],
 }
+
+export const languageMap: Record<string, string> = {
+  'js': 'javascript',
+  'jsx': 'javascript',
+  'ts': 'typescript',
+  'tsx': 'typescript',
+  'html': 'html',
+  'css': 'css',
+  'json': 'json',
+  'md': 'markdown',
+  'py': 'python',
+  'java': 'java',
+  'c': 'c',
+  'cpp': 'cpp',
+  'h': 'cpp',
+  'hpp': 'cpp',
+  'pdf': 'pdf'
+};

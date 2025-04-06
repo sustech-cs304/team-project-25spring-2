@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { Layout, Model, TabNode, Actions, DockLocation } from 'flexlayout-react';
+import { Node, Layout, Model, TabNode, Actions, DockLocation } from 'flexlayout-react';
 import MonacoEditorComponent from "@/components/coding/MonacoEditor";
 import TerminalComponent from "@/components/coding/Terminal";
-import { TreeNode } from "@/components/data/CodeEnvType";
+import { TreeNode, languageMap } from "@/components/data/CodeEnvType";
 import EditorToolbar from "./EditorToolbar";
 import { PDFPart } from "@/components/pdf/PDFPart";
 
@@ -52,7 +52,6 @@ const loadFileContent = async (filePath: string): Promise<string> => {
   // This is a mock function that returns dummy content based on file type
   // In a real implementation, this would call an API to fetch file content
   const ext = filePath.split('.').pop()?.toLowerCase() || '';
-  
   // Return some sample content based on file extension
   switch (ext) {
     case 'js':
@@ -108,23 +107,6 @@ export default function EditorLayout({ onToggleFileSystemBar, selectedFile }: Ed
   // Get file extension and map to language
   const getLanguageFromFileName = (fileName: string): string => {
     const ext = fileName.split('.').pop()?.toLowerCase() || '';
-    const languageMap: Record<string, string> = {
-      'js': 'javascript',
-      'jsx': 'javascript',
-      'ts': 'typescript',
-      'tsx': 'typescript',
-      'html': 'html',
-      'css': 'css',
-      'json': 'json',
-      'md': 'markdown',
-      'py': 'python',
-      'java': 'java',
-      'c': 'c',
-      'cpp': 'cpp',
-      'h': 'cpp',
-      'hpp': 'cpp',
-      'pdf': 'pdf'
-    };
     return languageMap[ext] || 'plaintext';
   };
 
@@ -203,7 +185,6 @@ export default function EditorLayout({ onToggleFileSystemBar, selectedFile }: Ed
   // Handle file opening - defined as a memoized callback
   const openFile = useCallback(async (treeNode: TreeNode) => {
     if (!treeNode || treeNode.type !== "file") return;
-
     try {
       const filePath = treeNode.uri;
       const fileName = filePath.split('/').pop() || filePath;
@@ -327,47 +308,36 @@ export default function EditorLayout({ onToggleFileSystemBar, selectedFile }: Ed
     return action;
   };
 
-  // Handle drag events
-  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "copy";
-    setIsDraggingOver(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDraggingOver(false);
-  };
-
-  const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    setIsDraggingOver(false);
-    
-    // Get the file URI from the dataTransfer
-    const uri = event.dataTransfer.getData("text/plain");
-    const fileType = event.dataTransfer.getData("text/file-type");
-    
-    if (!uri) {
-      return;
-    }
-
-    // Create a mock TreeNode object to pass to openFile
-    const fileName = uri.split('/').pop() || uri;
-    const mockTreeNode: TreeNode = {
-      uri,
-      type: "file"
+  // Handle external drag according to flexlayout's expected format
+  const handleExternalDrag = (event: React.DragEvent<HTMLElement>) => {
+    if (event.dataTransfer.types.indexOf('application/json') < 0) return;
+    event.dataTransfer.dropEffect = 'link';
+    return {
+      dragText: `Drag New File`,
+      json: {
+        type: "tab",
+        name: "New File",
+        component: "editor", 
+        config: { filePath: "New File", url: undefined },
+        language: "plaintext",
+      },
+      onDrop: (node?: Node, event?: React.DragEvent<HTMLElement>) => {
+        if (!node || !event) return; // Aborted drag
+        const uri = event.dataTransfer.getData("text/plain");
+        const language = getLanguageFromFileName(uri);
+        const isPDF = language === 'pdf';
+        model.doAction(Actions.updateNodeAttributes(node.getId(), {
+          name: uri.split('/').pop() || uri,
+          component: isPDF ? "pdf" : "editor",
+          config: { filePath: uri, url: isPDF ? uri : undefined },
+          language
+        }));
+      }
     };
-
-    // Open the file
-    await openFile(mockTreeNode);
   };
 
   return (
-    <div 
-      className={`flex-1 border-1 rounded-[var(--radius)] h-full flex flex-col ${isDraggingOver ? 'bg-gray-100 border-blue-500 border-dashed' : ''}`}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-    >
+    <div className="flex-1 border-1 rounded-[var(--radius)] h-full flex flex-col">
       <EditorToolbar 
         onToggleFileSystemBar={onToggleFileSystemBar}
         onToggleTerminal={toggleTerminal}
@@ -378,6 +348,7 @@ export default function EditorLayout({ onToggleFileSystemBar, selectedFile }: Ed
         factory={factory}
         onModelChange={handleModelChange}
         onAction={onAction}
+        onExternalDrag={handleExternalDrag}
       />
     </div>
   );
