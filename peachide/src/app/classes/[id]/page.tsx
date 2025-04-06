@@ -223,11 +223,11 @@ function ClassesRightBar({
       case 'course-info':
         return <CourseInfo courseId={selectedCourse.course_id} />;
       case 'instructors':
-      //   return <Instructors courseId={selectedCourse.course_id} />;
-      // case 'lecture':
-      //   return <Lecture courseId={selectedCourse.course_id} />;
-      // case 'assignment':
-      //   return <Assignment courseId={selectedCourse.course_id} />;
+        return <Instructors courseId={selectedCourse.course_id} />;
+      case 'lecture':
+        return <div className="p-4">Lecture content coming soon</div>;
+      case 'assignment':
+        return <div className="p-4">Assignment content coming soon</div>;
       default:
         return null;
     }
