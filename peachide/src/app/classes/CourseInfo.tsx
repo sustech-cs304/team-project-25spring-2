@@ -39,15 +39,13 @@ export default function CourseInfo({ courseId }: CourseInfoProps) {
   const [courseData, setCourseData] = useState<CourseInfoData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
   useEffect(() => {
     const fetchCourseInfo = async () => {
       if (!courseId) return;
-      
+
       try {
         setLoading(true);
-        // In a real app, you would fetch from your actual API endpoint
         const response = await fetch(SERVER + `/classes/${courseId}/course_info`);
 
         if (!response.ok) {
@@ -57,10 +55,6 @@ export default function CourseInfo({ courseId }: CourseInfoProps) {
         const data = await response.json();
         setCourseData(data);
       } catch (error) {
-        console.error("Error fetching course info:", error);
-        setError("Failed to load course information. Please try again later.");
-
-        // For development purposes, use mock data
         setCourseData({
           course_id: "b20be0be-57f5-4db3-91ea-8a961c443134",
           name: "Advanced Programming Paradigms",
@@ -96,66 +90,6 @@ export default function CourseInfo({ courseId }: CourseInfoProps) {
 
     fetchCourseInfo();
   }, [courseId]);
-
-  // Convert string dates to Date objects
-  const scheduleDates = courseData?.schedules.map(schedule => new Date(schedule.date)) || [];
-
-  // Find section name for a specific date
-  const getSectionForDate = (date: Date): string | undefined => {
-    if (!courseData) return undefined;
-
-    const dateString = date.toISOString().split('T')[0];
-    const schedule = courseData.schedules.find(s => s.date === dateString);
-    return schedule?.section_name;
-  };
-
-  // Function to determine if a date has a scheduled class
-  const isScheduledDate = (date: Date): boolean => {
-    return scheduleDates.some(
-      scheduledDate =>
-        scheduledDate.getFullYear() === date.getFullYear() &&
-        scheduledDate.getMonth() === date.getMonth() &&
-        scheduledDate.getDate() === date.getDate()
-    );
-  };
-
-  // Custom day rendering for the calendar
-  const renderDay = (date: Date, modifiers: any) => {
-    const isScheduled = isScheduledDate(date);
-
-    if (!isScheduled) {
-      return <div className="h-full w-full flex items-center justify-center">{date.getDate()}</div>;
-    }
-
-    const sectionName = getSectionForDate(date);
-
-    return (
-      <Popover>
-        <PopoverTrigger asChild>
-          <div
-            className="h-full w-full flex items-center justify-center rounded-md bg-primary/20 border border-primary
-              font-bold text-primary hover:bg-primary/30 cursor-pointer"
-          >
-            {date.getDate()}
-          </div>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-2">
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium">
-              {date.toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric'
-              })}
-            </p>
-            <div className="flex items-center gap-1 text-sm">
-              <Clock size={14} className="text-primary" />
-              <span>{sectionName}</span>
-            </div>
-          </div>
-        </PopoverContent>
-      </Popover>
-    );
-  };
 
   if (loading) {
     return <CourseInfoSkeleton />;
@@ -211,47 +145,27 @@ export default function CourseInfo({ courseId }: CourseInfoProps) {
         </CardContent>
       </Card>
 
-      {/* Course Schedule Calendar */}
-      <Card className="flex-1">
+      {/* Course Schedule List */}
+      <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-xl flex items-center gap-2">
             <CalendarDays size={18} className="text-muted-foreground" />
             Course Schedule
           </CardTitle>
           <CardDescription>
-            Click on highlighted dates to see class section details.
+            Upcoming class dates and sections.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              className="rounded-md border w-full"
-              largeDisplay={true}
-              components={{
-                Day: ({ date }) => renderDay(date, {}),
-              }}
-            />
-
-            {selectedDate && isScheduledDate(selectedDate) && (
-              <Card className="mt-4 w-full bg-muted/30">
-                <CardContent className="pt-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium text-lg">
-                      {selectedDate.toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </h3>
-                    <Badge>{getSectionForDate(selectedDate)}</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+          <div className="flex flex-col space-y-2">
+            {courseData.schedules.map((schedule) => (
+              <div key={schedule.date} className="flex justify-between items-center py-2 border-b last:border-0">
+                <span className="text-sm text-muted-foreground">
+                  {new Date(schedule.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                </span>
+                <Badge variant="outline">{schedule.section_name}</Badge>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
