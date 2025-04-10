@@ -375,10 +375,9 @@
   gap: 0.3em;
   align-items: center;
   box-sizing: border-box;
-  padding: 3px 0.5em;
+  padding: 2px 0.5em;
   cursor: pointer;
-  border-radius: 10px;
-  padding: 2px 0.8em;
+  border-radius: 5px;
 }
 .flexlayout__tab_button_stretch {
   background-color: transparent;

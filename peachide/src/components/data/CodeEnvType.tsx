@@ -76,18 +76,9 @@ export const TreeItem: FC<TreeItemProps> = memo(
           e.currentTarget.classList.remove("file-tree__tree-item--dragover");
         }}
         onDragStart={(e) => {
-          console.log("onDragStart", treeNode);
-          
-          // Store file info as JSON that can be accessed during dragenter
-          const fileInfo = {
-            uri: treeNode.uri,
-            type: treeNode.type,
-            name: treeNode.uri.split('/').pop() || treeNode.uri
-          };
-          
           // Set both the plain text (for compatibility) and custom format
           e.dataTransfer.setData("text/plain", treeNode.uri);
-          e.dataTransfer.setData("application/json", JSON.stringify(fileInfo));
+          e.dataTransfer.setData("text/file-type", treeNode.type);
           e.currentTarget.classList.add("file-tree__tree-item--dragging");
           
           // Create a drag image with a more subtle appearance
@@ -106,7 +97,6 @@ export const TreeItem: FC<TreeItemProps> = memo(
           }, 0);
         }}
         onDragEnd={(e) => {
-          console.log("onDragEnd", treeNode);
           e.currentTarget.classList.remove("file-tree__tree-item--dragging");
           // Remove any lingering dragover classes from all items
           document.querySelectorAll(".file-tree__tree-item--dragover").forEach(el => {

@@ -4,12 +4,12 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { Node, Layout, Model, TabNode, Actions, DockLocation } from 'flexlayout-react';
 import MonacoEditorComponent from "@/components/coding/MonacoEditor";
 import TerminalComponent from "@/components/coding/Terminal";
-import { TreeNode, languageMap } from "@/components/data/CodeEnvType";
+import { TreeNode, TreeNodeType, languageMap } from "@/components/data/CodeEnvType";
 import EditorToolbar from "./EditorToolbar";
-import { PDFPart } from "@/components/pdf/PDFPart";
+import { PDFComponent } from "@/components/pdf/PDFComponent";
 
 // Default layout configuration
-const defaultLayout = {
+var defaultLayout = {
   global: {
     "splitterEnableHandle": true,
     "tabSetEnableActiveIcon": true,
@@ -17,7 +17,7 @@ const defaultLayout = {
     "tabSetMinHeight": 100,
     "tabSetEnableTabScrollbar": true,
     "borderMinSize": 100,
-    "borderEnableTabScrollbar": true
+    "borderEnableTabScrollbar": true,
   },
   borders: [],
   layout: {
@@ -31,10 +31,13 @@ const defaultLayout = {
         children: [
           {
             type: "tab",
+            id: "welcome.js",
             name: "welcome.js",
             component: "editor",
-            config: { filePath: "welcome.js" },
-            language: "javascript"
+            config: { 
+              filePath: "welcome.js", 
+              language: "javascript" 
+            },
           }
         ]
       }
@@ -47,12 +50,8 @@ interface EditorLayoutProps {
   selectedFile?: TreeNode | null;
 }
 
-// Mock function to load file content - replace with actual API call later
 const loadFileContent = async (filePath: string): Promise<string> => {
-  // This is a mock function that returns dummy content based on file type
-  // In a real implementation, this would call an API to fetch file content
   const ext = filePath.split('.').pop()?.toLowerCase() || '';
-  // Return some sample content based on file extension
   switch (ext) {
     case 'js':
     case 'jsx':
@@ -73,7 +72,12 @@ const loadFileContent = async (filePath: string): Promise<string> => {
   }
 };
 
-export default function EditorLayout({ onToggleFileSystemBar, selectedFile }: EditorLayoutProps) {
+const getLanguageFromFileName = (fileName: string): string => {
+  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+  return languageMap[ext] || 'plaintext';
+};
+
+const EditorLayout = ({ onToggleFileSystemBar, selectedFile }: EditorLayoutProps) => {
   const [model, setModel] = useState<Model>(() => Model.fromJson(defaultLayout));
   const [showTerminal, setShowTerminal] = useState<boolean>(false);
   const [openFiles, setOpenFiles] = useState<Record<string, string>>({
@@ -81,100 +85,15 @@ export default function EditorLayout({ onToggleFileSystemBar, selectedFile }: Ed
   });
   const [currentFile, setCurrentFile] = useState<string | null>("welcome.js");
   const layoutRef = useRef<Layout>(null);
-  const [isDraggingOver, setIsDraggingOver] = useState<boolean>(false);
 
-  // Change Listener: Detect Tab Action and conduct according actions
-  useEffect(() => {
-    const handleModelChange = (action: any) => {
-      // Check if a tab is being deleted
-      if (action.type === Actions.DELETE_TAB) {
-        const tabId = action.data.node;
-        // Check if the deleted tab is the terminal tab
-        if (tabId === "terminal-panel") {
-          setShowTerminal(false);
-        }
-      }
-    };
-
-    model.addChangeListener(handleModelChange);
-    
-    // Clean up listener when component unmounts or model changes
-    return () => {
-      model.removeChangeListener(handleModelChange);
-    };
-  }, [model]);
-
-  // Get file extension and map to language
-  const getLanguageFromFileName = (fileName: string): string => {
-    const ext = fileName.split('.').pop()?.toLowerCase() || '';
-    return languageMap[ext] || 'plaintext';
-  };
-
-  // Factory function for creating components in layout
-  const factory = (node: TabNode) => {
-    const component = node.getComponent();
-    const config = node.getConfig() || {};
-    const filePath = config.filePath || node.getName();
-    const language = node.getExtraData()?.language || getLanguageFromFileName(filePath);
-
-    if (component === "editor") {
-      const initialData = openFiles[filePath] || "";
-      // Use a unique key with a timestamp to ensure component is always recreated when moved
-      const nodeId = `${node.getId()}-${Date.now()}`;
-      return (
-        <div key={nodeId} className="h-full w-full">
-          <MonacoEditorComponent 
-            initialData={initialData} 
-            language={language} 
-          />
-        </div>
-      );
-    } else if (component === "terminal") {
-      return <TerminalComponent />;
-    } else if (component === "pdf") {
-      return (
-        <div className="h-full w-full">
-          <PDFPart 
-            props={{
-              url: config.url || filePath,
-              pageNumber: config.pageNumber || 1,
-            }} 
-            onFeedbackAction={() => {}} 
-          />
-        </div>
-      );
-    }
-
-    return <div>{node.getName()}</div>;
-  };
-
-  // Toggle terminal panel
-  const toggleTerminal = () => {
+  const onToggleTerminal = () => {
     try {
-      // Check actual state instead of relying on showTerminal
       const terminalVisible = showTerminal;
-      
       if (!terminalVisible) {
-        // Find the main tabset ID to use as reference for adding
-        const terminalNode = {
-          type: "tab",
-          name: "Terminal",
-          component: "terminal",
-          id: "terminal-panel",
-          config: {}
-        };
-
-        model.doAction(Actions.addNode(terminalNode, model.getRoot().getId(), DockLocation.BOTTOM, 0, true));
+        model.doAction(Actions.addNode({type: "tab", name: "Terminal", component: "terminal", id: "terminal-panel"}, model.getRoot().getId(), DockLocation.BOTTOM, 0, true));
         setShowTerminal(true);
       } else {
-        // Find and remove the terminal tabset
-        model.visitNodes((node) => {
-          if (node.getId() === "terminal-panel") {
-            model.doAction(Actions.deleteTab(node.getId()));
-            return false; // Stop visiting
-          }
-          return true;
-        });
+        model.doAction(Actions.deleteTab("terminal-panel"));
         setShowTerminal(false);
       }
     } catch (error) {
@@ -182,18 +101,41 @@ export default function EditorLayout({ onToggleFileSystemBar, selectedFile }: Ed
     }
   };
 
-  // Handle file opening - defined as a memoized callback
+  const handleSave = (content: string) => {
+    if(currentFile){
+      setOpenFiles(prev => ({
+        ...prev,
+        [currentFile]: content
+      }));
+    }
+  };
+  
+  const factory = useCallback((node: TabNode) => {
+    const component = node.getComponent();
+    const config = node.getConfig() || {};
+    const filePath = config.filePath || node.getName();
+    const language = config.language || getLanguageFromFileName(filePath);
+
+    switch(component) {
+      case 'editor':
+        return <MonacoEditorComponent initialData={openFiles[filePath]} language={language} onSave={handleSave} />;
+      case 'terminal':
+        return <TerminalComponent />;
+      case 'pdf':
+        return <PDFComponent props={{ url: config.filePath, pageNumber: config.pageNumber || 1 }} onFeedbackAction={() => {}} />;
+      default:
+        return <div>Loading...</div>;
+    }
+  }, [openFiles, handleSave]);
+
   const openFile = useCallback(async (treeNode: TreeNode) => {
     if (!treeNode || treeNode.type !== "file") return;
     try {
       const filePath = treeNode.uri;
       const fileName = filePath.split('/').pop() || filePath;
-      
-      // Determine language based on file extension
       const language = getLanguageFromFileName(filePath);
       const isPDF = language === 'pdf';
 
-      // Check if file is already open by looking for a matching filePath in configs
       let existingTabId: string | undefined;
       
       model.visitNodes(node => {
@@ -207,7 +149,6 @@ export default function EditorLayout({ onToggleFileSystemBar, selectedFile }: Ed
         return true;
       });
 
-      // Load file content if not already loaded (for non-PDF files)
       if (!openFiles[filePath] && !isPDF) {
         try {
           const content = await loadFileContent(filePath);
@@ -225,17 +166,14 @@ export default function EditorLayout({ onToggleFileSystemBar, selectedFile }: Ed
       }
 
       if (existingTabId) {
-        // File is already open, just select the tab
         model.doAction(Actions.selectTab(existingTabId));
       } else {
-        // Find the first tabset
         let tabsetId: string | undefined;
         const activeTabset = model.getActiveTabset();
         
         if (activeTabset) {
           tabsetId = activeTabset.getId();
         } else {
-          // Find the main tabset if it exists
           model.visitNodes(node => {
             if (node.getType() === "tabset") {
               if (!tabsetId) {
@@ -247,26 +185,24 @@ export default function EditorLayout({ onToggleFileSystemBar, selectedFile }: Ed
         }
 
         if (tabsetId) {
-          // Add the tab to the tabset
           const newTabJson = {
             type: "tab",
             name: fileName,
             component: isPDF ? "pdf" : "editor",
-            config: { filePath, url: isPDF ? filePath : undefined },
-            language
+            config: { 
+              filePath, 
+              language
+            }
           };
-          
           model.doAction(Actions.addNode(newTabJson, tabsetId, DockLocation.CENTER, -1, true));
         }
       }
-
       setCurrentFile(filePath);
     } catch (error) {
       console.error("Error opening file:", error, treeNode);
     }
   }, [model, openFiles]);
 
-  // React to selectedFile changes
   useEffect(() => {
     if (selectedFile) {
       openFile(selectedFile);
@@ -278,78 +214,65 @@ export default function EditorLayout({ onToggleFileSystemBar, selectedFile }: Ed
     setModel(newModel);
   };
 
-  // Add a custom action handler to properly manage component lifecycle
   const onAction = (action: any) => {
-    // Check if the action is related to layout changes that require editor refresh
-    if (action.type === Actions.MOVE_NODE) {
-      
-      // For move operations, we want to make sure editors have time to re-render before being accessed
-      const result = action;
-      
-      // Schedule a layout refresh for all editors
-      setTimeout(() => {
-        // Find all Monaco editor instances and reset their layout
-        document.querySelectorAll('.monaco-editor').forEach(editor => {
-          try {
-            const editorInstance = (editor as any)._dataEditor;
-            if (editorInstance && typeof editorInstance.layout === 'function') {
-              editorInstance.layout();
-            }
-          } catch (err) {
-            // Ignore errors, just a safety mechanism
-          }
-        });
-      }, 100);
-      
-      return result;
+    if (action.type === Actions.DELETE_TAB) {
+      const tabId = action.data.node;
+      if (tabId === "terminal-panel") {
+        setShowTerminal(false);
+      }
+      if (currentFile === action.data.node) {
+        setCurrentFile(null);
+      }
+    } else if (action.type === Actions.MOVE_NODE) {
+      console.log("[onAction] Move node ", action.data)
+      setCurrentFile(action.data.node);
     }
-    
-    // For any other action, just return it unchanged
     return action;
   };
 
-  // Handle external drag according to flexlayout's expected format
   const handleExternalDrag = (event: React.DragEvent<HTMLElement>) => {
-    if (event.dataTransfer.types.indexOf('application/json') < 0) return;
+    const validTypes = ["text/plain"];
+    if (event.dataTransfer.types.find(t => validTypes.indexOf(t) !== -1) === undefined) return;
     event.dataTransfer.dropEffect = 'link';
     return {
-      dragText: `Drag New File`,
       json: {
         type: "tab",
-        name: "New File",
-        component: "editor", 
-        config: { filePath: "New File", url: undefined },
-        language: "plaintext",
+        component: "editor",
       },
       onDrop: (node?: Node, event?: React.DragEvent<HTMLElement>) => {
-        if (!node || !event) return; // Aborted drag
+        if (!node || !event) return;
         const uri = event.dataTransfer.getData("text/plain");
         const language = getLanguageFromFileName(uri);
         const isPDF = language === 'pdf';
         model.doAction(Actions.updateNodeAttributes(node.getId(), {
           name: uri.split('/').pop() || uri,
-          component: isPDF ? "pdf" : "editor",
-          config: { filePath: uri, url: isPDF ? uri : undefined },
-          language
+          component: isPDF ? "pdf" : "editor", 
+          config: {
+            filePath: uri,
+            language: language
+          },
         }));
+        openFile({ type: "file", uri });
       }
-    };
+    }
   };
 
   return (
     <div className="flex-1 border-1 rounded-[var(--radius)] h-full flex flex-col">
       <EditorToolbar 
         onToggleFileSystemBar={onToggleFileSystemBar}
-        onToggleTerminal={toggleTerminal}
+        onToggleTerminal={onToggleTerminal}
       />
       <Layout 
         ref={layoutRef}
         model={model}
         factory={factory}
-        onModelChange={handleModelChange}
         onAction={onAction}
+        onModelChange={handleModelChange}
         onExternalDrag={handleExternalDrag}
       />
     </div>
   );
 } 
+
+export default EditorLayout;

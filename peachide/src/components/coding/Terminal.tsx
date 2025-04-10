@@ -14,6 +14,17 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({ initialCommand, o
   const [isClient, setIsClient] = useState(false);
   const { resolvedTheme } = useTheme();
   
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    console.log(`Terminal mounted`);
+    setIsMounted(true);
+    
+    return () => {
+        console.log(`Terminal UNMOUNTED`);
+        setIsMounted(false);
+    };
+}, []);
+  
   // Define theme colors based on the current color scheme
   const terminalTheme = {
     dark: {
