@@ -10,6 +10,7 @@ fs.cpSync(cMapsDir, 'dist/cmaps/', {recursive: true});
 const nextConfig: NextConfig = {
     /* config options here */
     reactStrictMode: false,
+    output: 'standalone',
 };
 
 export default nextConfig;
