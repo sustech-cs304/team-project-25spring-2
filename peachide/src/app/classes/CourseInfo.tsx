@@ -3,19 +3,12 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar } from "@/components/ui/calendar";
 import { 
   BookOpen, 
   CalendarDays, 
-  Info, 
-  Clock 
+  Info
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {SERVER} from "@/components/data/CodeEnvType";
 
 interface CourseSchedule {
