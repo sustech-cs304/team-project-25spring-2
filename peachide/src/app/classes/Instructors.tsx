@@ -97,13 +97,13 @@ export default function Instructors({ courseId }: InstructorsProps) {
       initial="hidden"
       animate="show"
     >
-      <div className="relative bg-gradient-to-r from-primary/20 to-primary/5 rounded-lg p-4 mb-8 shadow-sm">
-        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary text-white px-3 py-1 rounded-full flex items-center gap-2">
-          <Users size={16} />
-          <span className="font-medium">Faculty</span>
-        </div>
-        <div className="w-24 h-1 bg-primary mx-auto mt-3 rounded-full"></div>
+      <div className="relative bg-gradient-to-r  rounded-lg p-4 mb-8 shadow-sm">
+          <div className="absolute -top-3 left 1/2 transform -translate-x-1/2 bg-primary text-white px-3 py-1 rounded-full flex items-center gap-2">
+              <Users size={16} />
+              <span className="font-medium">Faculty</span>
+          </div>
       </div>
+
       
       <div className="grid gap-6 grid-cols-1">
         {data.teachers.map((teacher, index) => (
