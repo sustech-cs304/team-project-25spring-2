@@ -1,4 +1,4 @@
-name: Build Next.js App Container
+name: Deploy to PeachIDE server
 
 on:
   push:
@@ -19,6 +19,7 @@ permissions:
 
 jobs:
   build:
+    name: Build image and Deploy
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -33,3 +34,11 @@ jobs:
       run: |
         docker build . --file Dockerfile --tag ghcr.io/chanbengz/peachide:latest
         docker push ghcr.io/chanbengz/peachide:latest
+
+    - name: Execute remote ssh commands
+      uses: appleboy/ssh-action@v1
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        script: kubectl rollout restart deployment/peachide
