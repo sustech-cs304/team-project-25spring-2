@@ -1,6 +1,6 @@
 import React, {createContext, useContext, useState} from 'react';
 
-const PDFContext = createContext<{
+type PDFContextType = {
     pageNumber: number;
     setPageNumber: (pageNumber: number) => void;
     numPages: number;
@@ -9,7 +9,13 @@ const PDFContext = createContext<{
     setCurrentSnippet: (currentSnippet: SnippetInfo) => void;
     snippets: SnippetsData;
     setSnippets: (snippets: SnippetsData) => void;
-}>({
+    usersInfo: any[];
+    setUsersInfo: (usersInfo: any[]) => void;
+    materialId: string;
+    setMaterialId: (materialId: string) => void;
+};
+
+const PDFContext = createContext<PDFContextType>({
     pageNumber: 1,
     setPageNumber: () => {
     },
@@ -21,6 +27,12 @@ const PDFContext = createContext<{
     },
     snippets: [],
     setSnippets: () => {
+    },
+    usersInfo: [],
+    setUsersInfo: () => {
+    },
+    materialId: '',
+    setMaterialId: () => {
     }
 });
 
@@ -37,6 +49,8 @@ export const PDFProvider = ({children}: { children: React.ReactNode }) => {
         lang: ''
     });
     const [snippets, setSnippets] = useState<SnippetsData>([]);
+    const [usersInfo, setUsersInfo] = useState<any[]>([]);
+    const [materialId, setMaterialId] = useState('');
 
     return (
             <PDFContext.Provider
@@ -48,7 +62,11 @@ export const PDFProvider = ({children}: { children: React.ReactNode }) => {
                         currentSnippet,
                         setCurrentSnippet,
                         snippets,
-                        setSnippets
+                        setSnippets,
+                        usersInfo,
+                        setUsersInfo,
+                        materialId,
+                        setMaterialId
                     }}>
                 {children}
             </PDFContext.Provider>

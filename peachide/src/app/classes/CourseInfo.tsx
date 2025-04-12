@@ -39,7 +39,7 @@ export default function CourseInfo({ courseId }: CourseInfoProps) {
 
       try {
         setLoading(true);
-        const response = await fetch(SERVER + `/classes/${courseId}/course_info`);
+        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/classes/${courseId}/course_info`);
 
         if (!response.ok) {
           throw new Error(`Failed to fetch course info: ${response.status}`);

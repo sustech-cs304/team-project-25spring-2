@@ -16,7 +16,6 @@ export default function Coding({ params }: { params: Promise<{ id: string }> }) 
 
   const handleFileSelect = (treeNode: TreeNode) => {
     setSelectedFile(treeNode);
-    // This will be passed to the EditorLayout component when we implement the full integration
   };
 
   return (
@@ -27,6 +26,7 @@ export default function Coding({ params }: { params: Promise<{ id: string }> }) 
         onFileSelect={handleFileSelect}
       />
       <EditorLayout 
+        projectId={resolvedParams.id}
         onToggleFileSystemBar={toggleFileSystemBar}
         selectedFile={selectedFile}
       />
