@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   BookOpen,
   ChevronRight,
   Presentation,
   FileText,
   ExternalLink,
+  MoreHorizontal,
+  Clock,
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
+import {SERVER} from "@/components/data/CodeEnvType";
 
 interface Material {
   material_id: string;
@@ -44,7 +47,7 @@ export default function Lecture({ courseId }: LectureProps) {
     const fetchSections = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/classes/${courseId}/sections`);
+        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/classes/${courseId}/sections`);
         
         if (!response.ok) {
           throw new Error('Failed to fetch sections data');
@@ -125,15 +128,24 @@ export default function Lecture({ courseId }: LectureProps) {
     show: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1
+        staggerChildren: 0.1,
+        delayChildren: 0.1
       }
     }
   };
 
   const item = {
     hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.4 } }
+    show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } }
   };
+
+  // Get current date for comparison
+  const currentDate = new Date();
+  const formattedDate = currentDate.toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    month: 'short', 
+    day: 'numeric' 
+  });
 
   if (loading) {
     return (
@@ -190,80 +202,111 @@ export default function Lecture({ courseId }: LectureProps) {
         initial="hidden"
         animate="show"
       >
-        <div className="flex items-center gap-2 mb-6">
-          <BookOpen className="h-6 w-6 text-primary" />
-          <h2 className="text-2xl font-bold">Course Sections</h2>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-primary/10 rounded-full">
+              <BookOpen className="h-5 w-5 text-primary" />
+            </div>
+            <h2 className="text-2xl font-bold">Course Sections</h2>
+          </div>
+          <div className="bg-muted/50 px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+            <Clock size={12} />
+            <span>{formattedDate}</span>
+          </div>
         </div>
 
-        <div className="h-[calc(100vh-250px)] overflow-y-auto pr-2">
-          <div className="grid gap-6 pb-6">
-            {data.sections.map((section) => (
-              <motion.div
-                key={section.section_id}
-                variants={item}
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Card className="overflow-hidden border hover:shadow-md transition-all duration-200 hover:border-primary/50">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-xl font-semibold flex items-center">
-                      <Presentation className="h-5 w-5 mr-2 text-primary" />
-                      {section.name}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                      This section contains {section.materials.length} learning materials.
-                    </p>
-                  </CardContent>
-                  <CardFooter className="bg-muted/20 pt-2 border-t">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => handleOpenMaterials(section)}
-                      className="ml-auto flex items-center gap-1 hover:gap-2 transition-all"
-                    >
-                      <span>View Materials</span>
-                      <ChevronRight size={16} />
-                    </Button>
-                  </CardFooter>
-                </Card>
-              </motion.div>
-            ))}
+        <div className="h-[calc(100vh-250px)] overflow-hidden">
+          <div className="grid gap-6 pb-6 pr-1 overflow-y-auto h-full p-1">
+            <AnimatePresence>
+              {data.sections.map((section, index) => (
+                <motion.div
+                  key={section.section_id}
+                  variants={item}
+                  custom={index}
+                  whileHover={{ scale: 1.01 }}
+                  className="p-1.5" // Padding to contain the hover scale effect
+                  transition={{ duration: 0.15 }}
+                >
+                  <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/50 relative">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/60 to-primary/20"></div>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-xl font-semibold flex items-center">
+                        <Presentation className="h-5 w-5 mr-2 text-primary" />
+                        {section.name}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground">
+                        This section contains {section.materials.length} {section.materials.length === 1 ? 'learning material' : 'learning materials'}.
+                      </p>
+                    </CardContent>
+                    <CardFooter className="bg-muted/20 pt-2 border-t flex justify-between">
+                      <div className="flex items-center text-xs text-muted-foreground">
+                        <FileText size={12} className="mr-1" />
+                        <span>Section {index + 1}</span>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleOpenMaterials(section)}
+                        className="flex items-center gap-1 hover:gap-2 transition-all hover:text-primary"
+                      >
+                        <span>View Materials</span>
+                        <ChevronRight size={16} />
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         </div>
       </motion.div>
 
       <Dialog open={materialsOpen} onOpenChange={setMaterialsOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText size={18} className="text-primary" />
+        <DialogContent className=" shadow-lg">
+          <DialogHeader className="border-b pb-4">
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <div className="p-2 bg-primary/10 rounded-full">
+                <FileText size={18} className="text-primary" />
+              </div>
               {selectedSection?.name} Materials
             </DialogTitle>
           </DialogHeader>
           
-          <div className="max-h-[60vh] mt-4 overflow-y-auto">
-            <div className="space-y-2 px-1">
-              {selectedSection?.materials.map((material) => (
-                <motion.div
-                  key={material.material_id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  whileHover={{ scale: 1.02, backgroundColor: 'rgba(0,0,0,0.03)' }}
-                  transition={{ duration: 0.2 }}
-                  onClick={() => handleMaterialClick(selectedSection.section_id, material.material_id)}
-                  className="flex items-center justify-between p-3 rounded-md cursor-pointer border hover:border-primary/50"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="bg-primary/10 p-2 rounded-full">
-                      <FileText size={16} className="text-primary" />
+          <div className="max-h-[60vh] mt-4 overflow-hidden">
+            <div className="space-y-3 px-1 overflow-y-auto max-h-[58vh] pr-2">
+              <AnimatePresence>
+                {selectedSection?.materials.map((material, index) => (
+                  <motion.div
+                    key={material.material_id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ 
+                      duration: 0.3, 
+                      delay: index * 0.05,
+                      ease: "easeOut"
+                    }}
+                    className="group"
+                  >
+                    <div
+                      onClick={() => handleMaterialClick(selectedSection.section_id, material.material_id)}
+                      className="flex items-center justify-between p-3 rounded-md cursor-pointer border hover:border-primary/50 hover:bg-muted/50 transition-all duration-200"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="bg-primary/10 p-2 rounded-full group-hover:bg-primary/20 transition-colors">
+                          <FileText size={16} className="text-primary" />
+                        </div>
+                        <span className="font-medium group-hover:text-primary transition-colors">{material.material_name}</span>
+                      </div>
+                      <div className="transform transition-transform duration-200 group-hover:translate-x-1">
+                        <ExternalLink size={16} className="text-muted-foreground group-hover:text-primary" />
+                      </div>
                     </div>
-                    <span className="font-medium">{material.material_name}</span>
-                  </div>
-                  <ExternalLink size={16} className="text-muted-foreground" />
-                </motion.div>
-              ))}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
           </div>
         </DialogContent>
