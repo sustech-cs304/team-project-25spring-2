@@ -7,5 +7,5 @@ class Schedule(Base):
     __tablename__ = "schedules"
 
     schedule_id = Column(String, primary_key=True, index=True)
-    data = Column(String, nullable=False)
+    date = Column(String, nullable=False)
     section_name = Column(String, nullable=False)
