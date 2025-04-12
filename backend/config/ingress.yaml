@@ -1,0 +1,41 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: peachide
+  namespace: default
+spec:
+  secretName: peachide
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  duration: 2160h
+  renewBefore: 72h
+  dnsNames:
+    - peach.benx.dev
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: peachide
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: "traefik"
+    kubernetes.io/tls-acme: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  rules:
+    - host: peach.benx.dev
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: peachide
+                port:
+                  number: 3000
+  tls:
+  - hosts:
+    - peach.benx.dev
+    secretName: peachide

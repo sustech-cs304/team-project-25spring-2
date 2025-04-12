@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: peachide
+  name: peachide
+  namespace: default
+spec:
+  type: ClusterIP
+  selector:
+    app: peachide
+  ports:
+  - port: 3000
+    protocol: TCP
+    targetPort: 3000
+  sessionAffinity: None
+status:
+  loadBalancer: {}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+  labels:
+    app: peachide
+  name: peachide
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: peachide
+  template:
+    metadata:
+      labels:
+        app: peachide
+    spec:
+      containers:
+      - image: ghcr.io/chanbengz/peachide:latest
+        imagePullPolicy: Always
+        name: peachide
+        resources: {}
+      restartPolicy: Always
