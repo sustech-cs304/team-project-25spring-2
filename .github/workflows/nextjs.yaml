@@ -4,11 +4,11 @@ on:
   push:
     branches: ["main"]
     paths:
-      - 'peachide'
+      - 'peachide/**'
   pull_request:
     branches: ["main"]
     paths:
-      - 'peachide'
+      - 'peachide/**'
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
@@ -31,5 +31,5 @@ jobs:
     - name: Build and push Docker image
       working-directory: peachide
       run: |
-        docker build . --file Dockerfile --tag ghcr.io/chanbengz/peachide:$(date +%s)
-        docker push ghcr.io/chanbengz/peachide:$(date +%s)
+        docker build . --file Dockerfile --tag ghcr.io/chanbengz/peachide:latest
+        docker push ghcr.io/chanbengz/peachide:latest
