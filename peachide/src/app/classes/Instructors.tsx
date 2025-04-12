@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { GraduationCap, Clock, MapPin, Users } from 'lucide-react';
+import {SERVER} from "@/components/data/CodeEnvType";
 
 interface Teacher {
   name: string;
@@ -27,7 +28,7 @@ export default function Instructors({ courseId }: InstructorsProps) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`/classes/${courseId}/instructors`);
+        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/classes/${courseId}/instructors`);
         if (!response.ok) {
           throw new Error('Failed to fetch instructors data');
         }
