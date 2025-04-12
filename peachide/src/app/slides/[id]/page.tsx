@@ -1,106 +1,21 @@
 'use client';
 
-import {Avatar} from "@radix-ui/react-avatar";
-import React, {Suspense, useEffect, useState} from "react";
-import {AvatarFallback} from "@/components/ui/avatar";
-import {MessageSquareQuote, Play, Reply, Save} from "lucide-react";
+import React, {Suspense, use, useEffect, useState} from "react";
+import {Play, Save} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {ResizableHandle, ResizablePanel, ResizablePanelGroup} from "@/components/ui/resizable";
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
 import dynamic from "next/dynamic";
 import {PDFPart} from "@/components/pdf/PDFPart";
-import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog";
 import {PDFProvider, usePDFContext} from "@/components/pdf/PDFEnvProvider";
-import {Textarea} from "@/components/ui/textarea";
 import MonacoEditorComponent from "@/components/coding/MonacoEditor";
 import {motion} from "framer-motion";
 import {random} from "lodash";
+import {useMaterial} from "@/app/slides/[id]/swr";
+import {CommentsSection} from "@/app/slides/[id]/Comments";
 
 const EditorComp = dynamic(() =>
         import('../../../components/editors/markdown-editor'), {ssr: false});
-
-
-function ReplyBox({id, title, content, children = null}:
-                          { id: string, title: string, content: string, children?: any | null }) {
-    const {pageNumber} = usePDFContext();
-    return (
-            <div className="flex flex-col m-2">
-                <div className="flex flex-row">
-                    <Avatar className="w-[40px] h-[40px] grow-0">
-                        <AvatarFallback className="w-[40px]">U</AvatarFallback>
-                    </Avatar>
-                    <div className="grow pl-3">
-                        <div>{title}</div>
-                        <div className="text-sm opacity-75">
-                            {content}
-                        </div>
-                        <div className="flex justify-content-center">
-                            <span className="text-xs opacity-50"
-                                    suppressHydrationWarning>{new Date().toLocaleString()}</span>
-                            <ReplyDialog trigger={
-                                <Button variant="ghost" size="icon" className="size-4 ml-2">
-                                    <Reply />
-                                </Button>} props={{page: pageNumber, type: "reply", id: id}} />
-                        </div>
-                    </div>
-                </div>
-                {
-                    children != null ? <div className="ml-8">
-                        {children}
-                    </div> : ''
-                }
-            </div>
-    );
-}
-
-type ReplyProps = {
-    page: number,
-    type: 'comment' | 'reply',
-    id?: string,
-}
-
-function ReplyDialog({trigger, props}: { trigger: React.ReactNode, props: ReplyProps }) {
-    return (<Dialog>
-        <DialogTrigger asChild>{trigger}</DialogTrigger>
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Add {props.type === 'reply' ? 'Reply' : 'Comment'}</DialogTitle>
-            </DialogHeader>
-            <Textarea placeholder="Type your message here." />
-            <DialogFooter>
-                <Button type="submit">Submit</Button>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>);
-}
-
-function CommentsSection() {
-    const {pageNumber} = usePDFContext();
-
-    return (<div className="h-1/3 flex flex-col">
-        <hr className="my-2" />
-        <div className="font-bold text-lg w-full grid grid-cols-2">
-            <div>Comments</div>
-            <div className={"text-right"}>
-                <ReplyDialog trigger={
-                    <Button variant="ghost" size="icon">
-                        <MessageSquareQuote />
-                    </Button>
-                } props={{page: pageNumber, type: "comment"}} />
-            </div>
-        </div>
-        <div className="overflow-scroll grow">
-            <ReplyBox id="1" title="Title 1" content="Content 1">
-                <ReplyBox id="2" title="Nested Title 1.1" content="Nested Content 1.1">
-                    <ReplyBox id="3" title="Nested Title 1.1.1"
-                            content="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed pretium molestie felis, vitae elementum nulla cursus vel. Aliquam ut nunc molestie, tempor augue vehicula, dapibus dui. Mauris quis est ac arcu rhoncus suscipit. Morbi malesuada lacus magna, ut eleifend dolor luctus sit amet. Pellentesque faucibus, nibh non rhoncus tincidunt, dolor dui volutpat massa, ac accumsan mauris sapien ut nunc. Nam ut est quis sem blandit viverra. " />
-                </ReplyBox>
-                <ReplyBox id="4" title="Nested Title 1.2" content="Nested Content 1.2" />
-            </ReplyBox>
-            <ReplyBox id="5" title="Title 2" content="Content 2" />
-        </div>
-    </div>);
-}
 
 function PDFSection({url}: { url: string }) {
     const {
@@ -122,7 +37,6 @@ function PDFSection({url}: { url: string }) {
                 setNumPages(feedback.numPages);
         }
         if (feedback.snippets) {
-            console.log(feedback.snippets, "SNPP", feedback);
             setSnippets(feedback.snippets);
         }
         if (feedback.currentSnippet) {
@@ -206,9 +120,15 @@ function CodeSnippetEditor() {
     );
 }
 
-export default function Slides() {
-    const [url, setUrl] = useState<string>('/example.pdf');
+
+export default function Slides({params}: {
+    params: Promise<{ id: string }>
+}) {
+    const resolvedParams = use(params);
+    const {material} = useMaterial(resolvedParams.id);
+
     const [mdNote, setMdNote] = useState<string>(`Hello **world**!`);
+
     return (
             <PDFProvider>
                 <motion.div className="p-5 rounded-[var(--radius)] border-1 h-full"
@@ -217,8 +137,8 @@ export default function Slides() {
                         transition={{duration: 0.5}}>
                     <ResizablePanelGroup direction="horizontal">
                         <ResizablePanel defaultSize={70} className="col-span-2 h-full flex flex-col pr-5">
-                            <PDFSection url={url} />
-                            <CommentsSection />
+                            <PDFSection url={material?.data} />
+                            <CommentsSection id={resolvedParams.id} />
                         </ResizablePanel>
                         <ResizableHandle />
                         <ResizablePanel defaultSize={30} className="pl-5 h-full">
