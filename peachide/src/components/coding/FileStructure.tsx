@@ -34,6 +34,11 @@ export interface FileTreeProps {
 
   onDragOver?: TreeItemProps["onDragOver"];
 
+  /**
+   * 删除文件或目录
+   */
+  onDelete?: (uri: string) => void;
+
   sorter?: (treeNodes: TreeNode[]) => TreeNode[];
 
   /**
@@ -72,9 +77,21 @@ function defaultEmptyRenderer() {
   return <div className="file-tree__empty">Nothing</div>;
 }
 
-function defaultItemRenderer(treeNode: TreeNode) {
+function defaultItemRenderer(treeNode: TreeNode, props: FileTreeProps) {
+  const { onItemClick, draggable, onDrop, onDragOver, onDelete } = props;
   const emoji = treeNode.type === "directory" ? (treeNode.expanded === true ? <FolderOpen size={16} /> : <Folder size={16} />): <File size={16} />;
-  return <FileItem icon={emoji} filename={getFileName(treeNode.uri)} />;
+  return (
+    <FileItem
+      icon={emoji}
+      filename={getFileName(treeNode.uri)}
+      treeNode={treeNode}
+      onItemClick={onItemClick}
+      draggable={draggable}
+      onDrop={onDrop}
+      onDragOver={onDragOver}
+      onDelete={onDelete}
+    />
+  );
 }
 
 export const FileTree = forwardRef<List, FileTreeProps>(
@@ -94,6 +111,7 @@ export const FileTree = forwardRef<List, FileTreeProps>(
       itemRenderer,
       sorter,
       activatedUri,
+      onDelete,
     },
     ref
   ) => {
@@ -106,7 +124,7 @@ export const FileTree = forwardRef<List, FileTreeProps>(
 
     const itemRender = itemRenderer
       ? (treeNode: TreeNode) => itemRenderer?.(treeNode)
-      : defaultItemRenderer;
+      : (treeNode: TreeNode) => defaultItemRenderer(treeNode, { onItemClick, draggable, onDrop, onDragOver, onDelete });
     const rowRenderer = (params: ListRowProps) => {
       const treeNode = items[params.index];
       const indentNum = indent || 10;

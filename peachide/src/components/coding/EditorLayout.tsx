@@ -4,9 +4,10 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { Node, Layout, Model, TabNode, Actions, DockLocation } from 'flexlayout-react';
 import MonacoEditorComponent from "@/components/coding/MonacoEditor";
 import TerminalComponent from "@/components/coding/Terminal";
-import { TreeNode, TreeNodeType, languageMap } from "@/components/data/CodeEnvType";
+import { TreeNode } from "@/components/data/CodeEnvType";
 import EditorToolbar from "./EditorToolbar";
 import { PDFComponent } from "@/components/pdf/PDFComponent";
+import { getLanguageFromFileName, loadFileContent } from "../data/EditorLayoutData";
 
 // Default layout configuration
 var defaultLayout = {
@@ -28,61 +29,22 @@ var defaultLayout = {
         type: "tabset",
         weight: 100,
         id: "main",
-        children: [
-          {
-            type: "tab",
-            id: "welcome.js",
-            name: "welcome.js",
-            component: "editor",
-            config: { 
-              filePath: "welcome.js", 
-              language: "javascript" 
-            },
-          }
-        ]
+        children: []
       }
     ]
   }
 };
 
 interface EditorLayoutProps {
+  projectId: string;
   onToggleFileSystemBar: () => void;
   selectedFile?: TreeNode | null;
 }
 
-const loadFileContent = async (filePath: string): Promise<string> => {
-  const ext = filePath.split('.').pop()?.toLowerCase() || '';
-  switch (ext) {
-    case 'js':
-    case 'jsx':
-      return `// JavaScript file: ${filePath}\n\nfunction hello() {\n  console.log("Hello from ${filePath}");\n}\n\nexport default hello;`;
-    case 'ts':
-    case 'tsx':
-      return `// TypeScript file: ${filePath}\n\nfunction hello(): void {\n  console.log("Hello from ${filePath}");\n}\n\nexport default hello;`;
-    case 'html':
-      return `<!DOCTYPE html>\n<html>\n<head>\n  <title>${filePath}</title>\n</head>\n<body>\n  <h1>Hello from ${filePath}</h1>\n</body>\n</html>`;
-    case 'css':
-      return `/* CSS file: ${filePath} */\n\nbody {\n  font-family: sans-serif;\n  margin: 0;\n  padding: 20px;\n}`;
-    case 'json':
-      return `{\n  "name": "${filePath}",\n  "description": "Sample JSON file"\n}`;
-    case 'md':
-      return `# ${filePath}\n\nThis is a sample Markdown file.\n\n## Features\n\n- Feature 1\n- Feature 2`;
-    default:
-      return `// File content for ${filePath}`;
-  }
-};
-
-const getLanguageFromFileName = (fileName: string): string => {
-  const ext = fileName.split('.').pop()?.toLowerCase() || '';
-  return languageMap[ext] || 'plaintext';
-};
-
-const EditorLayout = ({ onToggleFileSystemBar, selectedFile }: EditorLayoutProps) => {
+const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: EditorLayoutProps) => {
   const [model, setModel] = useState<Model>(() => Model.fromJson(defaultLayout));
   const [showTerminal, setShowTerminal] = useState<boolean>(false);
-  const [openFiles, setOpenFiles] = useState<Record<string, string>>({
-    "welcome.js": `function hello() {\n  alert('Hello world!');\n}`
-  });
+  const [openFiles, setOpenFiles] = useState<Record<string, string>>({});
   const [currentFile, setCurrentFile] = useState<string | null>("welcome.js");
   const layoutRef = useRef<Layout>(null);
 
@@ -97,7 +59,7 @@ const EditorLayout = ({ onToggleFileSystemBar, selectedFile }: EditorLayoutProps
         setShowTerminal(false);
       }
     } catch (error) {
-      console.error("Error toggling terminal:", error);
+      console.error("Error toggling terminal: ", error);
     }
   };
 
@@ -151,13 +113,12 @@ const EditorLayout = ({ onToggleFileSystemBar, selectedFile }: EditorLayoutProps
 
       if (!openFiles[filePath] && !isPDF) {
         try {
-          const content = await loadFileContent(filePath);
+          const content = await loadFileContent(projectId, filePath);
           setOpenFiles(prev => ({
             ...prev,
             [filePath]: content
           }));
         } catch (error) {
-          console.error("Error loading file content:", error);
           setOpenFiles(prev => ({
             ...prev,
             [filePath]: `// Error loading file content for ${filePath}`
@@ -209,12 +170,11 @@ const EditorLayout = ({ onToggleFileSystemBar, selectedFile }: EditorLayoutProps
     }
   }, [selectedFile, openFile]);
 
-  // Handle model changes from user interactions
   const handleModelChange = (newModel: Model) => {
     setModel(newModel);
   };
 
-  const onAction = (action: any) => {
+  const handleAction = (action: any) => {
     if (action.type === Actions.DELETE_TAB) {
       const tabId = action.data.node;
       if (tabId === "terminal-panel") {
@@ -224,7 +184,6 @@ const EditorLayout = ({ onToggleFileSystemBar, selectedFile }: EditorLayoutProps
         setCurrentFile(null);
       }
     } else if (action.type === Actions.MOVE_NODE) {
-      console.log("[onAction] Move node ", action.data)
       setCurrentFile(action.data.node);
     }
     return action;
@@ -267,7 +226,7 @@ const EditorLayout = ({ onToggleFileSystemBar, selectedFile }: EditorLayoutProps
         ref={layoutRef}
         model={model}
         factory={factory}
-        onAction={onAction}
+        onAction={handleAction}
         onModelChange={handleModelChange}
         onExternalDrag={handleExternalDrag}
       />
