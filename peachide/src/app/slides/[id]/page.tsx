@@ -11,7 +11,7 @@ import {PDFProvider, usePDFContext} from "@/components/pdf/PDFEnvProvider";
 import MonacoEditorComponent from "@/components/coding/MonacoEditor";
 import {motion} from "framer-motion";
 import {random} from "lodash";
-import {useMaterial} from "@/app/slides/[id]/swr";
+import {useMaterial, useNotes} from "@/app/slides/[id]/swr";
 import {CommentsSection} from "@/app/slides/[id]/Comments";
 
 const EditorComp = dynamic(() =>
@@ -126,8 +126,19 @@ export default function Slides({params}: {
 }) {
     const resolvedParams = use(params);
     const {material} = useMaterial(resolvedParams.id);
+    const {notes} = useNotes(resolvedParams.id);
 
     const [mdNote, setMdNote] = useState<string>(`Hello **world**!`);
+    useEffect(() => {
+        if (notes) {
+            for (let note of notes['notes']) {
+                if (!note.is_snippet) {
+                    setMdNote(note.content);
+                    break;
+                }
+            }
+        }
+    }, [notes]);
 
     return (
             <PDFProvider>

@@ -21,3 +21,13 @@ export function useComment(id: string) {
         isError: error,
     };
 }
+
+export function useNotes(id: string) {
+    const {data, error, isLoading} = useSWR(process.env.NEXT_PUBLIC_API_URL + `/note/${id}`, fetcher);
+
+    return {
+        notes: data,
+        isLoading,
+        isError: error,
+    };
+}

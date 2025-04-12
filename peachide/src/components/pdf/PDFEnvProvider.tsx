@@ -11,6 +11,8 @@ type PDFContextType = {
     setSnippets: (snippets: SnippetsData) => void;
     usersInfo: any[];
     setUsersInfo: (usersInfo: any[]) => void;
+    materialId: string;
+    setMaterialId: (materialId: string) => void;
 };
 
 const PDFContext = createContext<PDFContextType>({
@@ -28,6 +30,9 @@ const PDFContext = createContext<PDFContextType>({
     },
     usersInfo: [],
     setUsersInfo: () => {
+    },
+    materialId: '',
+    setMaterialId: () => {
     }
 });
 
@@ -45,6 +50,7 @@ export const PDFProvider = ({children}: { children: React.ReactNode }) => {
     });
     const [snippets, setSnippets] = useState<SnippetsData>([]);
     const [usersInfo, setUsersInfo] = useState<any[]>([]);
+    const [materialId, setMaterialId] = useState('');
 
     return (
             <PDFContext.Provider
@@ -58,7 +64,9 @@ export const PDFProvider = ({children}: { children: React.ReactNode }) => {
                         snippets,
                         setSnippets,
                         usersInfo,
-                        setUsersInfo
+                        setUsersInfo,
+                        materialId,
+                        setMaterialId
                     }}>
                 {children}
             </PDFContext.Provider>

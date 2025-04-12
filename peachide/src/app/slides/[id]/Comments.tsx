@@ -9,6 +9,7 @@ import {Textarea} from "@/components/ui/textarea";
 import {useComment, useMaterial} from "@/app/slides/[id]/swr";
 import {Label} from "@/components/ui/label";
 import {Switch} from "@/components/ui/switch";
+import {toast} from "sonner";
 
 function ReplyBox({id, title, avatar, content, forPage, showPageNumber, children = null}:
                           {
@@ -87,16 +88,50 @@ type ReplyProps = {
 
 function ReplyDialog({trigger, props}: { trigger: React.ReactNode, props: ReplyProps }) {
     const [content, setContent] = useState('');
+    const {materialId} = usePDFContext();
+    const [isOpen, setIsOpen] = useState(false);
 
-    return (<Dialog>
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (content.length === 0) {
+            toast("Please enter a comment.");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('content', content);
+        formData.append('user_id', '1'); // TODO now set 1
+        formData.append('material_id', materialId);
+        formData.append('page', props.page.toString());
+        if (props.type === 'reply') {
+            formData.append('ancestor_id', props.id || 'None');
+        } else {
+            formData.append('ancestor_id', 'None');
+        }
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/comment/${props.id}`, {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (response.ok) {
+            toast("Reply sent! ");
+            setContent('');
+            setIsOpen(false);
+        } else {
+            toast("Failed to send reply.");
+        }
+    };
+
+    return (<Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>{trigger}</DialogTrigger>
         <DialogContent>
             <DialogHeader>
                 <DialogTitle>Add {props.type === 'reply' ? 'Reply' : 'Comment'}</DialogTitle>
             </DialogHeader>
-            <Textarea placeholder="Type your message here." />
+            <Textarea placeholder={content} onChange={(e) => setContent(e.target.value)} />
             <DialogFooter>
-                <Button type="submit">Submit</Button>
+                <Button type="submit" onClick={(e) => handleSubmit(e)}>Submit</Button>
             </DialogFooter>
         </DialogContent>
     </Dialog>);
@@ -134,7 +169,7 @@ function ExtraCommentDialog({trigger, props, replies, fromTitle}: {
 }
 
 export function CommentsSection({id}: { id: string }) {
-    const {pageNumber, usersInfo, setUsersInfo} = usePDFContext();
+    const {pageNumber, usersInfo, setUsersInfo, setMaterialId} = usePDFContext();
     const {material, isLoading} = useMaterial(id);
     const [onlyThisPage, setOnlyThisPage] = React.useState(false);
 
@@ -150,6 +185,7 @@ export function CommentsSection({id}: { id: string }) {
                         });
             }
         });
+        setMaterialId(id);
     }, [material]);
 
     return (<div className="h-1/3 flex flex-col">

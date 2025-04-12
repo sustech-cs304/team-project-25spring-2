@@ -4,6 +4,7 @@ import {ThemeProvider} from "next-themes";
 import React from "react";
 import {AppSidebar} from "@/components/app-sidebar";
 import {SidebarInset, SidebarProvider} from "@/components/ui/sidebar";
+import {Toaster} from "sonner";
 
 export const metadata: Metadata = {
     title: "PeachIDE: Course-aware IDE",
@@ -33,6 +34,7 @@ export default function RootLayout({
                         </SidebarInset>
                     </SidebarProvider>
                 </ThemeProvider>
+                <Toaster />
             </body>
             </html>
     );
