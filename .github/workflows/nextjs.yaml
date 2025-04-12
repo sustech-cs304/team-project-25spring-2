@@ -3,6 +3,8 @@ name: Deploy Next.js site to Pages
 on:
   push:
     branches: ["main", "frontend"]
+  pull_request:
+    branches: ["main"]
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
@@ -55,7 +57,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./peachide/out
+          path: ./peachide/dist
 
   # Deployment job
   deploy:
