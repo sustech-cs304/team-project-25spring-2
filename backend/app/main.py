@@ -22,11 +22,11 @@ from app.slide.bookmarklist import router as bookmarklist_router
 
 app = FastAPI()
 
-app.include_router(comment_router, tags=["comments"])
-app.include_router(material_router, tags=["materials"])
-app.include_router(note_router, tags=["notes"])
-app.include_router(code_snippet_router, tags=["code_snippets"])
-app.include_router(bookmarklist_router, tags=["bookmarklists"])
+app.include_router(comment_router, tags=["comments"], prefix="/api")
+app.include_router(material_router, tags=["materials"], prefix="/api")
+app.include_router(note_router, tags=["notes"], prefix="/api")
+app.include_router(code_snippet_router, tags=["code_snippets"], prefix="/api")
+app.include_router(bookmarklist_router, tags=["bookmarklists"], prefix="/api")
 
 
 @app.on_event("startup")
@@ -34,6 +34,6 @@ def startup():
     Base.metadata.create_all(bind=engine)
 
 
-@app.get("/")
+@app.get("/api")
 async def root():
     return {"message": "Hello World"}
