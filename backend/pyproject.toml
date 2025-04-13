@@ -8,6 +8,7 @@ dependencies = [
     "fastapi-nextauth-jwt>=2.0.1",
     "fastapi[standard]>=0.115.11",
     "kubernetes>=32.0.1",
+    "psycopg2-binary>=2.9.10",
     "sqlalchemy>=2.0.40",
     "uvicorn[standard]>=0.34.0",
     "websockets>=15.0.1",
