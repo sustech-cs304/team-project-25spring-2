@@ -8,6 +8,7 @@ from app.models.code_snippet import CodeSnippet
 
 router = APIRouter()
 
+
 def get_db():
     db = SessionLocal()
     try:
@@ -17,11 +18,10 @@ def get_db():
 
 
 @router.get("/snippet/{material_id}")
-async def get_code_snippet(
-    material_id: str,
-    db: Session = Depends(get_db)
-):
-    code_snippets = db.query(CodeSnippet).filter(CodeSnippet.material_id == material_id).all()
+async def get_code_snippet(material_id: str, db: Session = Depends(get_db)):
+    code_snippets = (
+        db.query(CodeSnippet).filter(CodeSnippet.material_id == material_id).all()
+    )
     return {
         "message": "Code snippets retrieved successfully",
         "code_snippets": [
@@ -31,13 +31,12 @@ async def get_code_snippet(
                 "lang": snippet.lang,
                 "page": snippet.page,
                 "content": snippet.content,
-                "position": {
-                    "x": snippet.position_x,
-                    "y": snippet.position_y
-                }
-            } for snippet in code_snippets
-        ]
+                "position": {"x": snippet.position_x, "y": snippet.position_y},
+            }
+            for snippet in code_snippets
+        ],
     }
+
 
 @router.post("/teacher/snippet/{material_id}/page/{page}")
 async def create_code_snippet(
@@ -48,7 +47,7 @@ async def create_code_snippet(
     content: str = Body(None),
     position_x: float = Body(None),
     position_y: float = Body(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     snippet = db.query(CodeSnippet).filter(CodeSnippet.snippet_id == snippet_id).first()
     if snippet is None:
@@ -59,7 +58,7 @@ async def create_code_snippet(
             page=page,
             content=content,
             position_x=position_x,
-            position_y=position_y
+            position_y=position_y,
         )
         db.add(snippet)
         db.commit()
@@ -72,11 +71,8 @@ async def create_code_snippet(
                 "lang": snippet.lang,
                 "page": snippet.page,
                 "content": snippet.content,
-                "position": {
-                    "x": snippet.position_x,
-                    "y": snippet.position_y
-                }
-            }
+                "position": {"x": snippet.position_x, "y": snippet.position_y},
+            },
         }
     else:
         if lang is not None:
@@ -97,18 +93,13 @@ async def create_code_snippet(
                 "lang": snippet.lang,
                 "page": snippet.page,
                 "content": snippet.content,
-                "position": {
-                    "x": snippet.position_x,
-                    "y": snippet.position_y
-                }
-            }
+                "position": {"x": snippet.position_x, "y": snippet.position_y},
+            },
         }
 
+
 @router.delete("/teacher/{snippet_id}")
-async def delete_code_snippet(
-    snippet_id: str,
-    db: Session = Depends(get_db)
-):
+async def delete_code_snippet(snippet_id: str, db: Session = Depends(get_db)):
     snippet = db.query(CodeSnippet).filter(CodeSnippet.snippet_id == snippet_id).first()
     if snippet:
         db.delete(snippet)

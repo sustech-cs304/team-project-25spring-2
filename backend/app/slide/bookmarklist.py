@@ -14,6 +14,7 @@ import json
 
 router = APIRouter()
 
+
 def get_db():
     db = SessionLocal()
     try:
@@ -21,12 +22,12 @@ def get_db():
     finally:
         db.close()
 
+
 @router.get("/marklist/{material_id}")
-async def get_marklist(
-    material_id: str,
-    db: Session = Depends(get_db)
-):
-    marklist = db.query(BookmarkList).filter(BookmarkList.material_id == material_id).all()
+async def get_marklist(material_id: str, db: Session = Depends(get_db)):
+    marklist = (
+        db.query(BookmarkList).filter(BookmarkList.material_id == material_id).all()
+    )
     return {
         "message": "Marklist retrieved successfully",
         "marklists": [
@@ -36,9 +37,11 @@ async def get_marklist(
                 "user_id": marklist.user_id,
                 "page": marklist.page,
                 "bookmark_list": marklist.bookmark_list,
-            } for marklist in marklist
-        ]
+            }
+            for marklist in marklist
+        ],
     }
+
 
 def convert_string_to_int_list(string):
     if string is None:
@@ -47,7 +50,7 @@ def convert_string_to_int_list(string):
         return json.loads(string)
     except (ValueError, TypeError):
         return []
-    
+
 
 @router.post("/marklist/{list_id}/page/{page}")
 async def create_marklist(
@@ -56,7 +59,7 @@ async def create_marklist(
     user_id: str = Body(None),
     material_id: str = Body(None),
     bookmark_list: str = Body(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     marklist = db.query(BookmarkList).filter(BookmarkList.list_id == list_id).first()
     if marklist is None:
@@ -65,7 +68,7 @@ async def create_marklist(
             material_id=material_id,
             user_id=user_id,
             page=page,
-            bookmark_list=convert_string_to_int_list(bookmark_list)
+            bookmark_list=convert_string_to_int_list(bookmark_list),
         )
         db.add(marklist)
         db.commit()
@@ -78,7 +81,7 @@ async def create_marklist(
                 "user_id": marklist.user_id,
                 "page": marklist.page,
                 "bookmark_list": marklist.bookmark_list,
-            }
+            },
         }
     else:
         if user_id is not None:
@@ -99,14 +102,12 @@ async def create_marklist(
                 "user_id": marklist.user_id,
                 "page": marklist.page,
                 "bookmark_list": marklist.bookmark_list,
-            }
+            },
         }
-    
+
+
 @router.delete("/marklist/{list_id}")
-async def delete_marklist(
-    list_id: str,
-    db: Session = Depends(get_db)
-):
+async def delete_marklist(list_id: str, db: Session = Depends(get_db)):
     marklist = db.query(BookmarkList).filter(BookmarkList.list_id == list_id).first()
     if marklist is None:
         return {"message": "Marklist not found"}
@@ -114,4 +115,3 @@ async def delete_marklist(
         db.delete(marklist)
         db.commit()
         return {"message": "Marklist deleted successfully"}
-        

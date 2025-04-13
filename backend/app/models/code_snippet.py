@@ -2,6 +2,7 @@
 from sqlalchemy import Column, Integer, String, Boolean
 from app.db import Base
 
+
 class CodeSnippet(Base):
     __tablename__ = "code_snippets"
 

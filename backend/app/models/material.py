@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.dialects.postgresql import ARRAY
 from app.db import Base
 
+
 class Material(Base):
     __tablename__ = "materials"
 
@@ -10,4 +11,6 @@ class Material(Base):
     material_name = Column(String, nullable=False)
     section_id = Column(String, nullable=False)
     data = Column(String, nullable=False)
-    comments = Column(ARRAY(String), nullable=True)  # corresponding to the comment_id, but whole comment in the api
+    comments = Column(
+        ARRAY(String), nullable=True
+    )  # corresponding to the comment_id, but whole comment in the api
