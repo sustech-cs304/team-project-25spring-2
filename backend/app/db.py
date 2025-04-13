@@ -4,8 +4,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 db_port = 5432
+K8S_DB_HOST = "postgres"
 if os.environ.get("envname") == "k8s":
-    DATABASE_URL = f"postgresql://{os.environ.get('POSTGRES_USER')}:{os.environ.get('POSTGRES_PASSWORD')}@localhost:{db_port}/peachide"
+    DATABASE_URL = f"postgresql://{os.environ.get('POSTGRES_USER')}:{os.environ.get('POSTGRES_PASSWORD')}@{K8S}:{K8S_DB_HOST}/{os.environ.get('POSTGRES_DB')}"
 else:
     DATABASE_URL = f"postgresql://serendipity:chenmingzhi2004@localhost:{db_port}/cs304"
 
