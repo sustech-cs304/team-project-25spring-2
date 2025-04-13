@@ -8,6 +8,10 @@
     --color-foreground: var(--foreground);
 }
 
+html, body {
+    height: 100% !important;
+}
+
 @layer base {
     *,
     ::after,
@@ -22,6 +26,7 @@
     :root {
         --background: hsl(175 25% 98%);
         --foreground: hsl(175 25% 10%);
+        --foreground-opacity-50: hsla(175, 25%, 10%, 50%);
         --card: hsl(175 25% 100%);
         --card-foreground: hsl(175 25% 10%);
         --popover: hsl(175 25% 100%);
@@ -53,6 +58,7 @@
     .dark {
         --background: hsl(20 14.3% 4.1%);
         --foreground: hsl(175 25% 98%);
+        --foreground-opacity-50: hsla(175, 25%, 98%, 50%);
         --card: hsl(178 10% 10%);
         --card-foreground: hsl(175 25% 98%);
         --popover: hsl(175 25% 12%);
