@@ -41,4 +41,4 @@ jobs:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USERNAME }}
         key: ${{ secrets.SERVER_SSH_KEY }}
-        script: |
+        script: kubectl rollout restart deployment/backend
