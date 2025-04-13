@@ -43,6 +43,9 @@ spec:
         imagePullPolicy: Always
         name: backend
         resources: {}
+        env:
+        - name: ENVNAME
+          value: "k3s"
         envFrom:
         - configMapRef:
             name: postgres-config
