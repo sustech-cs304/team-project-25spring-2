@@ -6,14 +6,17 @@
 
 ## Architecture Diagram
 
-> **功能概览**  
-> - Database  
-> - Course View  
-> - Code Space  
-> - AI Integration  
-> - Material View  
-> - Code Editor  
-> - Markdown Editor  
+### Architecture Overview
+1. **Core Component**: The database is positioned at the top of the architecture, serving as the central hub for all data storage. It ensures secure and efficient management of course content, code snippets, user information, and other data.
+2. **Functional Modules**:
+   - **Course View**: Provides an overview and navigation of courses, helping users understand and select course content.
+   - **Code Space**: A dedicated area for writing and running code, forming the core of the programming learning experience.
+   - **AI Integration**: Enhances the platform's intelligent capabilities through a third-party AI provider. This includes features like automatic code completion and smart question-answering.
+   - **Material Reader**: Supports study document reading, e.g. PDF formats, enabling users to access learning materials and add notes & manipulate code snippets conveniently. It also includes a *Comments View*, that facilitates interaction and discussion among users, enhancing the collaborative learning experience.
+
+3. **Editing Tools**:
+   - **Code Editor** and **Code Snippet Editor**: These tools allow users to write full-length code and smaller code snippets, respectively, catering to different use cases.
+   - **Markdown Editor**: Enables note-taking and documentation using Markdown syntax, making it easy to organize and share knowledge.
 
 ![Architecture Diagram](docs/images/architecture-diagram.png)
 
@@ -23,10 +26,10 @@
 
 ### Feature 1
 **Create, manage, and collaborate in your code spaces**  
-- ✅ 使用 `Monaco-Editor` 提供 IDE 编辑功能  
-- ✅ 使用 `yjs` 实现多人协同编辑  
-- ✅ 可以查看 PDF 文件  
-- ✅ 提供后台连接的终端 (CLI)
+- Use `Monaco-Editor` to provide IDE editing functionality
+- Use `yjs` to enable real-time collaborative editing
+- View PDF files
+- Provide a terminal (CLI) connected to the backend
 
 ![Coding Environment](docs/images/coding_env.png)
 
@@ -34,10 +37,10 @@
 
 ### Feature 2
 **Find your resources and execute code snippets on the fly**  
-- ✅ 使用 `react-pdf` 演示 PDF  
-- ✅ 为 PDF 每一页提供评论区  
-- ✅ 在 PDF 文件中插入代码片段  
-- ✅ 使用富文本编辑器记录笔记  
+- Use `react-pdf` to display PDFs
+- Provide a comment section for each page of the PDF
+- Insert code snippets into the PDF
+- Use a rich text editor to take notes
 
 ![PDF & Comments](docs/images/slide_env.png)
 
@@ -45,15 +48,15 @@
 
 ### Feature 3
 **Organize and track your learning progress**  
-- ✅ 课程信息中心，整合课件、作业、分组信息  
-- ✅ 使用日历跟踪学习进度  
+- Course information center integrating slides, assignments, and group info
+- Use a calendar to track learning progress
 
 | <img src="docs/images/class_info.png" alt="Class Info" width="300"/> | <img src="docs/images/calendar.png" alt="Calendar" width="300"/> |
 | --- | --- |
 | _Class Info_ | _Calendar_ |
 
-- ✅ 查看发布的课件与作业  
-- ✅ 在“分组广场”中可以与同学组成学习小组  
+- View published slides and assignments
+- Form study groups with classmates in the "Group Plaza"
 
 | <img src="docs/images/class_lecture.png" alt="Class Lecture" width="300"/> | <img src="docs/images/class_group.png" alt="Class Group" width="300"/> |
 | --- | --- |
@@ -63,18 +66,15 @@
 
 ### Feature 4
 **Empower your study with an AI assistant**  
-- ✅ 帮助总结幻灯片内容  
-- ✅ 基于幻灯片内容自动生成测验  
-- ✅ 在 IDE 环境中协助解决问题  
+- Help summarize slide content
+- Automatically generate quizzes based on slide content
+- Assist with problem-solving in the IDE environment
 
 ![AI Assistant](docs/images/ai.png)
 
 ---
 
 ## UI Implementation
-
-> 以上展示了主要的界面和功能布局。  
-> 具体实现细节请参考对应的前端、后端与协同技术文档。
 
 ![](docs/images/1.jpg)
 ![](docs/images/2.jpg)
