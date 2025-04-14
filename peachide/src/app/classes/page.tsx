@@ -1,7 +1,6 @@
-import React from "react";
-
-export default function Classes() {
+import React from "react"
+export default function classes() {
     return (
-            <div>Classes</div>
-    );
+        <div>Classes Demo</div>
+    )
 }

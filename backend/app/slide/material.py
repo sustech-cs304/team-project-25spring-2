@@ -6,6 +6,7 @@ from app.models.comment import Comment
 
 router = APIRouter()
 
+
 def get_db():
     db = SessionLocal()
     try:
@@ -13,16 +14,15 @@ def get_db():
     finally:
         db.close()
 
+
 @router.get("/material/{material_id}")
-async def get_material(
-    material_id: str,
-    db: Session = Depends(get_db)
-):
+async def get_material(material_id: str, db: Session = Depends(get_db)):
     material = db.query(Material).filter(Material.material_id == material_id).first()
-    comments = db.query(Comment).filter(
-        Comment.material_id == material_id,
-        Comment.ancestor_id == None 
-    ).all()
+    comments = (
+        db.query(Comment)
+        .filter(Comment.material_id == material_id, Comment.ancestor_id == None)
+        .all()
+    )
     return {
         "message": "Material retrieved successfully",
         "material_id": material.material_id,
@@ -36,10 +36,12 @@ async def get_material(
                 "user_id": comment.user_id,
                 "material_id": comment.material_id,
                 "page": comment.page,
-                "ancestor_id": comment.ancestor_id
-            } for comment in comments
-        ]
+                "ancestor_id": comment.ancestor_id,
+            }
+            for comment in comments
+        ],
     }
+
 
 @router.post("/material/{material_id}")
 async def update_material(
@@ -51,13 +53,15 @@ async def update_material(
 ):
     material = db.query(Material).filter(Material.material_id == material_id).first()
     if material is None:
-        db.add(Material(
-            material_id=material_id,
-            material_name=material_name,
-            section_id=section_id,
-            data=data,
-            comments=[]
-        ))
+        db.add(
+            Material(
+                material_id=material_id,
+                material_name=material_name,
+                section_id=section_id,
+                data=data,
+                comments=[],
+            )
+        )
         db.commit()
     else:
         if material_name is not None:
@@ -81,16 +85,15 @@ async def update_material(
                 "user_id": comment.user_id,
                 "material_id": comment.material_id,
                 "page": comment.page,
-                "ancestor_id": comment.ancestor_id
-            } for comment in material.comments
-        ]
+                "ancestor_id": comment.ancestor_id,
+            }
+            for comment in material.comments
+        ],
     }
-    
+
+
 @router.delete("/material/{material_id}")
-async def delete_material(
-    material_id: str,
-    db: Session = Depends(get_db)
-):
+async def delete_material(material_id: str, db: Session = Depends(get_db)):
     material = db.query(Material).filter(Material.material_id == material_id).first()
     if material is None:
         return {"message": "Material not found"}

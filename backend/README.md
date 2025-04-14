@@ -45,6 +45,8 @@ View OpenAPI document on `/docs`.
 │   │   ├── __init__.py
 │   │   └── *.py
 │   └── main.py # Entry point
+├── config
+│   └── *.yaml # k8s config
 ├── pyproject.toml
 └── uv.lock
 ```

@@ -1,0 +1,44 @@
+name: Backend Deployment
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - 'backend/**'
+  pull_request:
+    branches: ["main"]
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build image and Deploy
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: chanbengz
+        password: ${{ secrets.HUB_GITHUB_TOKEN }}
+
+    - name: Build and push Docker image
+      working-directory: backend
+      run: |
+        docker build . --file Dockerfile --tag ghcr.io/chanbengz/peach-backend:latest
+        docker push ghcr.io/chanbengz/peach-backend:latest
+
+    - name: Execute remote ssh commands
+      uses: appleboy/ssh-action@v1
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        script: kubectl rollout restart deployment/backend

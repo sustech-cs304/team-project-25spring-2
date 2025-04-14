@@ -5,6 +5,7 @@ from app.models.comment import Comment
 
 router = APIRouter()
 
+
 def get_db():
     db = SessionLocal()
     try:
@@ -12,11 +13,9 @@ def get_db():
     finally:
         db.close()
 
+
 @router.get("/comment/{comment_id}")
-async def get_comment(
-    comment_id: str,
-    db: Session = Depends(get_db)
-):
+async def get_comment(comment_id: str, db: Session = Depends(get_db)):
     comment = db.query(Comment).filter(Comment.comment_id == comment_id).first()
     if comment is None:
         return {"error": "Comment not found"}
@@ -29,7 +28,7 @@ async def get_comment(
             "user_id": comment.user_id,
             "material_id": comment.material_id,
             "page": comment.page,
-            "ancestor_id": comment.ancestor_id
+            "ancestor_id": comment.ancestor_id,
         },
         "replies": [
             {
@@ -38,11 +37,12 @@ async def get_comment(
                 "user_id": reply.user_id,
                 "material_id": reply.material_id,
                 "page": reply.page,
-                "ancestor_id": reply.ancestor_id
+                "ancestor_id": reply.ancestor_id,
             }
             for reply in replies
-        ]
+        ],
     }
+
 
 @router.post("/comment/{comment_id}")
 async def reply_to_comment(
@@ -59,19 +59,23 @@ async def reply_to_comment(
         return {"error": "Comment not found"}
     ancestor = db.query(Comment).filter(Comment.comment_id == ancestor_id).first()
     while ancestor.ancestor_id != None:
-        ancestor = db.query(Comment).filter(Comment.comment_id == ancestor.ancestor_id).first()
-    db.add(Comment(
-        comment_id=comment_id,
-        content=content,
-        user_id=user_id,
-        material_id=material_id,
-        page=page,
-        ancestor_id=ancestor.comment_id,
-    ))
+        ancestor = (
+            db.query(Comment).filter(Comment.comment_id == ancestor.ancestor_id).first()
+        )
+    db.add(
+        Comment(
+            comment_id=comment_id,
+            content=content,
+            user_id=user_id,
+            material_id=material_id,
+            page=page,
+            ancestor_id=ancestor.comment_id,
+        )
+    )
     db.commit()
     return {"message": "Reply added successfully"}
-    
-    
+
+
 @router.delete("/comment/{comment_id}")
 async def delete_comment(
     comment_id: str,

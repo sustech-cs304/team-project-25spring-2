@@ -14,6 +14,7 @@ import json
 
 router = APIRouter()
 
+
 def get_db():
     db = SessionLocal()
     try:
@@ -21,11 +22,9 @@ def get_db():
     finally:
         db.close()
 
+
 @router.get("/classes/{course_id}/sections")
-async def get_sections(
-    course_id: str,
-    db: Session = Depends(get_db)
-):
+async def get_sections(course_id: str, db: Session = Depends(get_db)):
     sections = db.query(Section).filter(Section.course_id == course_id).all()
     return {
         "message": "Sections retrieved successfully",
@@ -36,10 +35,13 @@ async def get_sections(
                 "materials": [
                     {
                         "material_id": material.material_id,
-                        "material_name": material.name
-                    } for material in db.query(Material).filter(Material.material_id.in_(section.materials)).all()
-                ]
-            } for section in sections
-        ]
+                        "material_name": material.name,
+                    }
+                    for material in db.query(Material)
+                    .filter(Material.material_id.in_(section.materials))
+                    .all()
+                ],
+            }
+            for section in sections
+        ],
     }
-

@@ -14,6 +14,7 @@ import json
 
 router = APIRouter()
 
+
 def get_db():
     db = SessionLocal()
     try:
@@ -21,15 +22,13 @@ def get_db():
     finally:
         db.close()
 
+
 @router.get("/classes/getCourses")
-async def get_courses(db: Session = Depends(get_db)):
-    ...
+async def get_courses(db: Session = Depends(get_db)): ...
+
 
 @router.get("/classes/{course_id}/course_info")
-async def get_course_info(
-    course_id: str, db: 
-    Session = Depends(get_db)
-):  
+async def get_course_info(course_id: str, db: Session = Depends(get_db)):
     course = db.query(Course).filter(Course.course_id == course_id).first()
     return {
         "message": "Course retrieved successfully",
@@ -41,7 +40,7 @@ async def get_course_info(
             {
                 "date": schedule.date,
                 "section_name": schedule.section_name,
-            } for schedule in course.schedules
-        ] 
+            }
+            for schedule in course.schedules
+        ],
     }
-    

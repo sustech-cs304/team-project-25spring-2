@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
 from sqlalchemy.dialects.postgresql import ARRAY
 from app.db import Base
 
+
 class Comment(Base):
     __tablename__ = "comments"
 

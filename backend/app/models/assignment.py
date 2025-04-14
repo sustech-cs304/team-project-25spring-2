@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
 from sqlalchemy.dialects.postgresql import ARRAY
 from app.db import Base
 
+
 class Assignment(Base):
     __tablename__ = "assignments"
 
@@ -12,4 +13,6 @@ class Assignment(Base):
     teacher_id = Column(String, ForeignKey("users.user_id"), index=True)
     deadline = Column(String, index=True)
     isOver = Column(Boolean, index=True)
-    materials = Column(ARRAY(String), index=True) # corresponding to the material_id, but whole material in the api
+    materials = Column(
+        ARRAY(String), index=True
+    )  # corresponding to the material_id, but whole material in the api
