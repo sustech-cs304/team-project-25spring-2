@@ -5,6 +5,8 @@ import React from "react";
 import {AppSidebar} from "@/components/app-sidebar";
 import {SidebarInset, SidebarProvider} from "@/components/ui/sidebar";
 import {Toaster} from "sonner";
+import { UserProvider } from "./UserEnvProvider";
+import AuthGuard from "@/components/auth-guard";
 
 export const metadata: Metadata = {
     title: "PeachIDE: Course-aware IDE",
@@ -25,14 +27,18 @@ export default function RootLayout({
                         enableSystem
                         disableTransitionOnChange
                 >
-                    <SidebarProvider style={{
-                        "--sidebar-width": "3rem"
-                    } as React.CSSProperties} className="h-full">
-                        <AppSidebar />
-                        <SidebarInset className="p-3 h-full">
-                            {children}
-                        </SidebarInset>
-                    </SidebarProvider>
+                    <UserProvider>
+                        <AuthGuard>
+                            <SidebarProvider style={{
+                                "--sidebar-width": "3rem"
+                            } as React.CSSProperties} className="h-full">
+                                <AppSidebar />
+                                <SidebarInset className="p-3 h-full">
+                                    {children}
+                                </SidebarInset>
+                            </SidebarProvider>
+                        </AuthGuard>
+                    </UserProvider>
                 </ThemeProvider>
                 <Toaster />
             </body>

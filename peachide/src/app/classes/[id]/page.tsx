@@ -96,7 +96,7 @@ function ClassesLeftBar({ props, isVisible, onSelectCourse, selectedCourseId }: 
       try {
         setLoading(true);
         // In a real app, you'd fetch from your actual API endpoint
-        const response = await fetch('/classes/getCourses');
+        const response = await fetch('/classes/get_courses');
         const data = await response.json();
         setCourses(data.courses);
       } catch (error) {
