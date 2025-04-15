@@ -1,6 +1,6 @@
 "use client";
 
-import {CodeXml, ComponentIcon, Home, Book} from "lucide-react";
+import {Book, CodeXml, ComponentIcon, Home} from "lucide-react";
 
 import {
     Sidebar,
@@ -24,17 +24,17 @@ const items = [
     },
     {
         title: "Classes",
-        url: "/classes",
+        url: "/classes/1",
         icon: Book,
     },
     {
         title: "Coding",
-        url: "/coding",
+        url: "/coding/1",
         icon: CodeXml,
     },
     {
         title: "Slides",
-        url: "/slides",
+        url: "/slides/1",
         icon: ComponentIcon
     }
 ];
@@ -93,10 +93,10 @@ function FirstSidebar() {
 
 export function AppSidebar() {
     return (
-        <Sidebar
-                className="h-full border-none"
-        >
-            <FirstSidebar />
-        </Sidebar>
+            <Sidebar
+                    className="h-full border-none"
+            >
+                <FirstSidebar />
+            </Sidebar>
     );
 }

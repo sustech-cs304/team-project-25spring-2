@@ -147,7 +147,6 @@ export default function Slides({params}: {
 
         const formData = new FormData();
         formData.append('content', markdown);
-        formData.append('user_id', '1'); // TODO now set 1
         formData.append('material_id', material.material_id);
         formData.append('is_snippet', String(false));
 
