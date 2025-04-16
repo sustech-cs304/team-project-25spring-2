@@ -1,5 +1,5 @@
 # app/models/schedule.py
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
 from sqlalchemy.dialects.postgresql import ARRAY
 from app.db import Base
 

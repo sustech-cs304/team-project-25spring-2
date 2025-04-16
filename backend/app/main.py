@@ -31,6 +31,8 @@ app.include_router(bookmarklist_router, tags=["bookmarklists"], prefix="/api")
 
 @app.on_event("startup")
 def startup():
+    Base.metadata.reflect(bind=engine)
+    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
 
 

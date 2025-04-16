@@ -1,5 +1,5 @@
 # app/models/assignment.py
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
 from sqlalchemy.dialects.postgresql import ARRAY
 from app.db import Base
 
@@ -9,8 +9,8 @@ class Assignment(Base):
 
     assignment_id = Column(String, primary_key=True, index=True)
     name = Column(String, index=True)
-    course_id = Column(String, index=True)
-    teacher_id = Column(String, index=True)
+    course_id = Column(String, ForeignKey("courses.course_id"), index=True)
+    teacher_id = Column(String, ForeignKey("users.user_id"), index=True)
     deadline = Column(String, index=True)
     isOver = Column(Boolean, index=True)
     materials = Column(
