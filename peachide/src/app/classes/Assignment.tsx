@@ -265,7 +265,7 @@ export default function Assignment({ courseId }: AssignmentProps) {
       </div>
 
       <div className="h-[calc(100vh-250px)] overflow-hidden">
-        <div className="grid gap-8 pb-6 pr-1 overflow-y-auto h-full p-1">
+        <div className="flex flex-col gap-4 pb-6 pr-1 overflow-y-auto h-full p-1">
           <AnimatePresence>
             {sortedAssignments.map((assignment, index) => {
               const isActive = !assignment.isOver;

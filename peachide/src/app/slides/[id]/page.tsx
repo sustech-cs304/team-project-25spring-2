@@ -13,6 +13,7 @@ import {motion} from "framer-motion";
 import {random} from "lodash";
 import {useMaterial, useNotes} from "@/app/slides/[id]/swr";
 import {CommentsSection} from "@/app/slides/[id]/Comments";
+import {toast} from "sonner";
 
 const EditorComp = dynamic(() =>
         import('../../../components/editors/markdown-editor'), {ssr: false});
@@ -127,18 +128,38 @@ export default function Slides({params}: {
     const resolvedParams = use(params);
     const {material} = useMaterial(resolvedParams.id);
     const {notes} = useNotes(resolvedParams.id);
-
+    const [noteId, setNoteId] = useState<string>('');
     const [mdNote, setMdNote] = useState<string>(`Hello **world**!`);
     useEffect(() => {
         if (notes) {
             for (let note of notes['notes']) {
                 if (!note.is_snippet) {
                     setMdNote(note.content);
+                    setNoteId(note.id);
                     break;
                 }
             }
         }
     }, [notes]);
+
+    async function saveMdNote(markdown: string) {
+        setMdNote(markdown);
+
+        const formData = new FormData();
+        formData.append('content', markdown);
+        formData.append('material_id', material.material_id);
+        formData.append('is_snippet', String(false));
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/note/${noteId}`, {
+            method: 'POST',
+            body: formData,
+        });
+        if (response.ok) {
+            console.log("Note saved!");
+        } else {
+            toast("Failed to save note.");
+        }
+    }
 
     return (
             <PDFProvider>
@@ -163,7 +184,7 @@ export default function Slides({params}: {
                                 </TabsContent>
                                 <TabsContent value="notes" className="h-full">
                                     <Suspense fallback={null}>
-                                        <EditorComp heightMode="auto" markdown={mdNote} />
+                                        <EditorComp heightMode="auto" markdown={mdNote} onChange={saveMdNote} />
                                     </Suspense>
                                 </TabsContent>
                             </Tabs>

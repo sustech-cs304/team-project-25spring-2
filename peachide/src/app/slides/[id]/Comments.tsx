@@ -100,7 +100,6 @@ function ReplyDialog({trigger, props}: { trigger: React.ReactNode, props: ReplyP
 
         const formData = new FormData();
         formData.append('content', content);
-        formData.append('user_id', '1'); // TODO now set 1
         formData.append('material_id', materialId);
         formData.append('page', props.page.toString());
         if (props.type === 'reply') {
