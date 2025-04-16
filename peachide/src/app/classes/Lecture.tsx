@@ -48,11 +48,11 @@ export default function Lecture({ courseId }: LectureProps) {
       try {
         setLoading(true);
         const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/classes/${courseId}/sections`);
-        
+
         if (!response.ok) {
           throw new Error('Failed to fetch sections data');
         }
-        
+
         const result = await response.json();
         setData(result);
       } catch (err) {
@@ -119,7 +119,7 @@ export default function Lecture({ courseId }: LectureProps) {
   };
 
   const handleMaterialClick = (sectionId: string, materialId: string) => {
-    router.push(`/slides/${sectionId}/${materialId}`);
+    router.push(`/slides/${materialId}`);
     setMaterialsOpen(false);
   };
 
@@ -154,7 +154,7 @@ export default function Lecture({ courseId }: LectureProps) {
           <Skeleton className="h-8 w-8 rounded-full" />
           <Skeleton className="h-8 w-72" />
         </div>
-        
+
         {[1, 2, 3].map((i) => (
           <Skeleton key={i} className="h-40 w-full rounded-lg" />
         ))}
@@ -273,7 +273,7 @@ export default function Lecture({ courseId }: LectureProps) {
               {selectedSection?.name} Materials
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="max-h-[60vh] mt-4 overflow-hidden">
             <div className="space-y-3 px-1 overflow-y-auto max-h-[58vh] pr-2">
               <AnimatePresence>
