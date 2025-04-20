@@ -1,7 +1,8 @@
 # app/models/user.py
-from sqlalchemy import Column, Integer, String, Boolean
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from app.db import Base
+from datetime import datetime, timedelta
 
 
 class User(Base):
@@ -17,3 +18,9 @@ class User(Base):
     photo = Column(String, nullable=True)
     office_hour = Column(String, nullable=True)
     office_place = Column(String, nullable=True)
+
+class Session(Base):
+    __tablename__ = "sessions"
+    session_id = Column(UUID, primary_key=True, index=True)
+    user_id = Column(UUID, nullable=False)
+    expires = Column(DateTime, nullable=False, default=datetime.now() + timedelta(days=1))

@@ -26,6 +26,20 @@ spec:
                 name: backend
                 port:
                   number: 5000
+          - path: /docs
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 5000
+          - path: /openapi.json
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 5000
   tls:
   - hosts:
     - peach.benx.dev
