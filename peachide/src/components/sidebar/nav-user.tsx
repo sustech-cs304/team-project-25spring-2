@@ -13,6 +13,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar,} from "@/components/ui/sidebar";
 import {DarkToggle} from "@/components/sidebar/dark-toggle";
+import { useUserContext } from "@/app/UserEnvProvider";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function NavUser({
                             user,
@@ -24,6 +27,14 @@ export function NavUser({
     }
 }) {
     const {isMobile} = useSidebar();
+    const { logout } = useUserContext();
+    const router = useRouter();
+
+    const handleLogout = () => {
+        logout();
+        toast.success("已退出登录");
+        router.push('/auth');
+    };
 
     return (
             <SidebarMenu>
@@ -71,8 +82,9 @@ export function NavUser({
                                     Notifications
                                 </DropdownMenuItem>
                             </DropdownMenuGroup>
+                            
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={handleLogout}>
                                 <LogOut />
                                 Log out
                             </DropdownMenuItem>

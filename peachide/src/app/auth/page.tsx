@@ -11,6 +11,7 @@ import { useUserContext } from "../UserEnvProvider";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { EyeIcon, EyeOffIcon, LogInIcon, UserPlusIcon } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 export default function AuthPage() {
   const router = useRouter();

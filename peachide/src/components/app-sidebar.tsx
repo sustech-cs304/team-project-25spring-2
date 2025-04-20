@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/sidebar";
 import {NavUser} from "@/components/sidebar/nav-user";
 import React from "react";
+import { useUserContext } from "@/app/UserEnvProvider";
 
 const items = [
     {
@@ -81,22 +82,27 @@ function FirstSidebar() {
                 </SidebarGroupContent>
             </SidebarGroup>
         </SidebarContent>
-        <SidebarFooter className="mb-1">
-            <NavUser user={{
-                name: "User",
-                email: "user@example.com",
-                avatar: "",
-            }} />
-        </SidebarFooter>
     </Sidebar>);
 }
 
 export function AppSidebar() {
+    const { userId } = useUserContext();
+    
+    // 根据用户是否登录显示不同的用户信息
+    const userInfo = {
+        name: userId ? `User-${userId.slice(0, 5)}` : "Guest",
+        email: userId ? `user-${userId.slice(0, 5)}@example.com` : "未登录",
+        avatar: "",
+    };
+
     return (
             <Sidebar
                     className="h-full border-none"
             >
                 <FirstSidebar />
+                <SidebarFooter className="mb-1">
+                    <NavUser user={userInfo} />
+                </SidebarFooter>
             </Sidebar>
     );
 }

@@ -36,7 +36,7 @@ export default function Home() {
       
       try {
         setLoading(true);
-        const response = await fetch(process.env.NEXT_PUBLIC_API_URL+`/user`);
+        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + "/user");
         
         if (!response.ok) {
           throw new Error('Failed to fetch user data');
