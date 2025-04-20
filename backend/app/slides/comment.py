@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, Body
 from sqlalchemy.orm import Session
 from app.db import SessionLocal
 from app.models.comment import Comment
-
+from app.auth.middleware import get_current_user
+from app.models.user import User
 router = APIRouter()
 
 
@@ -48,7 +49,7 @@ async def get_comment(comment_id: str, db: Session = Depends(get_db)):
 async def reply_to_comment(
     comment_id: str,
     content: str = Body(...),
-    user_id: str = Body(...),
+    current_user: User = Depends(get_current_user),
     material_id: str = Body(...),
     page: int = Body(...),
     ancestor_id: str = Body(...),
@@ -66,7 +67,7 @@ async def reply_to_comment(
         Comment(
             comment_id=comment_id,
             content=content,
-            user_id=user_id,
+            user_id=current_user.user_id,
             material_id=material_id,
             page=page,
             ancestor_id=ancestor.comment_id,

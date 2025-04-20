@@ -23,7 +23,7 @@ def get_db():
         db.close()
 
 
-@router.get("/classes/{course_id}/assignments")
+@router.get("/assignments/{course_id}")
 async def get_assignments(course_id: str, db: Session = Depends(get_db)):
     course = db.query(Course).filter(Course.course_id == course_id).first()
     if not course:

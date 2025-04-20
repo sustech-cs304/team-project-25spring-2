@@ -5,7 +5,8 @@ from app.models.material import Material
 from app.models.comment import Comment
 from app.models.note import Note
 from app.models.code_snippet import CodeSnippet
-
+from app.auth.middleware import get_current_user
+from app.models.user import User
 router = APIRouter()
 
 
@@ -41,7 +42,7 @@ async def get_note(material_id: str, db: Session = Depends(get_db)):
 @router.post("/note/{note_id}")
 async def create_note(
     note_id: str,
-    user_id: str = Body(None),
+    current_user: User = Depends(get_current_user),
     material_id: str = Body(None),
     is_snippet: bool = Body(None),
     content: str = Body(None),
@@ -52,7 +53,7 @@ async def create_note(
     if note is None:
         note = Note(
             note_id=note_id,
-            user_id=user_id,
+            user_id=current_user.user_id,
             material_id=material_id,
             is_snippet=is_snippet,
             content=content,
@@ -80,8 +81,8 @@ async def create_note(
     else:
         if note_id is not None:
             note.note_id = note_id
-        if user_id is not None:
-            note.user_id = user_id
+        if current_user.user_id is not None:
+            note.user_id = current_user.user_id
         if material_id is not None:
             note.material_id = material_id
         if is_snippet is not None:

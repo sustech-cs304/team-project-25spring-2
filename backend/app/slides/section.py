@@ -23,7 +23,7 @@ def get_db():
         db.close()
 
 
-@router.get("/classes/{course_id}/sections")
+@router.get("/sections/{course_id}")
 async def get_sections(course_id: str, db: Session = Depends(get_db)):
     sections = db.query(Section).filter(Section.course_id == course_id).all()
     return {

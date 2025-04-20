@@ -11,7 +11,7 @@ from app.models.course import Course
 from app.models.section import Section
 from app.models.bookmarklist import BookmarkList
 import json
-
+from app.auth.middleware import get_current_user
 router = APIRouter()
 
 
@@ -56,7 +56,7 @@ def convert_string_to_int_list(string):
 async def create_marklist(
     list_id: str,
     page: int,
-    user_id: str = Body(None),
+    current_user: User = Depends(get_current_user),
     material_id: str = Body(None),
     bookmark_list: str = Body(None),
     db: Session = Depends(get_db),
@@ -66,7 +66,7 @@ async def create_marklist(
         marklist = BookmarkList(
             list_id=list_id,
             material_id=material_id,
-            user_id=user_id,
+            user_id=current_user.user_id,
             page=page,
             bookmark_list=convert_string_to_int_list(bookmark_list),
         )
@@ -84,8 +84,8 @@ async def create_marklist(
             },
         }
     else:
-        if user_id is not None:
-            marklist.user_id = user_id
+        if current_user.user_id is not None:
+            marklist.user_id = current_user.user_id
         if page is not None:
             marklist.page = page
         if bookmark_list is not None:

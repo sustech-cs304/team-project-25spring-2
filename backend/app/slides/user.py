@@ -23,7 +23,7 @@ def get_db():
         db.close()
 
 
-@router.get("/classes/{class_id}/instructors")
+@router.get("/instructors/{class_id}/")
 async def get_instructors(class_id: str, db: Session = Depends(get_db)):
     course = db.query(Course).filter(Course.course_id == class_id).first()
     # teacher_id = Column(ARRAY(String), nullable=False) # corresponding to the user_id, but whole user in the api
@@ -40,4 +40,5 @@ async def get_instructors(class_id: str, db: Session = Depends(get_db)):
                 "office_place": teacher.office_place,
             }
         )
-    return {"message": "Instructors retrieved successfully", "teachers": instructors}
+    return {"message": "Instructors retrieved successfully", 
+            "teachers": instructors}
