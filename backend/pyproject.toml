@@ -12,6 +12,8 @@ dependencies = [
     "sqlalchemy>=2.0.40",
     "uvicorn[standard]>=0.34.0",
     "websockets>=15.0.1",
+    "passlib[bcrypt]>=1.7.4",
+    "python-multipart>=0.0.9",
 ]
 
 [dependency-groups]
