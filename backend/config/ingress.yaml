@@ -40,13 +40,6 @@ spec:
                 name: backend
                 port:
                   number: 5000
-          - path: /api/v2/piston/
-            pathType: Prefix
-            backend:
-              service:
-                name: piston
-                port:
-                  number: 2000
   tls:
   - hosts:
     - peach.benx.dev

@@ -5,6 +5,7 @@ from app.models.material import Material
 from app.models.comment import Comment
 from app.models.note import Note
 from app.models.code_snippet import CodeSnippet
+from pyston import PystonClient, File
 
 router = APIRouter()
 
@@ -126,3 +127,16 @@ async def get_code_snippet(material_id: str, db: Session = Depends(get_db)):
             for snippet in code_snippets
         ],
     }
+
+@router.post("/execute/snippet/{snippet_id}")
+async def execute_code_snippet(snippet_id: str, db: Session = Depends(get_db)):
+    snippet = db.query(CodeSnippet).filter(CodeSnippet.snippet_id == snippet_id).first()
+    if not snippet:
+        return {"error": "Snippet not found"}
+
+    client = PystonClient(base_url="http://piston:2000/api/v2")
+    result = await client.execute(
+        snippet.lang,
+        File(snippet.content)
+    )
+    return result
