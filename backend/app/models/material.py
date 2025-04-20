@@ -9,7 +9,9 @@ class Material(Base):
 
     material_id = Column(String, primary_key=True, index=True)
     material_name = Column(String, nullable=False)
-    section_id = Column(String, ForeignKey("sections.section_id"), index=True, nullable=False)
+    section_id = Column(
+        String, ForeignKey("sections.section_id"), index=True, nullable=False
+    )
     data = Column(String, nullable=False)
     comments = Column(
         ARRAY(String), nullable=True

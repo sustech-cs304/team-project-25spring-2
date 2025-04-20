@@ -7,7 +7,9 @@ class CodeSnippet(Base):
     __tablename__ = "code_snippets"
 
     snippet_id = Column(String, primary_key=True, index=True)
-    material_id = Column(String, ForeignKey("materials.material_id"), index=True, nullable=False)
+    material_id = Column(
+        String, ForeignKey("materials.material_id"), index=True, nullable=False
+    )
     lang = Column(String, nullable=False)
     page = Column(Integer, nullable=False)
     content = Column(String, nullable=False)
