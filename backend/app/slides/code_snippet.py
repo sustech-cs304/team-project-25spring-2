@@ -107,3 +107,22 @@ async def delete_code_snippet(snippet_id: str, db: Session = Depends(get_db)):
         return {"message": "Code snippet deleted successfully"}
     else:
         return {"message": "Code snippet not found"}
+
+@router.get("/snippet/{material_id}")
+async def get_code_snippet(material_id: str, db: Session = Depends(get_db)):
+    code_snippets = (
+        db.query(CodeSnippet).filter(CodeSnippet.material_id == material_id).all()
+    )
+    return {
+        "snippets": [
+            {
+                "snippet_id": snippet.snippet_id,
+                "material_id": snippet.material_id,
+                "lang": snippet.lang,
+                "page": snippet.page,
+                "content": snippet.content,
+                "position": {"x": snippet.position_x, "y": snippet.position_y},
+            }
+            for snippet in code_snippets
+        ],
+    }

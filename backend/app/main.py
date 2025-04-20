@@ -7,11 +7,11 @@ from fastapi.security import HTTPBearer
 from app.db import Base, engine
 from app.models import *
 
-from app.slide.comment import router as comment_router
-from app.slide.material import router as material_router
-from app.slide.note import router as note_router
-from app.slide.code_snippet import router as code_snippet_router
-from app.slide.bookmarklist import router as bookmarklist_router
+from app.slides.comment import router as comment_router
+from app.slides.material import router as material_router
+from app.slides.note import router as note_router
+from app.slides.code_snippet import router as code_snippet_router
+from app.slides.bookmarklist import router as bookmarklist_router
 from app.auth import router as auth_router
 
 
