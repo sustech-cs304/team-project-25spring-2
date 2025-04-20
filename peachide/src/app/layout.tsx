@@ -1,10 +1,10 @@
-import type {Metadata} from "next";
+import type { Metadata } from "next";
 import "./globals.css";
-import {ThemeProvider} from "next-themes";
+import { ThemeProvider } from "next-themes";
 import React from "react";
-import {AppSidebar} from "@/components/app-sidebar";
-import {SidebarInset, SidebarProvider} from "@/components/ui/sidebar";
-import {Toaster} from "sonner";
+import { AppSidebar } from "@/components/app-sidebar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { Toaster } from "sonner";
 import { UserProvider } from "./UserEnvProvider";
 import AuthGuard from "@/components/auth-guard";
 
@@ -14,18 +14,18 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({
-                                       children,
-                                   }: Readonly<{
+    children,
+}: Readonly<{
     children: React.ReactNode;
 }>) {
     return (
-            <html lang="en" suppressHydrationWarning>
+        <html lang="en" suppressHydrationWarning>
             <body>
                 <ThemeProvider
-                        attribute="class"
-                        defaultTheme="system"
-                        enableSystem
-                        disableTransitionOnChange
+                    attribute="class"
+                    defaultTheme="system"
+                    enableSystem
+                    disableTransitionOnChange
                 >
                     <UserProvider>
                         <AuthGuard>
@@ -42,6 +42,6 @@ export default function RootLayout({
                 </ThemeProvider>
                 <Toaster />
             </body>
-            </html>
+        </html>
     );
 }

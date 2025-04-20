@@ -15,6 +15,7 @@ import {
     DialogTrigger
 } from "@/components/ui/dialog";
 import { usePDFContext } from "./PDFEnvProvider";
+import { useUserContext } from "@/app/UserEnvProvider";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
     'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -69,6 +70,7 @@ export const PDFPart: React.FC<PDFPartProps> = ({ props, onFeedbackAction }) => 
     const pdfContainerRef = useRef<HTMLDivElement>(null);
     const { snippets } = usePDFContext();
     const [localSnippets, setLocalSnippets] = useState<SnippetsData>([]);
+    const { isTeacher } = useUserContext();
 
     useEffect(() => {
         setLocalSnippets(snippets);
@@ -153,7 +155,7 @@ export const PDFPart: React.FC<PDFPartProps> = ({ props, onFeedbackAction }) => 
                                         onFeedbackAction={onFeedbackAction}
                                         props={props}
                                         snippet={snippet}
-                                        buttonClassName="size-3 ml-2 mb-2 text-red-500 absolute top-0 right-0 transform translate-x-2 -translate-y-2"
+                                        buttonClassName={`${isTeacher ? 'size-3 ml-2 mb-2 text-red-500 absolute top-0 right-0 transform translate-x-2 -translate-y-2' : 'hidden'}`}
                                     />
                                 </div>
                             ))}

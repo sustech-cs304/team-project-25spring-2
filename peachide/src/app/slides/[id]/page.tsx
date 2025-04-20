@@ -14,6 +14,8 @@ import { random } from "lodash";
 import { useMaterial, useNotes, useSnippets } from "@/app/slides/[id]/swr";
 import { CommentsSection } from "@/app/slides/[id]/Comments";
 import { toast } from "sonner";
+import { useUserContext } from "@/app/UserEnvProvider";
+import { v4 as uuidv4 } from 'uuid';
 
 const EditorComp = dynamic(() =>
     import('../../../components/editors/markdown-editor'), { ssr: false });
@@ -31,6 +33,7 @@ function PDFSection({ url, materialId }: { url: string, materialId: string }) {
     const [width, setWidth] = useState<number>(200);
     const containerRef = React.createRef<HTMLDivElement>();
     const [isAddingSnippet, setIsAddingSnippet] = useState<boolean>(false);
+    const { isTeacher } = useUserContext();
 
     const handleFeedback = async (feedback: any) => {
         if (feedback.pageNumber) {
@@ -135,7 +138,7 @@ function PDFSection({ url, materialId }: { url: string, materialId: string }) {
                 Page {pageNumber} / {numPages}
             </div>
             <div className="text-right">
-                <Button className="h-6 text-xs" onClick={() => {
+                <Button className={`${isTeacher ? 'h-6 text-xs' : 'hidden'}`} onClick={() => {
                     setIsAddingSnippet(!isAddingSnippet);
                     toast.info("Click on the PDF to add a snippet");
                 }}>
@@ -148,10 +151,12 @@ function PDFSection({ url, materialId }: { url: string, materialId: string }) {
 
 function CodeSnippetEditor({ materialId }: { materialId: string }) {
     const { currentSnippet, setCurrentSnippet, snippets, setSnippets } = usePDFContext();
+    const { isTeacher } = useUserContext();
     const [title, setTitle] = useState<string>('');
     const [editor, setEditor] = useState<any>(null);
     const [snippetContent, setSnippetContent] = useState<string>('');
     const [selectedLanguage, setSelectedLanguage] = useState<string>('javascript');
+    const { notes } = useNotes(materialId);
 
     useEffect(() => {
         if (currentSnippet.page === 0 || currentSnippet.id === '') {
@@ -159,11 +164,12 @@ function CodeSnippetEditor({ materialId }: { materialId: string }) {
             return;
         } else {
             setTitle(`Snippet on page ${currentSnippet.page}`);
-            setSnippetContent(currentSnippet.text);
+            const note = notes?.notes.find((note: any) => note.is_snippet && note.code_snippet?.snippet_id === currentSnippet.id);
+            setSnippetContent(note?.content || currentSnippet.text);
             setSelectedLanguage(currentSnippet.lang || 'javascript');
         }
         updateEditor();
-    }, [currentSnippet]);
+    }, [currentSnippet, notes]);
 
     const updateEditor = () => {
         setEditor(<MonacoEditorComponent
@@ -197,18 +203,42 @@ function CodeSnippetEditor({ materialId }: { materialId: string }) {
             setSnippets(updatedSnippets);
             setCurrentSnippet(updatedSnippet);
 
-            // Then send to backend
+            // Prepare form data
             const formData = new FormData();
-            formData.append('snippet_id', currentSnippet.id);
             formData.append('content', snippetContent);
             formData.append('lang', selectedLanguage);
-            formData.append('position_x', String(currentSnippet.position.x));
-            formData.append('position_y', String(currentSnippet.position.y));
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/teacher/snippet/${materialId}/page/${currentSnippet.page}`, {
-                method: 'POST',
-                body: formData,
-            });
+            let response;
+            if (isTeacher) {
+                // Teacher path - update the snippet for everyone
+                formData.append('snippet_id', currentSnippet.id);
+                formData.append('position_x', String(currentSnippet.position.x));
+                formData.append('position_y', String(currentSnippet.position.y));
+
+                response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/teacher/snippet/${materialId}/page/${currentSnippet.page}`, {
+                    method: 'POST',
+                    body: formData,
+                });
+            } else {
+                // Student path - save as a personal note
+                formData.append('material_id', materialId);
+                formData.append('is_snippet', String(true));
+                formData.append('code_snippet', currentSnippet.id);
+
+                const note = notes?.notes.find((note: any) => note.is_snippet && note.code_snippet?.snippet_id === currentSnippet.id);
+                if (note) {
+                    formData.append('note_id', note.id);
+                    response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/note/${note.id}`, {
+                        method: 'POST',
+                        body: formData,
+                    });
+                } else {
+                    response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/note/${uuidv4()}`, {
+                        method: 'POST',
+                        body: formData,
+                    });
+                }
+            }
 
             if (response.ok) {
                 toast.success("Snippet saved successfully");

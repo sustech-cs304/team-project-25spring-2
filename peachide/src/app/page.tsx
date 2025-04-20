@@ -11,7 +11,7 @@ import { LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
-interface UserData {
+export interface UserData {
   user_id: string;
   name: string;
   email?: string;
@@ -23,41 +23,8 @@ interface UserData {
 }
 
 export default function Home() {
-  const { userId, logout, isTeacher: contextIsTeacher } = useUserContext();
+  const { userId, logout, isTeacher, setIsTeacher, userData, setUserData } = useUserContext();
   const router = useRouter();
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Fetch user data when component mounts
-    const fetchUserData = async () => {
-      if (!userId) return;
-
-      try {
-        setLoading(true);
-        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + "/user");
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch user data');
-        }
-
-        const data = await response.json();
-        setUserData(data);
-
-        // If the userData has different isTeacher value than what's in context,
-        // we would need a way to update it. Since our login function now takes isTeacher,
-        // we would need to re-login or have a separate function to update just this value.
-        // For now we'll just ensure the display reflects the API response
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        toast.error('Failed to load user information');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, [userId]);
 
   const handleLogout = () => {
     logout();
@@ -72,9 +39,6 @@ export default function Home() {
       .toUpperCase()
       .substring(0, 2);
   };
-
-  // Use userData.is_teacher if available, otherwise fall back to context value
-  const isTeacher = userData ? userData.is_teacher : contextIsTeacher;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -104,14 +68,7 @@ export default function Home() {
               </Button>
             </CardHeader>
             <CardContent className="flex flex-col items-center pt-4">
-              {loading ? (
-                <>
-                  <Skeleton className="h-24 w-24 rounded-full" />
-                  <Skeleton className="h-4 w-[250px] mt-4" />
-                  <Skeleton className="h-4 w-[200px] mt-2" />
-                  <Skeleton className="h-4 w-[150px] mt-2" />
-                </>
-              ) : userData ? (
+              {userData != null ? (
                 <>
                   <Avatar className="h-24 w-24 border-2 border-primary">
                     <AvatarImage src={userData.photo} alt={userData.name} />
