@@ -8,16 +8,26 @@ import { WebsocketProvider } from 'y-websocket';
 import { MonacoBinding } from '@/lib/y-monaco';
 import { useMonaco } from '@monaco-editor/react';
 import { editor } from "monaco-editor";
+import { updateUserCursorStyle, cleanupCursorStyles, getRandomUserColor } from '@/lib/cursorUtils';
+import '@/styles/cursor.css';
+import { useUserContext } from '@/app/UserEnvProvider';
 
 const Editor = dynamic(
     () => import('@monaco-editor/react'),
     { ssr: false }
 );
 
+export interface UserInfo {
+    name: string;
+    color: string;
+    avatar: string;
+}
+
 interface CollaboratedEditorProps {
     initialData: string;
     language?: string;
     onSave?: (content: string) => void;
+    onUsersChange?: (roomName: string, users: UserInfo[]) => void;
     roomName?: string;
 }
 
@@ -29,7 +39,8 @@ const CollaboratedEditorComponent: React.FC<CollaboratedEditorProps> = ({
     initialData,
     language = 'javascript',
     onSave,
-    roomName = 'monaco-react-2'
+    onUsersChange,
+    roomName = 'monaco-react-2',
 }) => {
     const monacoRef = useRef<any>(null);
     const contentRef = useRef<string>(initialData);
@@ -37,6 +48,7 @@ const CollaboratedEditorComponent: React.FC<CollaboratedEditorProps> = ({
     const [editorRef, setEditorRef] = useState<editor.IStandaloneCodeEditor>();
     const providerRef = useRef<WebsocketProvider | null>(null);
     const bindingRef = useRef<MonacoBinding | null>(null);
+    const { userData } = useUserContext();
 
     const handleEditorChange = useCallback((value: string | undefined, event: any) => {
         if (value !== undefined) {
@@ -65,30 +77,7 @@ const CollaboratedEditorComponent: React.FC<CollaboratedEditorProps> = ({
             action?.run();
         }, 300);
 
-        // Add CSS for colored cursors
-        const styleElement = document.createElement('style');
-        styleElement.textContent = `
-            .yRemoteSelection {
-                background-color: var(--user-color, rgb(250, 129, 0, 0.5));
-            }
-            .yRemoteSelectionHead {
-                position: absolute;
-                border-left: var(--user-color, orange) solid 2px;
-                border-top: var(--user-color, orange) solid 2px;
-                border-bottom: var(--user-color, orange) solid 2px;
-                height: 100%;
-                box-sizing: border-box;
-            }
-            .yRemoteSelectionHead::after {
-                position: absolute;
-                content: ' ';
-                border: 3px solid var(--user-color, orange);
-                border-radius: 4px;
-                left: -4px;
-                top: -5px;
-            }
-        `;
-        document.head.appendChild(styleElement);
+        // 基本样式已在引入的CSS文件中定义
     }, [handleSave]);
 
     useEffect(() => {
@@ -104,62 +93,33 @@ const CollaboratedEditorComponent: React.FC<CollaboratedEditorProps> = ({
             provider = new WebsocketProvider(wsUrl, roomName, yDoc);
             providerRef.current = provider;
             
-            // Set up user colors
-            const userColors = [
-                'rgb(255, 0, 0)', // red
-                'rgb(0, 255, 0)', // green
-                'rgb(0, 0, 255)', // blue
-                'rgb(255, 165, 0)', // orange
-                'rgb(128, 0, 128)', // purple
-                'rgb(0, 128, 128)', // teal
-                'rgb(255, 192, 203)', // pink
-                'rgb(255, 255, 0)', // yellow
-            ];
-            
-            // Set random color for current user
-            const userColor = userColors[Math.floor(Math.random() * userColors.length)];
+            // 使用工具函数获取随机用户颜色
+            const userColor = getRandomUserColor();
             
             // Set user data in awareness
             provider.awareness.setLocalStateField('user', {
-                name: 'User ' + Math.floor(Math.random() * 100),
-                color: userColor
+                name: userData?.name || 'User ' + Math.floor(Math.random() * 100),
+                color: userColor,
+                avatar: userData?.photo
             });
             
             // Update CSS variables when awareness changes
             provider.awareness.on('change', () => {
                 const states = provider.awareness.getStates();
+                const currentUsers = Array.from(states.values()).map((state) => ({
+                    name: state.user?.name || 'User ' + Math.floor(Math.random() * 100),
+                    color: state.user?.color,
+                    avatar: state.user?.avatar
+                }));
+
                 states.forEach((state, clientID) => {
                     if (state.user?.color) {
-                        const color = state.user.color;
-                        document.documentElement.style.setProperty(
-                            `--user-color-${clientID}`, 
-                            color
-                        );
-                        
-                        // Add specific styles for this user's cursor
-                        const styleId = `user-style-${clientID}`;
-                        let styleEl = document.getElementById(styleId);
-                        if (!styleEl) {
-                            styleEl = document.createElement('style');
-                            styleEl.id = styleId;
-                            document.head.appendChild(styleEl);
-                        }
-                        
-                        styleEl.textContent = `
-                            .yRemoteSelection-${clientID} {
-                                background-color: ${color}50 !important;
-                            }
-                            .yRemoteSelectionHead-${clientID} {
-                                border-left: ${color} solid 2px !important;
-                                border-top: ${color} solid 2px !important;
-                                border-bottom: ${color} solid 2px !important;
-                            }
-                            .yRemoteSelectionHead-${clientID}::after {
-                                border: 3px solid ${color} !important;
-                            }
-                        `;
+                        updateUserCursorStyle(clientID, state.user.color, state.user.name);
                     }
                 });
+                
+                // Call the new handler with roomName and current users for this room
+                onUsersChange?.(roomName, currentUsers);
             });
             
             // Bind Monaco editor to Yjs
@@ -182,6 +142,9 @@ const CollaboratedEditorComponent: React.FC<CollaboratedEditorProps> = ({
                 providerRef.current.disconnect();
             }
 
+            // Notify parent that users left this room upon unmount
+            onUsersChange?.(roomName, []);
+
             if (editorRef) {
                 editorRef.dispose();
                 setEditorRef(undefined);
@@ -190,8 +153,8 @@ const CollaboratedEditorComponent: React.FC<CollaboratedEditorProps> = ({
             provider?.destroy();
             binding?.destroy();
             
-            // Clean up style elements
-            document.querySelectorAll('[id^="user-style-"]').forEach(el => el.remove());
+            // 使用工具函数清理样式元素
+            cleanupCursorStyles();
         };
     }, [editorRef, roomName]);
 
