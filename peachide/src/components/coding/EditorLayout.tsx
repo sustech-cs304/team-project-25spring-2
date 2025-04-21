@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Node, Layout, Model, TabNode, Actions, DockLocation } from 'flexlayout-react';
-import MonacoEditorComponent from "@/components/coding/MonacoEditor";
 import TerminalComponent from "@/components/coding/Terminal";
 import { TreeNode } from "@/components/data/CodeEnvType";
 import EditorToolbar from "./EditorToolbar";
 import { PDFComponent } from "@/components/pdf/PDFComponent";
 import { getLanguageFromFileName, loadFileContent } from "../data/EditorLayoutData";
+import CollaboratedEditorComponent from "./CollaboratedEditor";
 
 // Default layout configuration
 var defaultLayout = {
@@ -80,7 +80,7 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
 
     switch(component) {
       case 'editor':
-        return <MonacoEditorComponent initialData={openFiles[filePath]} language={language} onSave={handleSave} />;
+        return <CollaboratedEditorComponent initialData={openFiles[filePath]} language={language} onSave={handleSave} roomName={filePath} />;
       case 'terminal':
         return <TerminalComponent />;
       case 'pdf':

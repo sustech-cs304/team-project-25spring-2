@@ -9,7 +9,6 @@ import {
   Info
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {SERVER} from "@/components/data/CodeEnvType";
 
 interface CourseSchedule {
   date: string;
