@@ -4,50 +4,45 @@ import React, { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { useUserContext } from "./UserEnvProvider";
+import { LogOut } from "lucide-react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
-interface UserData {
+export interface UserData {
+  user_id: string;
   name: string;
-  email: string;
-  grade: string;
-  avatarUrl: string;
+  email?: string;
+  is_teacher: boolean;
+  courses: { course_id: string }[];
+  photo?: string;
+  office_hour?: string;
+  office_place?: string;
 }
 
 export default function Home() {
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { userId, logout, isTeacher, setIsTeacher, userData, setUserData } = useUserContext();
+  const router = useRouter();
 
-  useEffect(() => {
-    // Fetch user data when component mounts
-    const fetchUserData = async () => {
-      try {
-        // Replace with your actual API endpoint
-        const response = await fetch('/fetchUserInfo');
-        if (!response.ok) {
-          throw new Error('Failed to fetch user data');
-        }
-        const data = await response.json();
-        setUserData(data);
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        // Set sample data for demonstration
-        setUserData({
-          name: "Alex Johnson",
-          email: "alex.johnson@example.com",
-          grade: "Senior",
-          avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex"
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  const handleLogout = () => {
+    logout();
+    router.push('/auth');
+    toast.success('Logged out successfully');
+  };
 
-    fetchUserData();
-  }, []);
+  const getInitials = (name: string) => {
+    return name.split(' ')
+      .map(part => part.charAt(0))
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -66,27 +61,50 @@ export default function Home() {
           transition={{ delay: 0.2, duration: 0.5 }}
         >
           <Card className="border shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-center">Your Profile</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-xl">Your Profile</CardTitle>
+              <Button variant="ghost" size="icon" onClick={handleLogout}>
+                <LogOut className="h-4 w-4" />
+              </Button>
             </CardHeader>
-            <CardContent className="flex flex-col items-center">
-              {loading ? (
-                <>
-                  <Skeleton className="h-24 w-24 rounded-full" />
-                  <Skeleton className="h-4 w-[250px] mt-4" />
-                  <Skeleton className="h-4 w-[200px] mt-2" />
-                  <Skeleton className="h-4 w-[150px] mt-2" />
-                </>
-              ) : (
+            <CardContent className="flex flex-col items-center pt-4">
+              {userData != null ? (
                 <>
                   <Avatar className="h-24 w-24 border-2 border-primary">
-                    <AvatarImage src={userData?.avatarUrl} alt={userData?.name} />
-                    <AvatarFallback>{userData?.name.substring(0, 2)}</AvatarFallback>
+                    <AvatarImage src={userData.photo} alt={userData.name} />
+                    <AvatarFallback>{getInitials(userData.name)}</AvatarFallback>
                   </Avatar>
-                  <h2 className="text-xl font-semibold mt-4">{userData?.name}</h2>
-                  <p className="text-muted-foreground">{userData?.email}</p>
-                  <p className="bg-primary/10 px-3 py-1 rounded-full text-sm mt-2">{userData?.grade} Student</p>
+                  <h2 className="text-xl font-semibold mt-4">{userData.name}</h2>
+                  {userData.email && <p className="text-muted-foreground">{userData.email}</p>}
+                  <div className="flex flex-wrap gap-2 mt-2 justify-center">
+                    <span className={`px-3 py-1 rounded-full text-sm ${isTeacher ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                      }`}>
+                      {isTeacher ? 'Teacher' : 'Student'}
+                    </span>
+                    <span className="bg-primary/10 px-3 py-1 rounded-full text-sm">
+                      {userData.courses.length} Course{userData.courses.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+
+                  {isTeacher && (
+                    <div className="w-full mt-4 space-y-1 border-t pt-4">
+                      {userData.office_hour && (
+                        <p className="text-sm flex justify-between">
+                          <span className="font-medium">Office Hours:</span>
+                          <span>{userData.office_hour}</span>
+                        </p>
+                      )}
+                      {userData.office_place && (
+                        <p className="text-sm flex justify-between">
+                          <span className="font-medium">Office Location:</span>
+                          <span>{userData.office_place}</span>
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </>
+              ) : (
+                <p className="text-muted-foreground">Could not load user information</p>
               )}
             </CardContent>
           </Card>

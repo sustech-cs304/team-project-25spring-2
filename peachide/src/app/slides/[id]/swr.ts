@@ -3,7 +3,7 @@ import useSWR from "swr";
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export function useMaterial(id: string) {
-    const {data, error, isLoading} = useSWR(process.env.NEXT_PUBLIC_API_URL + `/material/${id}`, fetcher);
+    const { data, error, isLoading } = useSWR(process.env.NEXT_PUBLIC_API_URL + `/material/${id}`, fetcher);
 
     return {
         material: data,
@@ -13,7 +13,7 @@ export function useMaterial(id: string) {
 }
 
 export function useComment(id: string) {
-    const {data, error, isLoading} = useSWR(process.env.NEXT_PUBLIC_API_URL + `/comment/${id}`, fetcher);
+    const { data, error, isLoading } = useSWR(process.env.NEXT_PUBLIC_API_URL + `/comment/${id}`, fetcher);
 
     return {
         comment: data,
@@ -23,10 +23,20 @@ export function useComment(id: string) {
 }
 
 export function useNotes(id: string) {
-    const {data, error, isLoading} = useSWR(process.env.NEXT_PUBLIC_API_URL + `/note/${id}`, fetcher);
+    const { data, error, isLoading } = useSWR(process.env.NEXT_PUBLIC_API_URL + `/note/${id}`, fetcher);
 
     return {
         notes: data,
+        isLoading,
+        isError: error,
+    };
+}
+
+export function useSnippets(id: string) {
+    const { data, error, isLoading } = useSWR(process.env.NEXT_PUBLIC_API_URL + `/snippet/${id}`, fetcher);
+
+    return {
+        snippets: data?.code_snippets || [],
         isLoading,
         isError: error,
     };

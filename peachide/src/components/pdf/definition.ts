@@ -16,9 +16,7 @@ interface PDFPartProps {
         pageNumber: number;
         numPages?: number;
         width?: number;
-        snippets?: SnippetsData;
         currentSnippet?: string;
-        snippetsLength?: number;
     },
     onFeedbackAction: (feedback: any) => void;
 }
