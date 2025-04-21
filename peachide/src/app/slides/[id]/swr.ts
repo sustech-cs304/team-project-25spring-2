@@ -22,11 +22,11 @@ export function useComment(id: string) {
     };
 }
 
-export function useNotes(id: string) {
+export function useNote(id: string) {
     const { data, error, isLoading } = useSWR(process.env.NEXT_PUBLIC_API_URL + `/note/${id}`, fetcher);
 
     return {
-        notes: data,
+        note: data,
         isLoading,
         isError: error,
     };

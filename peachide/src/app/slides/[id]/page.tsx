@@ -11,7 +11,7 @@ import { PDFProvider, usePDFContext } from "@/components/pdf/PDFEnvProvider";
 import MonacoEditorComponent from "@/components/coding/MonacoEditor";
 import { motion } from "framer-motion";
 import { random } from "lodash";
-import { useMaterial, useNotes, useSnippets } from "@/app/slides/[id]/swr";
+import { useMaterial, useNote, useSnippets } from "@/app/slides/[id]/swr";
 import { CommentsSection } from "@/app/slides/[id]/Comments";
 import { toast } from "sonner";
 import { useUserContext } from "@/app/UserEnvProvider";
@@ -53,7 +53,7 @@ function PDFSection({ url, materialId }: { url: string, materialId: string }) {
                     text: 'console.log(\'Hello\')',
                     position: feedback.clickPosition,
                     page: feedback.pageNumber,
-                    id: String(random(1000, 9999)),
+                    id: uuidv4(),
                     lang: 'javascript'
                 };
 
@@ -68,30 +68,22 @@ function PDFSection({ url, materialId }: { url: string, materialId: string }) {
                 formData.append('position_y', String(newSnippet.position.y));
 
                 try {
-                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/teacher/snippet/${materialId}/page/${newSnippet.page}`, {
+                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/snippet/${materialId}/page/${newSnippet.page}`, {
                         method: 'POST',
                         body: formData,
                     });
 
                     if (response.ok) {
-                        const result = await response.json();
-                        if (result.snippet_id) {
-                            // Update the local snippet with the real ID
-                            const updatedSnippet = {
-                                ...newSnippet,
-                                id: result.snippet_id
-                            };
-                            setSnippets(snippets.map(s =>
-                                s === newSnippet ? updatedSnippet : s
-                            ));
-                        }
                         toast.success("Snippet added");
                     } else {
                         toast.error("Failed to add snippet");
+                        console.error("Error adding snippet:", response);
+                        setSnippets(snippets.filter(s => s.id !== newSnippet.id));
                     }
                 } catch (error) {
                     console.error("Error adding snippet:", error);
                     toast.error("Error adding snippet");
+                    setSnippets(snippets.filter(s => s.id !== newSnippet.id));
                 }
             }
         }
@@ -156,7 +148,9 @@ function CodeSnippetEditor({ materialId }: { materialId: string }) {
     const [editor, setEditor] = useState<any>(null);
     const [snippetContent, setSnippetContent] = useState<string>('');
     const [selectedLanguage, setSelectedLanguage] = useState<string>('javascript');
-    const { notes } = useNotes(materialId);
+    const { note } = useNote(materialId);
+    const [executionResult, setExecutionResult] = useState<{ result: string; error: string | null }>({ result: '', error: null });
+    const [showResults, setShowResults] = useState<boolean>(false);
 
     useEffect(() => {
         if (currentSnippet.page === 0 || currentSnippet.id === '') {
@@ -164,12 +158,11 @@ function CodeSnippetEditor({ materialId }: { materialId: string }) {
             return;
         } else {
             setTitle(`Snippet on page ${currentSnippet.page}`);
-            const note = notes?.notes.find((note: any) => note.is_snippet && note.code_snippet?.snippet_id === currentSnippet.id);
             setSnippetContent(note?.content || currentSnippet.text);
             setSelectedLanguage(currentSnippet.lang || 'javascript');
         }
         updateEditor();
-    }, [currentSnippet, notes]);
+    }, [currentSnippet, note]);
 
     const updateEditor = () => {
         setEditor(<MonacoEditorComponent
@@ -207,38 +200,14 @@ function CodeSnippetEditor({ materialId }: { materialId: string }) {
             const formData = new FormData();
             formData.append('content', snippetContent);
             formData.append('lang', selectedLanguage);
+            formData.append('snippet_id', currentSnippet.id);
+            formData.append('position_x', String(currentSnippet.position.x));
+            formData.append('position_y', String(currentSnippet.position.y));
 
-            let response;
-            if (isTeacher) {
-                // Teacher path - update the snippet for everyone
-                formData.append('snippet_id', currentSnippet.id);
-                formData.append('position_x', String(currentSnippet.position.x));
-                formData.append('position_y', String(currentSnippet.position.y));
-
-                response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/teacher/snippet/${materialId}/page/${currentSnippet.page}`, {
-                    method: 'POST',
-                    body: formData,
-                });
-            } else {
-                // Student path - save as a personal note
-                formData.append('material_id', materialId);
-                formData.append('is_snippet', String(true));
-                formData.append('code_snippet', currentSnippet.id);
-
-                const note = notes?.notes.find((note: any) => note.is_snippet && note.code_snippet?.snippet_id === currentSnippet.id);
-                if (note) {
-                    formData.append('note_id', note.id);
-                    response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/note/${note.id}`, {
-                        method: 'POST',
-                        body: formData,
-                    });
-                } else {
-                    response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/note/${uuidv4()}`, {
-                        method: 'POST',
-                        body: formData,
-                    });
-                }
-            }
+            let response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/snippet/${materialId}/page/${currentSnippet.page}`, {
+                method: 'POST',
+                body: formData,
+            });
 
             if (response.ok) {
                 toast.success("Snippet saved successfully");
@@ -251,10 +220,42 @@ function CodeSnippetEditor({ materialId }: { materialId: string }) {
         }
     };
 
+    const executeSnippet = async () => {
+        if (!currentSnippet.id) return;
+
+        try {
+            setShowResults(true);
+            setExecutionResult({ result: 'Executing...', error: null });
+
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/execute/snippet/${currentSnippet.id}`, {
+                method: 'GET',
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+
+                if (data.error) {
+                    toast.error(`Execution Error`);
+                    setExecutionResult({ result: data.result || '', error: data.error });
+                } else {
+                    setExecutionResult({ result: data.result, error: null });
+                }
+            } else if (response.status === 404) {
+                toast.error("No code snippet record found for current user");
+                setExecutionResult({ result: '', error: 'No code snippet record found for current user' });
+            } else {
+                toast.error("Failed to execute code snippet");
+                setExecutionResult({ result: '', error: 'Failed to execute code snippet' });
+            }
+        } catch (error) {
+            console.error("Error executing snippet:", error);
+            toast.error("Error executing snippet");
+            setExecutionResult({ result: '', error: 'Error executing snippet' });
+        }
+    };
+
     const languages = [
-        "javascript", "typescript", "python", "java", "c", "cpp", "csharp",
-        "go", "rust", "php", "ruby", "swift", "kotlin", "scala", "html",
-        "css", "json", "xml", "markdown", "sql", "shell", "bash"
+        "python", "java", "c", "cpp", "javascript", "typescript",
     ];
 
     return (
@@ -286,12 +287,50 @@ function CodeSnippetEditor({ materialId }: { materialId: string }) {
                     >
                         <Save />
                     </Button>
-                    <Button variant="ghost" size="icon" className="ml-2 size-4" disabled={editor == null}>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="ml-2 size-4"
+                        disabled={editor == null || !currentSnippet.id}
+                        onClick={executeSnippet}
+                    >
                         <Play />
                     </Button>
                 </div>
             </div>
-            {editor}
+            <div className="flex flex-col h-full">
+                <div className={`${showResults ? 'h-3/4' : 'h-full'}`}>
+                    {editor}
+                </div>
+                {showResults && (
+                    <div className="h-1/4 mt-3 overflow-auto">
+                        <div className="flex justify-between items-center mb-2">
+                            <h3 className="text-sm font-medium">Execution Results</h3>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setShowResults(false)}
+                                className="h-6 text-xs"
+                            >
+                                Close
+                            </Button>
+                        </div>
+                        <div className="border rounded-md p-3 bg-muted/50 h-[calc(100%-30px)] overflow-auto">
+                            {executionResult.error ? (
+                                <div className="text-red-500 whitespace-pre-wrap overflow-auto">
+                                    <div className="font-medium mb-1">Error:</div>
+                                    <div className="text-xs">{executionResult.error}</div>
+                                </div>
+                            ) : (
+                                <div className="whitespace-pre-wrap overflow-auto">
+                                    <div className="font-medium mb-1">Result:</div>
+                                    <div className="text-xs">{executionResult.result}</div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
@@ -302,23 +341,18 @@ export default function Slides({ params }: {
 }) {
     const resolvedParams = use(params);
     const { material } = useMaterial(resolvedParams.id);
-    const { notes } = useNotes(resolvedParams.id);
+    const { note } = useNote(resolvedParams.id);
     const { snippets: fetchedSnippets } = useSnippets(resolvedParams.id);
     const [noteId, setNoteId] = useState<string>('');
     const [mdNote, setMdNote] = useState<string>(`Hello **world**!`);
     const { snippets, setSnippets } = usePDFContext();
 
     useEffect(() => {
-        if (notes) {
-            for (let note of notes['notes']) {
-                if (!note.is_snippet) {
-                    setMdNote(note.content);
-                    setNoteId(note.id);
-                    break;
-                }
-            }
+        if (note) {
+            setMdNote(note.content);
+            setNoteId(note.id);
         }
-    }, [notes]);
+    }, [note]);
 
     useEffect(() => {
         if (fetchedSnippets && fetchedSnippets.length > 0) {
@@ -345,7 +379,6 @@ export default function Slides({ params }: {
         const formData = new FormData();
         formData.append('content', markdown);
         formData.append('material_id', material.material_id);
-        formData.append('is_snippet', String(false));
 
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/note/${noteId}`, {
             method: 'POST',
