@@ -11,6 +11,25 @@ export const getEditorLayout = (projectId: string) => {
   };
 };
 
+export const getConnectionUrl = async (projectId: string) => {
+  try {
+    const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/environment/${projectId}/collaboration/url`, {
+      method: 'GET',
+      credentials: 'include', // This ensures cookies are sent with the request
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to get collaboration URL');
+    }
+    
+    const data = await response.json();
+    return data.url;
+  } catch (error) {
+    console.error('Error getting collaboration URL:', error);
+    return 'ws://localhost:1234';
+  }
+};
+
 export const getLanguageFromFileName = (fileName: string): string => {
   const ext = fileName.split('.').pop()?.toLowerCase() || '';
   return languageMap[ext] || 'plaintext';

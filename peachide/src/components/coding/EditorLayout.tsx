@@ -6,7 +6,7 @@ import TerminalComponent from "@/components/coding/Terminal";
 import { TreeNode } from "@/components/data/CodeEnvType";
 import EditorToolbar from "./EditorToolbar";
 import { PDFComponent } from "@/components/pdf/PDFComponent";
-import { getLanguageFromFileName } from "../data/EditorLayoutData";
+import { getConnectionUrl, getLanguageFromFileName } from "../data/EditorLayoutData";
 import CollaboratedEditorComponent from "./CollaboratedEditor";
 import { UserInfo } from "./CollaboratedEditor";
 
@@ -48,6 +48,7 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [activeUsersByEditor, setActiveUsersByEditor] = useState<Record<string, UserInfo[]>>({});
   const layoutRef = useRef<Layout>(null);
+  const [wsUrl, setWsUrl] = useState<string>('');
 
   const handleEditorUsersChange = useCallback((editorId: string, users: UserInfo[]) => {
     setActiveUsersByEditor(prev => {
@@ -91,6 +92,7 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
     switch(component) {
       case 'editor':
         return <CollaboratedEditorComponent 
+                 wsUrl={wsUrl}
                  language={language}
                  roomName={filePath}
                  onUsersChange={handleEditorUsersChange}
@@ -102,7 +104,7 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
       default:
         return <div>Loading...</div>;
     }
-  }, [handleEditorUsersChange]);
+  }, [wsUrl, handleEditorUsersChange]);
 
   const openFile = useCallback(async (treeNode: TreeNode) => {
     if (!treeNode || treeNode.type !== "file") return;
@@ -162,6 +164,18 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
       console.error("Error opening file:", error, treeNode);
     }
   }, [model]);
+
+  useEffect(() => {
+    const fetchWsUrl = async () => {
+      try {
+        const url = await getConnectionUrl(projectId);
+        setWsUrl(url);
+      } catch (error) {
+        console.error("Error fetching WebSocket URL:", error);
+      }
+    };
+    fetchWsUrl();
+  }, [projectId]);
 
   useEffect(() => {
     if (selectedFile) {

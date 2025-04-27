@@ -11,6 +11,7 @@ import { editor } from "monaco-editor";
 import { updateUserCursorStyle, cleanupCursorStyles, getRandomUserColor } from '@/lib/cursorUtils';
 import '@/styles/cursor.css';
 import { useUserContext } from '@/app/UserEnvProvider';
+import { getConnectionUrl } from '../data/EditorLayoutData';
 const Editor = dynamic(
     () => import('@monaco-editor/react'),
     { ssr: false }
@@ -23,6 +24,7 @@ export interface UserInfo {
 }
 
 interface CollaboratedEditorProps {
+    wsUrl: string;
     language?: string;
     onUsersChange?: (roomName: string, users: UserInfo[]) => void;
     roomName?: string;
@@ -33,6 +35,7 @@ interface CollaboratedEditorProps {
 // The style should be improved. (Add Flag for user name)
 
 const CollaboratedEditorComponent: React.FC<CollaboratedEditorProps> = ({
+    wsUrl,
     language = 'javascript',
     onUsersChange,
     roomName = 'monaco-react-2',
@@ -47,59 +50,47 @@ const CollaboratedEditorComponent: React.FC<CollaboratedEditorProps> = ({
     const handleEditorDidMount = useCallback((editor: editor.IStandaloneCodeEditor, monaco: any) => {
         setEditorRef(editor);
         monacoRef.current = monaco;
-
-        // Format document
         setTimeout(() => {
             const action = editor?.getAction("editor.action.formatDocument");
             action?.run();
         }, 300);
-
-        // 基本样式已在引入的CSS文件中定义
     }, []);
 
     useEffect(() => {
-        // Set up WebSocket provider
-        let yDoc: Y.Doc
-        let provider: WebsocketProvider;
-        let binding: MonacoBinding;
+        let yDoc: Y.Doc | null = null;
+        let provider: WebsocketProvider | null = null;
+        let binding: MonacoBinding | null = null;
+
+        const awarenessChangeHandler = () => {
+            if (!provider) return;
+            const states = provider.awareness.getStates();
+            const currentUsers = Array.from(states.values()).map((state) => ({
+                name: state.user?.name || 'User ' + Math.floor(Math.random() * 100),
+                color: state.user?.color,
+                avatar: state.user?.avatar
+            }));
+            states.forEach((state, clientID) => {
+                if (state.user?.color) {
+                    updateUserCursorStyle(clientID, state.user.color, state.user.name);
+                }
+            });
+            onUsersChange?.(roomName, currentUsers);
+        };
         
         if (editorRef) {
             yDoc = new Y.Doc();
             const yText = yDoc.getText("content");
-            const wsUrl = 'ws://localhost:1234';
             provider = new WebsocketProvider(wsUrl, roomName, yDoc);
             providerRef.current = provider;
             
-            // 使用工具函数获取随机用户颜色
             const userColor = getRandomUserColor();
-            
-            // Set user data in awareness
             provider.awareness.setLocalStateField('user', {
                 name: userData?.name || 'User ' + Math.floor(Math.random() * 100),
                 color: userColor,
                 avatar: userData?.photo
             });
+            provider.awareness.on('change', awarenessChangeHandler);
             
-            // Update CSS variables when awareness changes
-            provider.awareness.on('change', () => {
-                const states = provider.awareness.getStates();
-                const currentUsers = Array.from(states.values()).map((state) => ({
-                    name: state.user?.name || 'User ' + Math.floor(Math.random() * 100),
-                    color: state.user?.color,
-                    avatar: state.user?.avatar
-                }));
-
-                states.forEach((state, clientID) => {
-                    if (state.user?.color) {
-                        updateUserCursorStyle(clientID, state.user.color, state.user.name);
-                    }
-                });
-                
-                // Call the new handler with roomName and current users for this room
-                onUsersChange?.(roomName, currentUsers);
-            });
-            
-            // Bind Monaco editor to Yjs
             binding = new MonacoBinding(
                 yText,
                 editorRef.getModel() as editor.ITextModel,
@@ -109,31 +100,32 @@ const CollaboratedEditorComponent: React.FC<CollaboratedEditorProps> = ({
             bindingRef.current = binding;
         }
 
+        const currentProvider = providerRef.current;
+        const currentYDoc = yDoc;
+
         return () => {
-            // Clean up Yjs resources
+            if (currentProvider) {
+                currentProvider.awareness.off('change', awarenessChangeHandler);
+            }
+
             if (bindingRef.current) {
                 bindingRef.current.destroy();
-            }
-            
-            if (providerRef.current) {
-                providerRef.current.disconnect();
+                bindingRef.current = null;
             }
 
-            // Notify parent that users left this room upon unmount
+            if (currentProvider) {
+                 currentProvider.disconnect();
+                 providerRef.current = null;
+            }
+
+            if (currentYDoc) {
+                currentYDoc.destroy();
+            }
+            
             onUsersChange?.(roomName, []);
-
-            if (editorRef) {
-                editorRef.dispose();
-                setEditorRef(undefined);
-            }
-            yDoc?.destroy();
-            provider?.destroy();
-            binding?.destroy();
-            
-            // 使用工具函数清理样式元素
             cleanupCursorStyles();
         };
-    }, [editorRef, roomName]);
+    }, [editorRef, roomName, wsUrl, onUsersChange, userData?.name, userData?.photo]);
 
     return (
         <div style={{ height: '100%' }}>
