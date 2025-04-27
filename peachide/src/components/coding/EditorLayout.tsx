@@ -6,7 +6,7 @@ import TerminalComponent from "@/components/coding/Terminal";
 import { TreeNode } from "@/components/data/CodeEnvType";
 import EditorToolbar from "./EditorToolbar";
 import { PDFComponent } from "@/components/pdf/PDFComponent";
-import { getLanguageFromFileName, loadFileContent } from "../data/EditorLayoutData";
+import { getLanguageFromFileName } from "../data/EditorLayoutData";
 import CollaboratedEditorComponent from "./CollaboratedEditor";
 import { UserInfo } from "./CollaboratedEditor";
 
@@ -45,7 +45,6 @@ interface EditorLayoutProps {
 const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: EditorLayoutProps) => {
   const [model, setModel] = useState<Model>(() => Model.fromJson(defaultLayout));
   const [showTerminal, setShowTerminal] = useState<boolean>(false);
-  const [openFiles, setOpenFiles] = useState<Record<string, string>>({});
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [activeUsersByEditor, setActiveUsersByEditor] = useState<Record<string, UserInfo[]>>({});
   const layoutRef = useRef<Layout>(null);
@@ -83,15 +82,6 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
     }
   };
 
-  const handleSave = (content: string) => {
-    if(currentFile){
-      setOpenFiles(prev => ({
-        ...prev,
-        [currentFile]: content
-      }));
-    }
-  };
-
   const factory = useCallback((node: TabNode) => {
     const component = node.getComponent();
     const config = node.getConfig() || {};
@@ -101,9 +91,7 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
     switch(component) {
       case 'editor':
         return <CollaboratedEditorComponent 
-                 initialData={openFiles[filePath] ?? ''} 
-                 language={language} 
-                 onSave={handleSave} 
+                 language={language}
                  roomName={filePath}
                  onUsersChange={handleEditorUsersChange}
                />;
@@ -114,7 +102,7 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
       default:
         return <div>Loading...</div>;
     }
-  }, [openFiles, handleSave, handleEditorUsersChange]);
+  }, [handleEditorUsersChange]);
 
   const openFile = useCallback(async (treeNode: TreeNode) => {
     if (!treeNode || treeNode.type !== "file") return;
@@ -136,21 +124,6 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
         }
         return true;
       });
-
-      if (!openFiles[filePath] && !isPDF) {
-        try {
-          const content = await loadFileContent(projectId, filePath);
-          setOpenFiles(prev => ({
-            ...prev,
-            [filePath]: content
-          }));
-        } catch (error) {
-          setOpenFiles(prev => ({
-            ...prev,
-            [filePath]: `// Error loading file content for ${filePath}`
-          }));
-        }
-      }
 
       if (existingTabId) {
         model.doAction(Actions.selectTab(existingTabId));
@@ -188,7 +161,7 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
     } catch (error) {
       console.error("Error opening file:", error, treeNode);
     }
-  }, [model, openFiles]);
+  }, [model]);
 
   useEffect(() => {
     if (selectedFile) {

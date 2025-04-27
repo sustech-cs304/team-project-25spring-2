@@ -11,15 +11,6 @@ export const getEditorLayout = (projectId: string) => {
   };
 };
 
-export const loadFileContent = async (projectId: string, filePath: string) => {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/environment/${projectId}/file?path=${encodeURIComponent(filePath)}`);
-    if (!response.ok) {
-        throw new Error(`Failed to load file: ${response.status} ${response.statusText}`);
-    }
-    const data = await response.text();
-    return data;
-};
-
 export const getLanguageFromFileName = (fileName: string): string => {
   const ext = fileName.split('.').pop()?.toLowerCase() || '';
   return languageMap[ext] || 'plaintext';

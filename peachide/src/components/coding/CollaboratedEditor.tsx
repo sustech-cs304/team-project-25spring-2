@@ -11,7 +11,6 @@ import { editor } from "monaco-editor";
 import { updateUserCursorStyle, cleanupCursorStyles, getRandomUserColor } from '@/lib/cursorUtils';
 import '@/styles/cursor.css';
 import { useUserContext } from '@/app/UserEnvProvider';
-
 const Editor = dynamic(
     () => import('@monaco-editor/react'),
     { ssr: false }
@@ -24,9 +23,7 @@ export interface UserInfo {
 }
 
 interface CollaboratedEditorProps {
-    initialData: string;
     language?: string;
-    onSave?: (content: string) => void;
     onUsersChange?: (roomName: string, users: UserInfo[]) => void;
     roomName?: string;
 }
@@ -36,41 +33,21 @@ interface CollaboratedEditorProps {
 // The style should be improved. (Add Flag for user name)
 
 const CollaboratedEditorComponent: React.FC<CollaboratedEditorProps> = ({
-    initialData,
     language = 'javascript',
-    onSave,
     onUsersChange,
     roomName = 'monaco-react-2',
 }) => {
     const monacoRef = useRef<any>(null);
-    const contentRef = useRef<string>(initialData);
     const { theme } = useTheme();
     const [editorRef, setEditorRef] = useState<editor.IStandaloneCodeEditor>();
     const providerRef = useRef<WebsocketProvider | null>(null);
     const bindingRef = useRef<MonacoBinding | null>(null);
     const { userData } = useUserContext();
 
-    const handleEditorChange = useCallback((value: string | undefined, event: any) => {
-        if (value !== undefined) {
-            contentRef.current = value;
-        }
-    }, []);
-
-    const handleSave = useCallback(() => {
-        if (onSave) {
-            onSave(contentRef.current);
-        }
-    }, [onSave]);
-
     const handleEditorDidMount = useCallback((editor: editor.IStandaloneCodeEditor, monaco: any) => {
         setEditorRef(editor);
         monacoRef.current = monaco;
 
-        // Set up save command
-        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-            handleSave();
-        });
-        
         // Format document
         setTimeout(() => {
             const action = editor?.getAction("editor.action.formatDocument");
@@ -78,7 +55,7 @@ const CollaboratedEditorComponent: React.FC<CollaboratedEditorProps> = ({
         }, 300);
 
         // 基本样式已在引入的CSS文件中定义
-    }, [handleSave]);
+    }, []);
 
     useEffect(() => {
         // Set up WebSocket provider
@@ -88,7 +65,7 @@ const CollaboratedEditorComponent: React.FC<CollaboratedEditorProps> = ({
         
         if (editorRef) {
             yDoc = new Y.Doc();
-            const yText = yDoc.getText("monaco");
+            const yText = yDoc.getText("content");
             const wsUrl = 'ws://localhost:1234';
             provider = new WebsocketProvider(wsUrl, roomName, yDoc);
             providerRef.current = provider;
@@ -164,8 +141,6 @@ const CollaboratedEditorComponent: React.FC<CollaboratedEditorProps> = ({
                 height="100%"
                 theme={theme === 'dark' ? 'vs-dark' : 'light'}
                 language={language}
-                defaultValue={initialData}
-                onChange={handleEditorChange}
                 options={{
                     cursorStyle: "line",
                     formatOnPaste: true,
