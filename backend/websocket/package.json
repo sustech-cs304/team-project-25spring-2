@@ -1,0 +1,13 @@
+{
+  "name": "websocket-server",
+  "version": "1.0.0",
+  "description": "Yjs WebSocket server",
+  "type": "module",
+  "main": "server.js",
+  "dependencies": {
+    "@y/websocket-server": "^0.1.1",
+    "ws": "^8.13.0",
+    "yjs": "^13.6.8",
+    "lib0": "^0.2.87"
+  }
+}
