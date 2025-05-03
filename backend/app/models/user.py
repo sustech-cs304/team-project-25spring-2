@@ -1,10 +1,10 @@
 # app/models/user.py
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy import Column, String, Boolean, ForeignKey, DateTime
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from app.db import Base
-from datetime import datetime, timedelta
 from pydantic import BaseModel
 from typing import Optional
+import uuid
 
 
 class User(Base):
@@ -20,6 +20,15 @@ class User(Base):
     photo = Column(String, nullable=True)
     office_hour = Column(String, nullable=True)
     office_place = Column(String, nullable=True)
+
+
+class Sessions(Base):
+    __tablename__ = "sessions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(String, ForeignKey("users.user_id"), nullable=False)
+    created_at = Column(DateTime, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
 
 
 # Pydantic models for API schemas
@@ -40,7 +49,7 @@ class UserCreate(BaseModel):
 
 
 class UserLogin(BaseModel):
-    user_id: str
+    name: str
     password: str
 
 

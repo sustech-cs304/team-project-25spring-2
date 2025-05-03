@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer
 from sqlalchemy.orm import Session
 from typing import Annotated
-from datetime import timedelta
+from datetime import timedelta, datetime
+import uuid
 
 from app.auth.middleware import get_db, get_current_user
 from app.models.user import (
@@ -11,12 +12,15 @@ from app.models.user import (
     UserLogin,
     UserResponse,
     User,
+    Sessions,
 )
 from app.auth.utils import (
     verify_password,
     get_password_hash,
     create_access_token,
     get_user_by_id,
+    decode_access_token,
+    get_session_by_id,
     ACCESS_TOKEN_EXPIRE_MINUTES,
 )
 
@@ -24,9 +28,7 @@ router = APIRouter()
 security = HTTPBearer()
 
 
-@router.post(
-    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     # Check if user exists
     db_user = get_user_by_id(db, user_data.user_id)
@@ -47,15 +49,14 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
 
     db.add(db_user)
     db.commit()
-    db.refresh(db_user)
 
-    return db_user
+    return {"msg": "User registered successfully"}
 
 
 @router.post("/login", response_model=TokenSchema)
 async def login(user_data: UserLogin, db: Session = Depends(get_db)):
     # Verify user
-    user = get_user_by_id(db, user_data.user_id)
+    user = get_user_by_id(db, user_data.name)
     if not user or not verify_password(user_data.password, user.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -63,20 +64,33 @@ async def login(user_data: UserLogin, db: Session = Depends(get_db)):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # Create session
+    session = Sessions(
+        user_id=user.user_id,
+        created_at=datetime.now(),
+        expires_at=datetime.now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+    )
+    db.add(session)
+    db.commit()
+
     # Create access token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.user_id}, expires_delta=access_token_expires
-    )
+    access_token = create_access_token(data={"sub": str(session.id)})
 
     return {
-        "access_token": access_token,
-        "token_type": "bearer",
+        "token": access_token,
+        "user_id": user.user_id,
     }
 
 
-@router.post("/logout")
-async def logout(current_user: User = Depends(get_current_user)):
+@router.delete("/logout")
+async def logout(token: str = Depends(security), db: Session = Depends(get_db)):
+    payload = decode_access_token(token.credentials)
+    session_id: str = payload.get("sub")
+    session = get_session_by_id(db, session_id)
+    db.delete(session)
+    db.commit()
+
     return {"message": "Successfully logged out"}
 
 
