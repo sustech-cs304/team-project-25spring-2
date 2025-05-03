@@ -4,7 +4,7 @@ import { Document as PDFDocument, Page, pdfjs } from "react-pdf";
 import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Minus, Play, Plus } from "lucide-react";
+import { Minus, Play, Plus, Bookmark, BookmarkCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -14,8 +14,9 @@ import {
     DialogTitle,
     DialogTrigger
 } from "@/components/ui/dialog";
-import { usePDFContext } from "./PDFEnvProvider";
+import { usePDFContext, type BookmarkType } from "./PDFEnvProvider";
 import { useUserContext } from "@/app/UserEnvProvider";
+import { Input } from "@/components/ui/input";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
     'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -64,11 +65,47 @@ const DeleteSnippetButton: React.FC<{
     );
 };
 
+const BookmarkButton: React.FC<{
+    onFeedbackAction: (feedback: any) => void,
+    props: any,
+    buttonClassName: string,
+    pageNumber: number,
+    position: { x: number; y: number }
+}> = ({ onFeedbackAction, props, buttonClassName, pageNumber, position }) => {
+    const { bookmarks, addBookmark, removeBookmark } = usePDFContext();
+    const existingBookmark = bookmarks.find(b => b.page === pageNumber);
+
+    const handleAddBookmark = async () => {
+        await addBookmark(pageNumber);
+    };
+
+    const handleRemoveBookmark = async () => {
+        if (existingBookmark) {
+            await removeBookmark(existingBookmark.list_id);
+        }
+    };
+
+    return (
+        <Button
+            variant="outline"
+            size="icon"
+            className={buttonClassName}
+            onClick={existingBookmark ? handleRemoveBookmark : handleAddBookmark}
+        >
+            {existingBookmark ? (
+                <BookmarkCheck className="text-yellow-500" />
+            ) : (
+                <Bookmark />
+            )}
+        </Button>
+    );
+};
+
 export const PDFPart: React.FC<PDFPartProps> = ({ props, onFeedbackAction }) => {
     const [numPages, setNumPages] = useState<number>();
     const [scale, setScale] = useState(1);
     const pdfContainerRef = useRef<HTMLDivElement>(null);
-    const { snippets } = usePDFContext();
+    const { snippets, bookmarks, setPageNumber } = usePDFContext();
     const [localSnippets, setLocalSnippets] = useState<SnippetsData>([]);
     const { isTeacher } = useUserContext();
 
@@ -98,7 +135,7 @@ export const PDFPart: React.FC<PDFPartProps> = ({ props, onFeedbackAction }) => 
 
         const handleScroll = () => {
             const scrollTop = container.scrollTop;
-            const pageHeight = container.scrollHeight / numPages!;
+            const pageHeight = (container.scrollHeight - 50) / numPages!;
             const currentPage = Math.floor(scrollTop / pageHeight) + 1;
 
             if (currentPage !== props.pageNumber) {
@@ -116,7 +153,18 @@ export const PDFPart: React.FC<PDFPartProps> = ({ props, onFeedbackAction }) => 
         const y = e.clientY - rect.top;
         const position = { x, y };
         onFeedbackAction({ clickPosition: position, pageNumber: pageNumber });
-        // Do not stop propagation to allow other elements to handle the event
+    };
+
+    const handleBookmarkClick = (bookmark: BookmarkType) => {
+        if (pdfContainerRef.current) {
+            const pageHeight = (pdfContainerRef.current.scrollHeight - 50) / numPages!;
+            const targetScroll = (bookmark.page - 1) * pageHeight + 1;
+            pdfContainerRef.current.scrollTo({
+                top: targetScroll,
+                behavior: 'smooth'
+            });
+            setPageNumber(bookmark.page);
+        }
     };
 
     return (
@@ -159,21 +207,44 @@ export const PDFPart: React.FC<PDFPartProps> = ({ props, onFeedbackAction }) => 
                                     />
                                 </div>
                             ))}
+                            <div style={{ position: 'absolute', top: 10, right: 10, pointerEvents: 'auto' }}>
+                                <BookmarkButton
+                                    onFeedbackAction={onFeedbackAction}
+                                    props={props}
+                                    buttonClassName="size-6"
+                                    pageNumber={index + 1}
+                                    position={{ x: 10, y: 10 }}
+                                />
+                            </div>
                         </div>
                     </Page>
                 ))}
             </PDFDocument>
-            <div className="sticky bottom-0 left-0 z-[1000]">
-                <Button variant="outline" size="icon" className="size-6 ml-2 mb-2"
-                    onClick={() => setScale(scale + 0.1)}>
-                    <Plus />
-                </Button>
-                <Button variant="outline" size="icon" className="size-6 ml-1.5 mb-2"
-                    onClick={() => setScale(scale - 0.1)}>
-                    <Minus />
-                </Button>
+            <div className="sticky bottom-0 left-0 z-[1000] flex items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                <div className="flex">
+                    <Button variant="outline" size="icon" className="size-6 ml-2"
+                        onClick={() => setScale(scale + 0.1)}>
+                        <Plus />
+                    </Button>
+                    <Button variant="outline" size="icon" className="size-6 ml-1.5"
+                        onClick={() => setScale(scale - 0.1)}>
+                        <Minus />
+                    </Button>
+                </div>
+                <div className="ml-2 flex space-x-2 overflow-x-auto max-w-full mt-2 mb-2">
+                    {bookmarks.map(bookmark => (
+                        <Button
+                            key={bookmark.list_id}
+                            variant={props.pageNumber === bookmark.page ? "default" : "outline"}
+                            size="sm"
+                            className="text-xs whitespace-nowrap"
+                            onClick={() => handleBookmarkClick(bookmark)}
+                        >
+                            Page {bookmark.page}
+                        </Button>
+                    ))}
+                </div>
             </div>
         </div>
-
     );
 };

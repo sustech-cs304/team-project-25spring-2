@@ -39,7 +39,7 @@ export const PDFComponent: React.FC<PDFPartProps> = ({ props, onFeedbackAction }
 
         const handleScroll = () => {
             const scrollTop = container.scrollTop;
-            const pageHeight = container.scrollHeight / numPages!;
+            const pageHeight = (container.scrollHeight - 50) / numPages!;
             const currentPage = Math.floor(scrollTop / pageHeight) + 1;
 
             if (currentPage !== props.pageNumber) {
