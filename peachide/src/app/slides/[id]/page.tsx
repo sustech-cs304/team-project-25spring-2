@@ -16,6 +16,7 @@ import { CommentsSection } from "@/app/slides/[id]/Comments";
 import { toast } from "sonner";
 import { useUserContext } from "@/app/UserEnvProvider";
 import { v4 as uuidv4 } from 'uuid';
+import { AIChatButton } from '@/components/ai/AIChatButton';
 
 const EditorComp = dynamic(() =>
     import('../../../components/editors/markdown-editor'), { ssr: false });
@@ -391,6 +392,30 @@ export default function Slides({ params }: {
         }
     }
 
+    const handleAIMessage = async (message: string) => {
+        try {
+            const formData = new FormData();
+            formData.append('message', message);
+            if (material?.material_id) {
+                formData.append('material_id', material.material_id);
+            }
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/chat`, {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to get AI response');
+            }
+
+            const data = await response.json();
+            return data.response;
+        } catch (error) {
+            console.error('Error in AI chat:', error);
+            throw error;
+        }
+    };
+
     return (
         <motion.div className="p-5 rounded-[var(--radius)] border-1 h-full"
             initial={{ opacity: 0, y: -20 }}
@@ -419,6 +444,7 @@ export default function Slides({ params }: {
                     </Tabs>
                 </ResizablePanel>
             </ResizablePanelGroup>
+            <AIChatButton materialId={material?.material_id} />
         </motion.div>
     );
 }
