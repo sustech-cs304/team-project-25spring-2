@@ -33,6 +33,14 @@ uvicorn app.main:app --reload
 
 View OpenAPI document on `/docs`.
 
+### Testing
+
+Run testing with pytest
+
+```
+python3 -m pytest
+```
+
 ### Code Style
 
 ```

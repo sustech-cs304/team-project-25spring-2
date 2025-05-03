@@ -12,6 +12,7 @@ from app.models.section import Section
 from app.models.bookmarklist import BookmarkList
 import json
 from app.auth.middleware import get_current_user
+
 router = APIRouter()
 
 

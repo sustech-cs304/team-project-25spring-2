@@ -40,5 +40,4 @@ async def get_instructors(class_id: str, db: Session = Depends(get_db)):
                 "office_place": teacher.office_place,
             }
         )
-    return {"message": "Instructors retrieved successfully", 
-            "teachers": instructors}
+    return {"message": "Instructors retrieved successfully", "teachers": instructors}

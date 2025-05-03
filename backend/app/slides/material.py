@@ -1,8 +1,11 @@
-from fastapi import APIRouter, Depends, Body
+from fastapi import APIRouter, Depends, Body, HTTPException, status
 from sqlalchemy.orm import Session
 from app.db import SessionLocal
 from app.models.material import Material
 from app.models.comment import Comment
+from app.auth.middleware import get_current_user
+from app.models.user import User
+import uuid
 
 router = APIRouter()
 
@@ -15,9 +18,61 @@ def get_db():
         db.close()
 
 
+@router.get("/materials")
+async def get_materials(db: Session = Depends(get_db)):
+    materials = db.query(Material).all()
+    return {
+        "message": "Materials retrieved successfully",
+        "materials": [
+            {
+                "material_id": material.material_id,
+                "material_name": material.material_name,
+                "section_id": material.section_id,
+                "data": material.data,
+            }
+            for material in materials
+        ],
+    }
+
+
+@router.post("/materials")
+async def create_material(
+    current_user: User = Depends(get_current_user),
+    title: str = Body(...),
+    content: str = Body(...),
+    db: Session = Depends(get_db),
+):
+    if not current_user.is_teacher:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only teachers can create materials",
+        )
+
+    material_id = str(uuid.uuid4())
+    material = Material(
+        material_id=material_id,
+        material_name=title,
+        data=content,
+    )
+    db.add(material)
+    db.commit()
+    db.refresh(material)
+
+    return {
+        "message": "Material created successfully",
+        "material_id": material.material_id,
+        "material_name": material.material_name,
+        "data": material.data,
+    }
+
+
 @router.get("/material/{material_id}")
 async def get_material(material_id: str, db: Session = Depends(get_db)):
     material = db.query(Material).filter(Material.material_id == material_id).first()
+    if not material:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Material not found"
+        )
     comments = (
         db.query(Comment)
         .filter(Comment.material_id == material_id, Comment.ancestor_id == None)

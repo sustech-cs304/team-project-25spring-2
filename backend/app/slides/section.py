@@ -69,9 +69,7 @@ async def create_section(
         db.add(section)
         db.commit()
         db.refresh(section)
-        return {
-            "message": "Section created successfully"
-        }
+        return {"message": "Section created successfully"}
     else:
         if course_id is not None:
             section.course_id = course_id
@@ -83,6 +81,4 @@ async def create_section(
             section.schedules = schedules
         db.commit()
         db.refresh(section)
-        return {
-            "message": "Section updated successfully"
-        }
+        return {"message": "Section updated successfully"}

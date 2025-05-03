@@ -38,7 +38,8 @@ async def get_courses(
                 "name": course.name,
                 "number": course.number,
                 "description": course.description,
-            } for course in courses
+            }
+            for course in courses
         ],
     }
 
@@ -60,6 +61,7 @@ async def get_course_info(course_id: str, db: Session = Depends(get_db)):
             for schedule in course.schedules
         ],
     }
+
 
 @router.post("/course_info")
 async def create_course(
@@ -88,9 +90,7 @@ async def create_course(
         db.add(course)
         db.commit()
         db.refresh(course)
-        return {
-            "message": "Course created successfully"
-        }
+        return {"message": "Course created successfully"}
     else:
         if name is not None:
             course.name = name
@@ -108,6 +108,4 @@ async def create_course(
             course.assignments = assignments
         db.commit()
         db.refresh(course)
-        return {
-            "message": "Course updated successfully"
-        }
+        return {"message": "Course updated successfully"}
