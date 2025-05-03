@@ -60,3 +60,54 @@ async def get_course_info(course_id: str, db: Session = Depends(get_db)):
             for schedule in course.schedules
         ],
     }
+
+@router.post("/course_info")
+async def create_course(
+    db: Session = Depends(get_db),
+    course_id: str = Body(None),
+    name: str = Body(None),
+    description: str = Body(None),
+    number: str = Body(None),
+    teacher_id: list[str] = Body(None),
+    sections: list[str] = Body(None),
+    schedules: list[str] = Body(None),
+    assignments: list[str] = Body(None),
+):
+    course = db.query(Course).filter(Course.course_id == course_id).first()
+    if course is None:
+        course = Course(
+            course_id=course_id,
+            name=name,
+            description=description,
+            number=number,
+            teacher_id=teacher_id if teacher_id != None else [],
+            sections=sections if sections != None else [],
+            schedules=schedules if schedules != None else [],
+            assignments=assignments if assignments != None else [],
+        )
+        db.add(course)
+        db.commit()
+        db.refresh(course)
+        return {
+            "message": "Course created successfully"
+        }
+    else:
+        if name is not None:
+            course.name = name
+        if description is not None:
+            course.description = description
+        if number is not None:
+            course.number = number
+        if teacher_id is not None:
+            course.teacher_id = teacher_id
+        if sections is not None:
+            course.sections = sections
+        if schedules is not None:
+            course.schedules = schedules
+        if assignments is not None:
+            course.assignments = assignments
+        db.commit()
+        db.refresh(course)
+        return {
+            "message": "Course updated successfully"
+        }

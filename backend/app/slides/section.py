@@ -45,3 +45,44 @@ async def get_sections(course_id: str, db: Session = Depends(get_db)):
             for section in sections
         ],
     }
+
+
+@router.post("/section")
+async def create_section(
+    section: Section,
+    db: Session = Depends(get_db),
+    section_id: str = Body(None),
+    course_id: str = Body(None),
+    name: str = Body(None),
+    materials: list[str] = Body(None),
+    schedules: list[str] = Body(None),
+):
+    section = db.query(Section).filter(Section.section_id == section_id).first()
+    if section is None:
+        section = Section(
+            section_id=section_id,
+            course_id=course_id,
+            name=name,
+            materials=materials,
+            schedules=schedules,
+        )
+        db.add(section)
+        db.commit()
+        db.refresh(section)
+        return {
+            "message": "Section created successfully"
+        }
+    else:
+        if course_id is not None:
+            section.course_id = course_id
+        if name is not None:
+            section.name = name
+        if materials is not None:
+            section.materials = materials
+        if schedules is not None:
+            section.schedules = schedules
+        db.commit()
+        db.refresh(section)
+        return {
+            "message": "Section updated successfully"
+        }
