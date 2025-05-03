@@ -42,9 +42,10 @@ class TokenData(BaseModel):
 
 
 class UserCreate(BaseModel):
-    user_id: str
     name: str
     password: str
+    email: str
+    user_id: str
     is_teacher: bool = False
 
 

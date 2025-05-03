@@ -14,14 +14,16 @@ def generate_random_string(length=8):
 
 def generate_random_user_data():
     """Generate random user data for testing"""
-    user_id = f"user_{uuid.uuid4().hex[:8]}"
+    user_id = f"1221" + str(random.randint(1000, 9999))
     name = f"Test User {generate_random_string(4)}"
     password = f"Pass_{generate_random_string(10)}"
+    email = f"test{generate_random_string(4)}@gmail.com"
     return {
         "user_id": user_id,
         "name": name,
         "password": password,
         "is_teacher": random.choice([True, False]),
+        "email": email,
     }
 
 
