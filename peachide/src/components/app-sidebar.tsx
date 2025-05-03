@@ -87,11 +87,10 @@ function FirstSidebar() {
 
 export function AppSidebar() {
     const { userId } = useUserContext();
-    
-    // 根据用户是否登录显示不同的用户信息
+
     const userInfo = {
         name: userId ? `User-${userId.slice(0, 5)}` : "Guest",
-        email: userId ? `user-${userId.slice(0, 5)}@example.com` : "未登录",
+        email: userId ? `user-${userId.slice(0, 5)}@example.com` : "Not logged in",
         avatar: "",
     };
 

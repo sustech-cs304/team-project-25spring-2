@@ -232,17 +232,20 @@ export const PDFPart: React.FC<PDFPartProps> = ({ props, onFeedbackAction }) => 
                     </Button>
                 </div>
                 <div className="ml-2 flex space-x-2 overflow-x-auto max-w-full mt-2 mb-2">
-                    {bookmarks.map(bookmark => (
-                        <Button
-                            key={bookmark.list_id}
-                            variant={props.pageNumber === bookmark.page ? "default" : "outline"}
-                            size="sm"
-                            className="text-xs whitespace-nowrap"
-                            onClick={() => handleBookmarkClick(bookmark)}
-                        >
-                            Page {bookmark.page}
-                        </Button>
-                    ))}
+                    {bookmarks
+                        .slice()
+                        .sort((a, b) => a.page - b.page)
+                        .map(bookmark => (
+                            <Button
+                                key={bookmark.list_id}
+                                variant={props.pageNumber === bookmark.page ? "default" : "outline"}
+                                size="sm"
+                                className="text-xs whitespace-nowrap"
+                                onClick={() => handleBookmarkClick(bookmark)}
+                            >
+                                Page {bookmark.page}
+                            </Button>
+                        ))}
                 </div>
             </div>
         </div>
