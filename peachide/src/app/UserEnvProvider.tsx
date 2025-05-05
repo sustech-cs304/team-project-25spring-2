@@ -2,8 +2,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserData } from './page';
 import { toast } from 'sonner';
+import { Home, Book } from "lucide-react";
 
 const IS_MOCK_AUTH = process.env.NEXT_PUBLIC_MOCK_AUTH === 'true';
+
+interface SidebarItem {
+  title: string;
+  url: string;
+  icon: any;
+}
 
 interface UserContextType {
   token: string | null;
@@ -15,7 +22,22 @@ interface UserContextType {
   setIsTeacher: (isTeacher: boolean) => void;
   login: (token: string, userId: string, isTeacher: boolean) => void;
   logout: () => void;
+  sidebarItems: SidebarItem[];
+  setSidebarItems: (items: SidebarItem[]) => void;
 }
+
+const defaultSidebarItems: SidebarItem[] = [
+  {
+    title: "Home",
+    url: "/",
+    icon: Home,
+  },
+  {
+    title: "Classes",
+    url: "/classes",
+    icon: Book,
+  },
+];
 
 const UserContext = createContext<UserContextType>({
   token: null,
@@ -27,6 +49,8 @@ const UserContext = createContext<UserContextType>({
   login: () => { },
   logout: () => { },
   setUserData: () => { },
+  sidebarItems: defaultSidebarItems,
+  setSidebarItems: () => { },
 });
 
 export const useUserContext = () => useContext(UserContext);
@@ -36,6 +60,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [isTeacher, setIsTeacher] = useState<boolean>(false);
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [sidebarItems, setSidebarItems] = useState<SidebarItem[]>(defaultSidebarItems);
 
   useEffect(() => {
     // Fetch user data when component mounts
@@ -103,7 +128,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.removeItem('isTeacher');
   };
 
-  // 根据环境变量和token确定认证状态
   const isAuthenticated = IS_MOCK_AUTH || !!token;
 
   return (
@@ -117,7 +141,9 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         login,
         logout,
         userData,
-        setUserData
+        setUserData,
+        sidebarItems,
+        setSidebarItems,
       }}
     >
       {children}

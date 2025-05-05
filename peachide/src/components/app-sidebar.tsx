@@ -1,6 +1,6 @@
 "use client";
 
-import {Book, CodeXml, ComponentIcon, Home} from "lucide-react";
+import { Book, CodeXml, ComponentIcon, Home } from "lucide-react";
 
 import {
     Sidebar,
@@ -13,50 +13,28 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import {NavUser} from "@/components/sidebar/nav-user";
+import { NavUser } from "@/components/sidebar/nav-user";
 import React from "react";
 import { useUserContext } from "@/app/UserEnvProvider";
 
-const items = [
-    {
-        title: "Home",
-        url: "/",
-        icon: Home,
-    },
-    {
-        title: "Classes",
-        url: "/classes/1",
-        icon: Book,
-    },
-    {
-        title: "Coding",
-        url: "/coding/1",
-        icon: CodeXml,
-    },
-    {
-        title: "Slides",
-        url: "/slides/1",
-        icon: ComponentIcon
-    }
-];
-
 function PeachSidebarHeader() {
     return (
-            <SidebarMenu>
-                <SidebarMenuItem>
-                    <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
-                        <div className="flex aspect-square size-8 items-center justify-center select-none border-b-1 rounded-none">
-                            🍑
-                        </div>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-            </SidebarMenu>
+        <SidebarMenu>
+            <SidebarMenuItem>
+                <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
+                    <div className="flex aspect-square size-8 items-center justify-center select-none border-b-1 rounded-none">
+                        🍑
+                    </div>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+        </SidebarMenu>
     );
 }
 
 function FirstSidebar() {
+    const { sidebarItems } = useUserContext();
     return (<Sidebar collapsible="icon"
-            className="w-[calc(var(--sidebar-width-icon))]! border-r-1">
+        className="w-[calc(var(--sidebar-width-icon))]! border-r-1">
         <SidebarHeader>
             <PeachSidebarHeader />
         </SidebarHeader>
@@ -64,19 +42,19 @@ function FirstSidebar() {
             <SidebarGroup>
                 <SidebarGroupContent>
                     <SidebarMenu>
-                        {items.map((item) => (
-                                <SidebarMenuItem key={item.title}>
-                                    <SidebarMenuButton asChild
-                                            className="hover:bg-border mb-2"
-                                            tooltip={{
-                                                children: item.title,
-                                                hidden: false,
-                                            }}>
-                                        <a href={item.url}>
-                                            <item.icon />
-                                        </a>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
+                        {sidebarItems.map((item) => (
+                            <SidebarMenuItem key={item.title}>
+                                <SidebarMenuButton asChild
+                                    className="hover:bg-border mb-2"
+                                    tooltip={{
+                                        children: item.title,
+                                        hidden: false,
+                                    }}>
+                                    <a href={item.url}>
+                                        <item.icon />
+                                    </a>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
                         ))}
                     </SidebarMenu>
                 </SidebarGroupContent>
@@ -95,13 +73,13 @@ export function AppSidebar() {
     };
 
     return (
-            <Sidebar
-                    className="h-full border-none"
-            >
-                <FirstSidebar />
-                <SidebarFooter className="mb-1">
-                    <NavUser user={userInfo} />
-                </SidebarFooter>
-            </Sidebar>
+        <Sidebar
+            className="h-full border-none"
+        >
+            <FirstSidebar />
+            <SidebarFooter className="mb-1">
+                <NavUser user={userInfo} />
+            </SidebarFooter>
+        </Sidebar>
     );
 }
