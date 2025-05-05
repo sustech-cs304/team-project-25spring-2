@@ -26,7 +26,8 @@ export default function AuthPage() {
   const [formData, setFormData] = useState({
     name: "",
     password: "",
-    email: ""
+    email: "",
+    user_id: ""
   });
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,19 +39,27 @@ export default function AuthPage() {
     setIsLoading(true);
 
     try {
-      // Mock successful login response
-      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate API call
+      const response = await fetch(process.env.NEXT_PUBLIC_API_URL + "/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name: formData.user_id,
+          password: formData.password
+        })
+      });
 
-      // Use mock data for login
-      const mockResponse = {
-        token: "mock-token-12345",
-        user_id: "user-123"
-      };
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Wrong username or password");
+        }
+        throw new Error("Login failed, please try again");
+      }
 
-      // Store token, user_id and isTeacher in UserContext
-      login(mockResponse.token, mockResponse.user_id, isTeacher);
-
-      // Redirect to home page
+      const data = await response.json();
+      // data: { token, user_id }
+      login(data.token, data.user_id, isTeacher);
       router.push('/');
       toast.success('Logged in successfully');
     } catch (error) {
@@ -66,13 +75,28 @@ export default function AuthPage() {
     setIsLoading(true);
 
     try {
-      // Mock successful registration
-      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate API call
+      const response = await fetch(process.env.NEXT_PUBLIC_API_URL + "/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          password: formData.password,
+          email: formData.email,
+          user_id: formData.user_id,
+          is_teacher: isTeacher
+        })
+      });
 
-      // Notify success
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Unauthorized");
+        }
+        throw new Error("Registration failed, please try again");
+      }
+
       toast.success('Registration successful, please login');
-
-      // Switch to login tab
       setActiveTab("login");
     } catch (error) {
       console.error('Registration error:', error);
@@ -159,11 +183,11 @@ export default function AuthPage() {
                         <Label htmlFor="login-name" className="text-sm font-medium">Username</Label>
                         <Input
                           id="login-name"
-                          name="name"
+                          name="user_id"
                           required
-                          value={formData.name}
+                          value={formData.user_id}
                           onChange={handleFormChange}
-                          placeholder="Enter your username"
+                          placeholder="Enter your user ID"
                           className="h-11 transition-all"
                         />
                       </motion.div>
@@ -195,18 +219,6 @@ export default function AuthPage() {
                             )}
                           </button>
                         </div>
-                      </motion.div>
-
-                      <motion.div
-                        className="flex items-center space-x-2"
-                        variants={itemVariants}
-                      >
-                        <Switch
-                          id="teacher-mode"
-                          checked={isTeacher}
-                          onCheckedChange={setIsTeacher}
-                        />
-                        <Label htmlFor="teacher-mode" className="text-sm">Login as Teacher</Label>
                       </motion.div>
                     </CardContent>
                     <CardFooter className="mt-4">
@@ -302,6 +314,21 @@ export default function AuthPage() {
                           value={formData.email}
                           onChange={handleFormChange}
                           placeholder="Enter your email (optional)"
+                          className="h-11 transition-all"
+                        />
+                      </motion.div>
+                      <motion.div
+                        className="space-y-2"
+                        variants={itemVariants}
+                      >
+                        <Label htmlFor="register-userid" className="text-sm font-medium">User ID</Label>
+                        <Input
+                          id="register-userid"
+                          name="user_id"
+                          required
+                          value={formData.user_id}
+                          onChange={handleFormChange}
+                          placeholder="Enter your user ID"
                           className="h-11 transition-all"
                         />
                       </motion.div>

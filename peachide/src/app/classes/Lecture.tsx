@@ -44,12 +44,17 @@ export default function Lecture({ courseId }: LectureProps) {
   const [materialsOpen, setMaterialsOpen] = useState(false);
   const { setSidebarItems, sidebarItems } = useUserContext();
   const router = useRouter();
+  const { token } = useUserContext();
 
   useEffect(() => {
     const fetchSections = async () => {
       try {
         setLoading(true);
-        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/sections/${courseId}`);
+        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/sections/${courseId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
 
         if (!response.ok) {
           throw new Error('Failed to fetch sections data');

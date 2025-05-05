@@ -1,10 +1,14 @@
 import { TreeNode } from "@/components/data/CodeEnvType";
 import useSWR from 'swr';
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher = (url: string, token: string | null) => {
+  return fetch(url, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  }).then((res) => res.json());
+};
 
-export function useTree(projectId: string) {
-  const { data, error, isLoading } = useSWR(process.env.NEXT_PUBLIC_API_URL + `/environment/${projectId}/files`, fetcher);
+export function useTree(projectId: string, token: string | null) {
+  const { data, error, isLoading } = useSWR(process.env.NEXT_PUBLIC_API_URL + `/environment/${projectId}/files`, (url) => fetcher(url, token));
   return {
     fileTree: data,
     isLoading: isLoading,

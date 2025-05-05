@@ -35,6 +35,7 @@ function PDFSection({ url, materialId }: { url: string, materialId: string }) {
     const containerRef = React.createRef<HTMLDivElement>();
     const [isAddingSnippet, setIsAddingSnippet] = useState<boolean>(false);
     const { isTeacher } = useUserContext();
+    const { token } = useUserContext();
 
     const handleFeedback = async (feedback: any) => {
         if (feedback.pageNumber) {
@@ -72,6 +73,9 @@ function PDFSection({ url, materialId }: { url: string, materialId: string }) {
                     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/snippet/${materialId}/page/${newSnippet.page}`, {
                         method: 'POST',
                         body: formData,
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
                     });
 
                     if (response.ok) {
@@ -94,6 +98,9 @@ function PDFSection({ url, materialId }: { url: string, materialId: string }) {
             try {
                 const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/teacher/${feedback.deleteSnippet.id}`, {
                     method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
                 });
 
                 if (response.ok) {
@@ -149,7 +156,8 @@ function CodeSnippetEditor({ materialId }: { materialId: string }) {
     const [editor, setEditor] = useState<any>(null);
     const [snippetContent, setSnippetContent] = useState<string>('');
     const [selectedLanguage, setSelectedLanguage] = useState<string>('javascript');
-    const { note } = useNote(materialId);
+    const { token } = useUserContext();
+    const { note } = useNote(materialId, token);
     const [executionResult, setExecutionResult] = useState<{ result: string; error: string | null }>({ result: '', error: null });
     const [showResults, setShowResults] = useState<boolean>(false);
 
@@ -208,6 +216,9 @@ function CodeSnippetEditor({ materialId }: { materialId: string }) {
             let response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/snippet/${materialId}/page/${currentSnippet.page}`, {
                 method: 'POST',
                 body: formData,
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             });
 
             if (response.ok) {
@@ -230,6 +241,9 @@ function CodeSnippetEditor({ materialId }: { materialId: string }) {
 
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/execute/snippet/${currentSnippet.id}`, {
                 method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             });
 
             if (response.ok) {
@@ -341,9 +355,10 @@ export default function Slides({ params }: {
     params: Promise<{ id: string }>
 }) {
     const resolvedParams = use(params);
-    const { material } = useMaterial(resolvedParams.id);
-    const { note } = useNote(resolvedParams.id);
-    const { snippets: fetchedSnippets } = useSnippets(resolvedParams.id);
+    const { token } = useUserContext();
+    const { material } = useMaterial(resolvedParams.id, token);
+    const { note } = useNote(resolvedParams.id, token);
+    const { snippets: fetchedSnippets } = useSnippets(resolvedParams.id, token);
     const [noteId, setNoteId] = useState<string>('');
     const [mdNote, setMdNote] = useState<string>(`Hello **world**!`);
     const { snippets, setSnippets } = usePDFContext();
@@ -375,6 +390,8 @@ export default function Slides({ params }: {
     }, [fetchedSnippets, setSnippets]);
 
     async function saveMdNote(markdown: string) {
+        const { token } = useUserContext();
+
         setMdNote(markdown);
 
         const formData = new FormData();
@@ -384,6 +401,9 @@ export default function Slides({ params }: {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/note/${noteId}`, {
             method: 'POST',
             body: formData,
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
         });
         if (response.ok) {
             console.log("Note saved!");
@@ -393,6 +413,8 @@ export default function Slides({ params }: {
     }
 
     const handleAIMessage = async (message: string) => {
+        const { token } = useUserContext();
+
         try {
             const formData = new FormData();
             formData.append('message', message);
@@ -402,6 +424,9 @@ export default function Slides({ params }: {
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/chat`, {
                 method: 'POST',
                 body: formData,
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             });
 
             if (!response.ok) {
@@ -438,7 +463,7 @@ export default function Slides({ params }: {
                         </TabsContent>
                         <TabsContent value="notes" className="h-full">
                             <Suspense fallback={null}>
-                                <EditorComp heightMode="auto" markdown={mdNote} onChange={saveMdNote} />
+                                <EditorComp heightMode="auto" markdown={mdNote === undefined ? '' : mdNote} onChange={saveMdNote} />
                             </Suspense>
                         </TabsContent>
                     </Tabs>

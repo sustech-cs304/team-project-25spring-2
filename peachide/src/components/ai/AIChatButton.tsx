@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import ReactMarkdown from 'react-markdown';
 import { chatPresets } from './presets';
+import { useUserContext } from '@/app/UserEnvProvider';
 
 interface Message {
     role: 'user' | 'assistant' | 'system';
@@ -61,8 +62,14 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
     }, [currentChatId]);
 
     const fetchChats = async () => {
+        const { token } = useUserContext();
+
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat`);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
             if (!response.ok) throw new Error('Failed to fetch chats');
             const data = await response.json();
             setChats(data);
@@ -73,8 +80,14 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
     };
 
     const fetchMessages = async (chatId: string) => {
+        const { token } = useUserContext();
+
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat/${chatId}`);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat/${chatId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
             if (!response.ok) throw new Error('Failed to fetch messages');
             const data = await response.json();
             setMessages(Array.isArray(data.messages) ? data.messages : []);
@@ -87,9 +100,14 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
     };
 
     const createNewChat = async () => {
+        const { token } = useUserContext();
+
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat`, {
                 method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             });
             if (!response.ok) throw new Error('Failed to create chat');
             const data = await response.json();
@@ -106,6 +124,7 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
 
     const handleSendMessage = async () => {
         if (!input.trim() || !currentChatId) return;
+        const { token } = useUserContext();
 
         const userMessage = input.trim();
         setInput('');
@@ -122,6 +141,9 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat/${currentChatId}`, {
                 method: 'POST',
                 body: formData,
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             });
 
             if (!response.ok) throw new Error('Failed to send message');

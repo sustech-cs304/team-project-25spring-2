@@ -13,6 +13,7 @@ import CourseInfo from "@/app/classes/CourseInfo";
 import Instructors from "@/app/classes/Instructors";
 import Lecture from "@/app/classes/Lecture";
 import Assignment from "@/app/classes/Assignment";
+import { useUserContext } from "../UserEnvProvider";
 
 // Course type definition based on API response
 interface Course {
@@ -91,13 +92,18 @@ function ClassesLeftBar({ props, isVisible, onSelectCourse, selectedCourseId }: 
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const { token } = useUserContext();
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
         setLoading(true);
         // In a real app, you'd fetch from your actual API endpoint
-        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + '/courses');
+        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + '/courses', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         const data = await response.json();
         setCourses(data.courses);
       } catch (error) {
@@ -148,16 +154,16 @@ function ClassesLeftBar({ props, isVisible, onSelectCourse, selectedCourseId }: 
           <BookCopy size={18} className="text-primary" />
           <h2 className="text-lg font-semibold">My Courses</h2>
         </div>
-        <Button 
-          variant="ghost" 
-          className="ml-auto" 
+        <Button
+          variant="ghost"
+          className="ml-auto"
           size="sm"
           onClick={() => setCalendarOpen(true)}
         >
           <Calendar size={16} />
           <span className="ml-1">Calendar</span>
         </Button>
-        
+
         <CalendarModal open={calendarOpen} onOpenChange={setCalendarOpen} />
       </div>
 

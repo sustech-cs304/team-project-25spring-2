@@ -39,12 +39,17 @@ export default function Assignment({ courseId }: AssignmentProps) {
   const [error, setError] = useState<string | null>(null);
   const { setSidebarItems, sidebarItems } = useUserContext();
   const router = useRouter();
+  const { token } = useUserContext();
 
   useEffect(() => {
     const fetchAssignments = async () => {
       try {
         setLoading(true);
-        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/assignments/${courseId}`);
+        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/assignments/${courseId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
 
         if (!response.ok) {
           throw new Error('Failed to fetch assignments data');
@@ -124,7 +129,7 @@ export default function Assignment({ courseId }: AssignmentProps) {
       if (a.isOver !== b.isOver) {
         return a.isOver ? 1 : -1; // Active/incomplete assignments first
       }
-      
+
       // For incomplete assignments, prioritize by deadline
       if (!a.isOver) {
         const aDeadline = new Date(a.deadline);
@@ -132,13 +137,13 @@ export default function Assignment({ courseId }: AssignmentProps) {
         const now = new Date();
         const aIsPastDeadline = aDeadline < now;
         const bIsPastDeadline = bDeadline < now;
-        
+
         // If one is past deadline and the other isn't, prioritize upcoming deadlines
         if (aIsPastDeadline !== bIsPastDeadline) {
           return aIsPastDeadline ? 1 : -1; // Non-missed assignments first
         }
       }
-      
+
       // Then sort by deadline
       return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
     })
@@ -311,31 +316,31 @@ export default function Assignment({ courseId }: AssignmentProps) {
             const now = new Date();
             return !a.isOver && deadlineDate >= now;
           }).length > 0 && (
-            <Badge className="px-3 py-1 flex items-center gap-1">
-              <Calendar size={12} />
-              <span>{data.assignments.filter(a => {
-                const deadlineDate = new Date(a.deadline);
-                const now = new Date();
-                return !a.isOver && deadlineDate >= now;
-              }).length} Active</span>
-            </Badge>
-          )}
-          
+              <Badge className="px-3 py-1 flex items-center gap-1">
+                <Calendar size={12} />
+                <span>{data.assignments.filter(a => {
+                  const deadlineDate = new Date(a.deadline);
+                  const now = new Date();
+                  return !a.isOver && deadlineDate >= now;
+                }).length} Active</span>
+              </Badge>
+            )}
+
           {data.assignments.filter(a => {
             const deadlineDate = new Date(a.deadline);
             const now = new Date();
             return !a.isOver && deadlineDate < now;
           }).length > 0 && (
-            <Badge variant="destructive" className="px-3 py-1 flex items-center gap-1">
-              <XCircle size={12} />
-              <span>{data.assignments.filter(a => {
-                const deadlineDate = new Date(a.deadline);
-                const now = new Date();
-                return !a.isOver && deadlineDate < now;
-              }).length} Missed</span>
-            </Badge>
-          )}
-          
+              <Badge variant="destructive" className="px-3 py-1 flex items-center gap-1">
+                <XCircle size={12} />
+                <span>{data.assignments.filter(a => {
+                  const deadlineDate = new Date(a.deadline);
+                  const now = new Date();
+                  return !a.isOver && deadlineDate < now;
+                }).length} Missed</span>
+              </Badge>
+            )}
+
           {data.assignments.filter(a => a.isOver).length > 0 && (
             <Badge variant="outline" className="px-3 py-1 flex items-center gap-1">
               <CheckCircle size={12} />
