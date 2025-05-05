@@ -122,8 +122,23 @@ export default function Assignment({ courseId }: AssignmentProps) {
     ? [...data.assignments].sort((a, b) => {
       // First separate by isOver status
       if (a.isOver !== b.isOver) {
-        return a.isOver ? 1 : -1; // Active assignments first
+        return a.isOver ? 1 : -1; // Active/incomplete assignments first
       }
+      
+      // For incomplete assignments, prioritize by deadline
+      if (!a.isOver) {
+        const aDeadline = new Date(a.deadline);
+        const bDeadline = new Date(b.deadline);
+        const now = new Date();
+        const aIsPastDeadline = aDeadline < now;
+        const bIsPastDeadline = bDeadline < now;
+        
+        // If one is past deadline and the other isn't, prioritize upcoming deadlines
+        if (aIsPastDeadline !== bIsPastDeadline) {
+          return aIsPastDeadline ? 1 : -1; // Non-missed assignments first
+        }
+      }
+      
       // Then sort by deadline
       return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
     })
@@ -176,6 +191,11 @@ export default function Assignment({ courseId }: AssignmentProps) {
 
   // Function to render deadline info with appropriate styling
   const renderDeadlineInfo = (deadline: string, isOver: boolean) => {
+    const deadlineDate = new Date(deadline);
+    const now = new Date();
+    const isPastDeadline = deadlineDate < now;
+    const { date, time, daysRemaining } = formatDeadline(deadline);
+
     if (isOver) {
       return (
         <div className="flex items-center gap-2 text-muted-foreground">
@@ -185,7 +205,23 @@ export default function Assignment({ courseId }: AssignmentProps) {
       );
     }
 
-    const { date, time, daysRemaining } = formatDeadline(deadline);
+    if (isPastDeadline) {
+      return (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Calendar size={14} className="text-muted-foreground" />
+            <span className="font-medium text-sm">{date} at {time}</span>
+          </div>
+          <Badge
+            variant="destructive"
+            className="flex items-center gap-1 text-xs bg-red-500 hover:bg-red-600"
+          >
+            <XCircle size={10} />
+            <span>Missed</span>
+          </Badge>
+        </div>
+      );
+    }
 
     return (
       <div className="space-y-3">
@@ -269,10 +305,44 @@ export default function Assignment({ courseId }: AssignmentProps) {
           </div>
           <h2 className="text-2xl font-bold">Assignments</h2>
         </div>
-        <Badge className="px-3 py-1 flex items-center gap-1">
-          <Calendar size={12} />
-          <span>{data.assignments.filter(a => !a.isOver).length} Active</span>
-        </Badge>
+        <div className="flex gap-2">
+          {data.assignments.filter(a => {
+            const deadlineDate = new Date(a.deadline);
+            const now = new Date();
+            return !a.isOver && deadlineDate >= now;
+          }).length > 0 && (
+            <Badge className="px-3 py-1 flex items-center gap-1">
+              <Calendar size={12} />
+              <span>{data.assignments.filter(a => {
+                const deadlineDate = new Date(a.deadline);
+                const now = new Date();
+                return !a.isOver && deadlineDate >= now;
+              }).length} Active</span>
+            </Badge>
+          )}
+          
+          {data.assignments.filter(a => {
+            const deadlineDate = new Date(a.deadline);
+            const now = new Date();
+            return !a.isOver && deadlineDate < now;
+          }).length > 0 && (
+            <Badge variant="destructive" className="px-3 py-1 flex items-center gap-1">
+              <XCircle size={12} />
+              <span>{data.assignments.filter(a => {
+                const deadlineDate = new Date(a.deadline);
+                const now = new Date();
+                return !a.isOver && deadlineDate < now;
+              }).length} Missed</span>
+            </Badge>
+          )}
+          
+          {data.assignments.filter(a => a.isOver).length > 0 && (
+            <Badge variant="outline" className="px-3 py-1 flex items-center gap-1">
+              <CheckCircle size={12} />
+              <span>{data.assignments.filter(a => a.isOver).length} Completed</span>
+            </Badge>
+          )}
+        </div>
       </div>
 
       <div className="h-[calc(100vh-250px)] overflow-hidden">
@@ -280,6 +350,9 @@ export default function Assignment({ courseId }: AssignmentProps) {
           <AnimatePresence>
             {sortedAssignments.map((assignment, index) => {
               const isActive = !assignment.isOver;
+              const deadlineDate = new Date(assignment.deadline);
+              const now = new Date();
+              const isMissed = isActive && deadlineDate < now;
 
               return (
                 <motion.div
@@ -292,8 +365,11 @@ export default function Assignment({ courseId }: AssignmentProps) {
                 >
                   <Card className={`overflow-hidden border shadow-sm hover:shadow-md transition-all duration-200 ${isActive ? 'hover:border-primary/50' : 'opacity-80'
                     } relative`}>
-                    {isActive && (
+                    {isActive && !isMissed && (
                       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/60 to-primary/20"></div>
+                    )}
+                    {isMissed && (
+                      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500/60 to-red-500/20"></div>
                     )}
                     {!isActive && (
                       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-muted-foreground/30 to-muted-foreground/10"></div>
@@ -305,6 +381,11 @@ export default function Assignment({ courseId }: AssignmentProps) {
                         {assignment.isOver && (
                           <Badge variant="outline" className="ml-2 text-xs">
                             Completed
+                          </Badge>
+                        )}
+                        {isMissed && (
+                          <Badge variant="destructive" className="ml-2 text-xs">
+                            Missed
                           </Badge>
                         )}
                       </CardTitle>
