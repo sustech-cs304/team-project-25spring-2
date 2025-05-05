@@ -49,7 +49,6 @@ async def get_sections(course_id: str, db: Session = Depends(get_db)):
 
 @router.post("/section")
 async def create_section(
-    section: Section,
     db: Session = Depends(get_db),
     section_id: str = Body(None),
     course_id: str = Body(None),

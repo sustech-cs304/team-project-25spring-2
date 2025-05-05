@@ -17,9 +17,6 @@ class Course(Base):
     sections = Column(
         ARRAY(String), nullable=False
     )  # corresponding to the section_id, but whole section in the api
-    schedules = Column(
-        ARRAY(String), nullable=False
-    )  # corresponding to the schedule_id, but whole schedule in the api
     assignments = Column(
         ARRAY(String), nullable=False
     )  # corresponding to the assignment_id, but whole assignment in the api

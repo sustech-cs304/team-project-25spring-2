@@ -12,6 +12,8 @@ from app.slides.material import router as material_router
 from app.slides.note import router as note_router
 from app.slides.code_snippet import router as code_snippet_router
 from app.slides.bookmarklist import router as bookmarklist_router
+from app.slides.course import router as course_router
+from app.slides.section import router as section_router
 from app.auth import router as auth_router
 
 
@@ -47,6 +49,8 @@ app.include_router(material_router, tags=["materials"], prefix="/api")
 app.include_router(note_router, tags=["notes"], prefix="/api")
 app.include_router(code_snippet_router, tags=["code_snippets"], prefix="/api")
 app.include_router(bookmarklist_router, tags=["bookmarklists"], prefix="/api")
+app.include_router(course_router, tags=["courses"], prefix="/api")
+app.include_router(section_router, tags=["sections"], prefix="/api")
 app.include_router(
     auth_router,
     tags=["authentication"],

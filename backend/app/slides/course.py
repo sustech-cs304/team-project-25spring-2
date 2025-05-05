@@ -24,12 +24,12 @@ def get_db():
         db.close()
 
 
-@router.get("/Courses")
+@router.get("/courses")
 async def get_courses(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    courses = db.query(Course).filter(Course.user_id == current_user.user_id).all()
+    courses = db.query(Course).filter(Course.course_id.in_(current_user.courses)).all() if current_user.courses else []
     return {
         "message": "Courses retrieved successfully",
         "courses": [
@@ -53,13 +53,6 @@ async def get_course_info(course_id: str, db: Session = Depends(get_db)):
         "name": course.name,
         "number": course.number,
         "description": course.description,
-        "schedules": [
-            {
-                "date": schedule.date,
-                "section_name": schedule.section_name,
-            }
-            for schedule in course.schedules
-        ],
     }
 
 
@@ -72,7 +65,6 @@ async def create_course(
     number: str = Body(None),
     teacher_id: list[str] = Body(None),
     sections: list[str] = Body(None),
-    schedules: list[str] = Body(None),
     assignments: list[str] = Body(None),
 ):
     course = db.query(Course).filter(Course.course_id == course_id).first()
@@ -84,7 +76,6 @@ async def create_course(
             number=number,
             teacher_id=teacher_id if teacher_id != None else [],
             sections=sections if sections != None else [],
-            schedules=schedules if schedules != None else [],
             assignments=assignments if assignments != None else [],
         )
         db.add(course)
@@ -102,10 +93,29 @@ async def create_course(
             course.teacher_id = teacher_id
         if sections is not None:
             course.sections = sections
-        if schedules is not None:
-            course.schedules = schedules
         if assignments is not None:
             course.assignments = assignments
         db.commit()
         db.refresh(course)
         return {"message": "Course updated successfully"}
+
+@router.post("/add")
+async def add_student_to_course(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    course_id: str = Body(None),
+    student_id: str = Body(None),
+):
+    course = db.query(Course).filter(Course.course_id == course_id).first()
+    if current_user.is_teacher == False:
+        return {"message": "You are not a teacher"}
+    if course is None:
+        return {"message": "Course not found"}
+    student = db.query(User).filter(User.user_id == student_id).first()
+    if student is None:
+        return {"message": "Student not found"}
+    student.courses = list(set(student.courses + [course_id]))
+    db.commit()
+    db.refresh(student)
+    return {"message": "Student added to course successfully"}
+

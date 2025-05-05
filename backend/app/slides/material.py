@@ -38,21 +38,19 @@ async def get_materials(db: Session = Depends(get_db)):
 @router.post("/materials")
 async def create_material(
     current_user: User = Depends(get_current_user),
-    title: str = Body(...),
-    content: str = Body(...),
+    material_id: str = Body(None),
+    material_name: str = Body(None),
+    section_id: str = Body(None),
+    data: str = Body(None),
+    comments: list[str] = Body(None),
     db: Session = Depends(get_db),
 ):
-    if not current_user.is_teacher:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only teachers can create materials",
-        )
-
-    material_id = str(uuid.uuid4())
     material = Material(
         material_id=material_id,
-        material_name=title,
-        data=content,
+        material_name=material_name,
+        section_id=section_id,
+        data=data,
+        comments=comments,
     )
     db.add(material)
     db.commit()
@@ -105,6 +103,7 @@ async def update_material(
     material_name: str = Body(None),
     section_id: str = Body(None),
     data: str = Body(None),
+    comments: list[str] = Body(None),
 ):
     material = db.query(Material).filter(Material.material_id == material_id).first()
     if material is None:
@@ -114,10 +113,11 @@ async def update_material(
                 material_name=material_name,
                 section_id=section_id,
                 data=data,
-                comments=[],
+                comments=comments,
             )
         )
         db.commit()
+        return {"message": "Material created successfully"}
     else:
         if material_name is not None:
             material.material_name = material_name
@@ -125,6 +125,8 @@ async def update_material(
             material.section_id = section_id
         if data is not None:
             material.data = data
+        if comments is not None:
+            material.comments = comments
         db.commit()
     db.refresh(material)
     return {
