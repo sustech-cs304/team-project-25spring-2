@@ -65,13 +65,25 @@ async def create_section(
             materials=materials,
             schedules=schedules,
         )
+        course = db.query(Course).filter(Course.course_id == course_id).first()
+        if course is None:
+            return {"message": "Course not found"}
+        if section_id not in course.sections:
+            course.sections = course.sections + [section_id]
         db.add(section)
         db.commit()
         db.refresh(section)
         return {"message": "Section created successfully"}
     else:
-        if course_id is not None:
+        if course_id is not None and course_id != section.course_id:
+            origin_course = db.query(Course).filter(Course.course_id == section.course_id).first()
+            if origin_course is not None:
+                origin_course.sections.remove(section_id)
+            new_course = db.query(Course).filter(Course.course_id == course_id).first()
+            if new_course is not None:
+                new_course.sections = new_course.sections + [section_id]
             section.course_id = course_id
+
         if name is not None:
             section.name = name
         if materials is not None:

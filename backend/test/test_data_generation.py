@@ -138,7 +138,6 @@ def setup_test_user(is_teacher=False):
 
 
 def test_create_courses():
-    """Test creating courses"""
     token, user_data = setup_test_user(is_teacher=True)
     setup_test_user(is_teacher=False)
     headers = {"Authorization": f"Bearer {token}"}
@@ -170,7 +169,6 @@ def test_create_courses():
     assert len(courses) >= len(created_courses)
 
 def test_course_listing():
-    """Test listing courses"""
     student_token = Student_id_list[0]["token"]
     headers = {"Authorization": f"Bearer {student_token}"}
     
@@ -188,7 +186,6 @@ def test_course_listing():
 
 
 def test_create_sections():
-    """Test creating sections"""
     student_token = Student_id_list[0]["token"]
     headers = {"Authorization": f"Bearer {student_token}"}
     for _ in range(2):
