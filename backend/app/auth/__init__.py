@@ -94,6 +94,13 @@ async def logout(token: str = Depends(security), db: Session = Depends(get_db)):
     return {"message": "Successfully logged out"}
 
 
-@router.get("/whoami", response_model=UserResponse)
+@router.get("/user", response_model=UserResponse)
 async def get_user_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+@router.get("/user/{user_id}", response_model=UserResponse)
+async def get_user_by_id(user_id: str, db: Session = Depends(get_db)):
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
