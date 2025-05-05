@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
+import CalendarModal from "@/app/classes/CalendarModal";
 
 // Import tab components
 import CourseInfo from "@/app/classes/CourseInfo";
@@ -89,6 +90,7 @@ function ClassesLeftBar({ props, isVisible, onSelectCourse, selectedCourseId }: 
 }) {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -146,6 +148,17 @@ function ClassesLeftBar({ props, isVisible, onSelectCourse, selectedCourseId }: 
           <BookCopy size={18} className="text-primary" />
           <h2 className="text-lg font-semibold">My Courses</h2>
         </div>
+        <Button 
+          variant="ghost" 
+          className="ml-auto" 
+          size="sm"
+          onClick={() => setCalendarOpen(true)}
+        >
+          <Calendar size={16} />
+          <span className="ml-1">Calendar</span>
+        </Button>
+        
+        <CalendarModal open={calendarOpen} onOpenChange={setCalendarOpen} />
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">

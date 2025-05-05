@@ -1,0 +1,511 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X, BookOpen, ClipboardList } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { motion } from "framer-motion";
+
+// 定义API响应的类型
+interface CalendarData {
+  courses: Course[];
+}
+
+interface Course {
+  course_name: string;
+  sections: Section[];
+  assignments: Assignment[];
+}
+
+interface Section {
+  name: string;
+  schedules: Schedule[];
+}
+
+interface Schedule {
+  date: string;
+}
+
+interface Assignment {
+  name: string;
+  deadline: string;
+}
+
+// 日历中每天显示的事件类型
+interface DayEvent {
+  type: 'section' | 'assignment';
+  name: string;
+  courseName: string;
+}
+
+interface CalendarModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export default function CalendarModal({ open, onOpenChange }: CalendarModalProps) {
+  const [calendarData, setCalendarData] = useState<CalendarData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [calendarDays, setCalendarDays] = useState<Date[]>([]);
+  const [events, setEvents] = useState<Map<string, DayEvent[]>>(new Map());
+
+  // 每当弹窗打开时获取数据
+  useEffect(() => {
+    if (open) {
+      fetchCalendarData();
+    }
+  }, [open]);
+
+  // 根据currentDate更新日历视图
+  useEffect(() => {
+    generateCalendarDays();
+  }, [currentDate]);
+
+  // 当日历数据变化时，处理事件
+  useEffect(() => {
+    if (calendarData) {
+      processEvents();
+    }
+  }, [calendarData]);
+
+  // 获取日历数据
+  const fetchCalendarData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch(process.env.NEXT_PUBLIC_API_URL + '/classes/calendar');
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch calendar data: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setCalendarData(data);
+    } catch (error) {
+      console.error('Error fetching calendar data:', error);
+      setError('Failed to load calendar data. Please try again later.');
+      
+      // 使用模拟数据进行开发测试
+      setCalendarData({
+        "courses": [
+          {
+            "sections": [
+              {
+                "name": "动器都院入实制育极。",
+                "schedules": [
+                  {
+                    "date": "2025-05-07"
+                  }
+                ]
+              }
+            ],
+            "course_name": "黄治文",
+            "assignments": [
+              {
+                "name": "沐万佳",
+                "deadline": "2024-09-01"
+              },
+              {
+                "name": "禾敏",
+                "deadline": "2025-12-27"
+              }
+            ]
+          },
+          {
+            "sections": [
+              {
+                "name": "油明细难备广。",
+                "schedules": [
+                  {
+                    "date": "2024-05-10"
+                  },
+                  {
+                    "date": "2024-06-13"
+                  },
+                  {
+                    "date": "2025-08-14"
+                  }
+                ]
+              },
+              {
+                "name": "九响小水明石去。",
+                "schedules": [
+                  {
+                    "date": "2024-08-27"
+                  }
+                ]
+              },
+              {
+                "name": "劳广包整资布。",
+                "schedules": [
+                  {
+                    "date": "2025-04-13"
+                  }
+                ]
+              }
+            ],
+            "course_name": "崔娟",
+            "assignments": [
+              {
+                "name": "鄂国秀",
+                "deadline": "2025-07-10"
+              }
+            ]
+          }
+        ]
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 生成当前月份的日历天数
+  const generateCalendarDays = () => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    
+    // 获取当月第一天
+    const firstDay = new Date(year, month, 1);
+    // 获取当月最后一天
+    const lastDay = new Date(year, month + 1, 0);
+    
+    // 确定日历的起始日期（上月末尾几天）
+    const startDay = new Date(firstDay);
+    startDay.setDate(startDay.getDate() - startDay.getDay());
+    
+    // 确定日历的结束日期（下月开始几天）
+    const endDay = new Date(lastDay);
+    const daysToAdd = 6 - endDay.getDay();
+    endDay.setDate(endDay.getDate() + daysToAdd);
+    
+    // 生成所有日历天数
+    const days: Date[] = [];
+    let currentDay = new Date(startDay);
+    
+    while (currentDay <= endDay) {
+      days.push(new Date(currentDay));
+      currentDay.setDate(currentDay.getDate() + 1);
+    }
+    
+    setCalendarDays(days);
+  };
+
+  // 处理课程和作业事件
+  const processEvents = () => {
+    if (!calendarData) return;
+    
+    const newEvents = new Map<string, DayEvent[]>();
+    
+    calendarData.courses.forEach(course => {
+      // 处理课程安排
+      course.sections.forEach(section => {
+        section.schedules.forEach(schedule => {
+          const dateKey = schedule.date;
+          const event: DayEvent = {
+            type: 'section',
+            name: section.name,
+            courseName: course.course_name
+          };
+          
+          if (newEvents.has(dateKey)) {
+            newEvents.get(dateKey)!.push(event);
+          } else {
+            newEvents.set(dateKey, [event]);
+          }
+        });
+      });
+      
+      // 处理作业截止日期
+      course.assignments.forEach(assignment => {
+        const dateKey = assignment.deadline;
+        const event: DayEvent = {
+          type: 'assignment',
+          name: assignment.name,
+          courseName: course.course_name
+        };
+        
+        if (newEvents.has(dateKey)) {
+          newEvents.get(dateKey)!.push(event);
+        } else {
+          newEvents.set(dateKey, [event]);
+        }
+      });
+    });
+    
+    setEvents(newEvents);
+  };
+
+  // 切换到上个月
+  const prevMonth = () => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev);
+      newDate.setMonth(newDate.getMonth() - 1);
+      return newDate;
+    });
+  };
+
+  // 切换到下个月
+  const nextMonth = () => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev);
+      newDate.setMonth(newDate.getMonth() + 1);
+      return newDate;
+    });
+  };
+
+  // 获取当天的事件
+  const getDayEvents = (day: Date) => {
+    const dateKey = day.toISOString().split('T')[0];
+    return events.get(dateKey) || [];
+  };
+
+  // 判断是否是当前月份
+  const isCurrentMonth = (day: Date) => {
+    return day.getMonth() === currentDate.getMonth();
+  };
+
+  // 判断是否是今天
+  const isToday = (day: Date) => {
+    const today = new Date();
+    return day.getDate() === today.getDate() &&
+      day.getMonth() === today.getMonth() &&
+      day.getFullYear() === today.getFullYear();
+  };
+
+  // 渲染日历头部
+  const renderHeader = () => {
+    const monthName = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+    
+    return (
+      <div className="flex items-center justify-between border-b pb-4">
+        <div className="flex items-center gap-3">
+          <CalendarIcon className="h-6 w-6 text-primary" />
+          <h3 className="text-xl font-semibold">{monthName}</h3>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button variant="outline" size="icon" onClick={prevMonth}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setCurrentDate(new Date())}
+          >
+            Today
+          </Button>
+          <Button variant="outline" size="icon" onClick={nextMonth}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  // 渲染星期头部
+  const renderWeekdays = () => {
+    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    
+    return (
+      <div className="grid grid-cols-7 gap-1 text-center py-2 border-b">
+        {weekdays.map(day => (
+          <div key={day} className="text-xs font-medium text-muted-foreground">
+            {day}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // 渲染日历天数
+  const renderDays = () => {
+    if (loading) {
+      return (
+        <div className="grid grid-cols-7 gap-1 mt-2">
+          {Array.from({ length: 35 }).map((_, index) => (
+            <Skeleton key={index} className="aspect-square rounded-md" />
+          ))}
+        </div>
+      );
+    }
+    
+    return (
+      <div className="grid grid-cols-7 gap-1 mt-2">
+        {calendarDays.map((day, index) => {
+          const dayEvents = getDayEvents(day);
+          const hasEvents = dayEvents.length > 0;
+          
+          return (
+            <motion.div
+              key={day.toISOString()}
+              className={`aspect-square p-1 rounded-md relative 
+                ${isCurrentMonth(day) ? 'bg-card' : 'bg-muted/30 text-muted-foreground'} 
+                ${isToday(day) ? 'ring-2 ring-primary' : 'ring-1 ring-border'}
+                ${hasEvents ? 'hover:ring-primary/50' : ''}
+                flex flex-col items-stretch text-xs`}
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="flex justify-between items-start p-1">
+                <span className={`font-medium ${isToday(day) ? 'text-primary' : ''}`}>
+                  {day.getDate()}
+                </span>
+                {hasEvents && (
+                  <div className="flex space-x-1">
+                    {dayEvents.some(e => e.type === 'section') && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="w-2 h-2 rounded-full bg-blue-500" />
+                        </TooltipTrigger>
+                        <TooltipContent>Lecture</TooltipContent>
+                      </Tooltip>
+                    )}
+                    {dayEvents.some(e => e.type === 'assignment') && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="w-2 h-2 rounded-full bg-red-500" />
+                        </TooltipTrigger>
+                        <TooltipContent>Assignment Due</TooltipContent>
+                      </Tooltip>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              {/* 显示事件 */}
+              <div className="flex-1 overflow-hidden">
+                {dayEvents.length > 0 && (
+                  <div className="flex flex-col gap-1 mt-1 overflow-hidden">
+                    {dayEvents.slice(0, 2).map((event, i) => (
+                      <Tooltip key={i}>
+                        <TooltipTrigger asChild>
+                          <div 
+                            className={`px-1 py-0.5 text-[8px] leading-tight truncate rounded
+                              ${event.type === 'section' 
+                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border-l-2 border-blue-500' 
+                                : 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300 border-l-2 border-red-500'}`}
+                          >
+                            {event.name.length > 10 
+                              ? `${event.name.substring(0, 10)}...` 
+                              : event.name}
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>{`${event.name} (${event.courseName})`}</TooltipContent>
+                      </Tooltip>
+                    ))}
+                    
+                    {dayEvents.length > 2 && (
+                      <div className="text-[8px] text-muted-foreground text-center">
+                        +{dayEvents.length - 2} more
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // 渲染日历事件列表
+  const renderEventsList = () => {
+    // 获取当前月份所有事件
+    const currentMonthEvents: { date: string; events: DayEvent[] }[] = [];
+    
+    events.forEach((eventList, dateKey) => {
+      const eventDate = new Date(dateKey);
+      if (eventDate.getMonth() === currentDate.getMonth() && 
+          eventDate.getFullYear() === currentDate.getFullYear()) {
+        currentMonthEvents.push({
+          date: dateKey,
+          events: eventList
+        });
+      }
+    });
+    
+    // 按日期排序
+    currentMonthEvents.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    if (currentMonthEvents.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center p-4 text-muted-foreground">
+          <CalendarIcon className="h-8 w-8 mb-2" />
+          <p>No events for this month</p>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="space-y-4 mt-4">
+        <h3 className="text-lg font-semibold">Events This Month</h3>
+        <div className="space-y-3">
+          {currentMonthEvents.map(({ date, events }) => (
+            <div key={date} className="border rounded-md p-2">
+              <div className="font-medium mb-2">
+                {new Date(date).toLocaleDateString('en-US', { 
+                  weekday: 'short', 
+                  month: 'short', 
+                  day: 'numeric' 
+                })}
+              </div>
+              <div className="space-y-2">
+                {events.map((event, index) => (
+                  <div 
+                    key={index} 
+                    className={`flex items-center gap-2 text-sm p-2 rounded-md
+                      ${event.type === 'section' 
+                        ? 'bg-blue-50 dark:bg-blue-950/40' 
+                        : 'bg-red-50 dark:bg-red-950/40'}`}
+                  >
+                    {event.type === 'section' ? (
+                      <BookOpen className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    ) : (
+                      <ClipboardList className="h-4 w-4 text-red-600 dark:text-red-400" />
+                    )}
+                    <div className="flex-1 overflow-hidden">
+                      <div className="font-medium truncate">{event.name}</div>
+                      <div className="text-xs text-muted-foreground">{event.courseName}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[900px] max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogHeader>
+          <DialogTitle sr-only>Calendar</DialogTitle>
+        </DialogHeader>
+        
+        <div className="flex flex-col lg:flex-row gap-6 overflow-hidden">
+          <div className="flex-1 overflow-hidden flex flex-col">
+            {renderHeader()}
+            {renderWeekdays()}
+            <div className="overflow-y-auto flex-1">
+              {renderDays()}
+            </div>
+          </div>
+          
+          <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l p-4 overflow-y-auto">
+            {renderEventsList()}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+} 
