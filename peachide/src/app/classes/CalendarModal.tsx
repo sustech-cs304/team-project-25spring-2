@@ -205,7 +205,10 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
       // 处理课程安排
       course.sections.forEach(section => {
         section.schedules.forEach(schedule => {
-          const dateKey = schedule.date;
+          // 确保使用本地时区处理日期
+          const dateObj = new Date(schedule.date + 'T00:00:00');
+          const dateKey = dateObj.toISOString().split('T')[0];
+          
           const event: DayEvent = {
             type: 'section',
             name: section.name,
@@ -222,7 +225,10 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
       
       // 处理作业截止日期
       course.assignments.forEach(assignment => {
-        const dateKey = assignment.deadline;
+        // 确保使用本地时区处理日期
+        const dateObj = new Date(assignment.deadline + 'T00:00:00');
+        const dateKey = dateObj.toISOString().split('T')[0];
+        
         const event: DayEvent = {
           type: 'assignment',
           name: assignment.name,
@@ -260,8 +266,9 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
 
   // 获取当天的事件
   const getDayEvents = (day: Date) => {
-    const dateKey = day.toISOString().split('T')[0];
-    return events.get(dateKey) || [];
+    // 使用本地时区日期字符串格式 YYYY-MM-DD
+    const dateStr = day.toISOString().split('T')[0];
+    return events.get(dateStr) || [];
   };
 
   // 判断是否是当前月份
@@ -282,26 +289,28 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
     const monthName = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
     
     return (
-      <div className="flex items-center justify-between border-b pb-4">
-        <div className="flex items-center gap-3">
-          <CalendarIcon className="h-6 w-6 text-primary" />
-          <h3 className="text-xl font-semibold">{monthName}</h3>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h3 className="text-xl font-semibold tracking-tight">{monthName}</h3>
         </div>
-        <div className="flex items-center gap-1">
-          <Button variant="outline" size="icon" onClick={prevMonth}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
+        <div className="flex items-center gap-2">
           <Button 
-            variant="outline" 
+            variant="ghost" 
             size="sm"
             onClick={() => setCurrentDate(new Date())}
+            className="text-xs font-medium px-3 h-7"
           >
             Today
           </Button>
-          <Button variant="outline" size="icon" onClick={nextMonth}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
+          <div className="flex border rounded bg-card">
+            <Button variant="ghost" size="icon" className="rounded-none h-7 w-7 border-r" onClick={prevMonth}>
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="rounded-none h-7 w-7" onClick={nextMonth}>
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onOpenChange(false)}>
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -314,9 +323,9 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
     const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     
     return (
-      <div className="grid grid-cols-7 gap-1 text-center py-2 border-b">
+      <div className="grid grid-cols-7 text-center border-b">
         {weekdays.map(day => (
-          <div key={day} className="text-xs font-medium text-muted-foreground">
+          <div key={day} className="py-1.5 text-xs font-medium text-muted-foreground">
             {day}
           </div>
         ))}
@@ -328,88 +337,74 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
   const renderDays = () => {
     if (loading) {
       return (
-        <div className="grid grid-cols-7 gap-1 mt-2">
+        <div className="grid grid-cols-7 border-collapse">
           {Array.from({ length: 35 }).map((_, index) => (
-            <Skeleton key={index} className="aspect-square rounded-md" />
+            <Skeleton key={index} className="h-28 border-r border-b last:border-r-0" />
           ))}
         </div>
       );
     }
     
     return (
-      <div className="grid grid-cols-7 gap-1 mt-2">
+      <div className="grid grid-cols-7 border-collapse">
         {calendarDays.map((day, index) => {
           const dayEvents = getDayEvents(day);
           const hasEvents = dayEvents.length > 0;
+          const isCurrentDay = isToday(day);
+          const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+          const isLastInRow = (index + 1) % 7 === 0;
           
           return (
-            <motion.div
+            <div
               key={day.toISOString()}
-              className={`aspect-square p-1 rounded-md relative 
-                ${isCurrentMonth(day) ? 'bg-card' : 'bg-muted/30 text-muted-foreground'} 
-                ${isToday(day) ? 'ring-2 ring-primary' : 'ring-1 ring-border'}
-                ${hasEvents ? 'hover:ring-primary/50' : ''}
-                flex flex-col items-stretch text-xs`}
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.2 }}
+              className={`h-28 relative border-r border-b ${isLastInRow ? 'border-r-0' : ''}
+                ${isCurrentMonth(day) 
+                  ? isWeekend ? 'bg-card/80' : 'bg-card' 
+                  : isWeekend ? 'bg-muted/30' : 'bg-muted/20 text-muted-foreground'} 
+                ${isCurrentDay ? 'bg-primary/5' : ''}
+                hover:bg-accent/10 transition-colors duration-150`}
             >
-              <div className="flex justify-between items-start p-1">
-                <span className={`font-medium ${isToday(day) ? 'text-primary' : ''}`}>
+              <div className={`p-2
+                ${isCurrentDay ? 'after:absolute after:top-0 after:left-0 after:w-full after:h-[2px] after:bg-primary' : ''}`}>
+                <span className={`text-sm ${isCurrentDay ? 'font-medium text-primary' : isCurrentMonth(day) ? '' : 'text-muted-foreground'}`}>
                   {day.getDate()}
                 </span>
-                {hasEvents && (
-                  <div className="flex space-x-1">
-                    {dayEvents.some(e => e.type === 'section') && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="w-2 h-2 rounded-full bg-blue-500" />
-                        </TooltipTrigger>
-                        <TooltipContent>Lecture</TooltipContent>
-                      </Tooltip>
-                    )}
-                    {dayEvents.some(e => e.type === 'assignment') && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="w-2 h-2 rounded-full bg-red-500" />
-                        </TooltipTrigger>
-                        <TooltipContent>Assignment Due</TooltipContent>
-                      </Tooltip>
-                    )}
-                  </div>
-                )}
               </div>
               
               {/* 显示事件 */}
-              <div className="flex-1 overflow-hidden">
+              <div className="p-[3px] pt-0 overflow-hidden">
                 {dayEvents.length > 0 && (
                   <div className="flex flex-col gap-1 mt-1 overflow-hidden">
-                    {dayEvents.slice(0, 2).map((event, i) => (
+                    {dayEvents.slice(0, 3).map((event, i) => (
                       <Tooltip key={i}>
                         <TooltipTrigger asChild>
                           <div 
-                            className={`px-1 py-0.5 text-[8px] leading-tight truncate rounded
+                            className={`px-1.5 py-0.5 text-xs leading-tight truncate rounded-[2px]
                               ${event.type === 'section' 
-                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border-l-2 border-blue-500' 
-                                : 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300 border-l-2 border-red-500'}`}
+                                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200' 
+                                : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200'}`}
                           >
-                            {event.name.length > 10 
-                              ? `${event.name.substring(0, 10)}...` 
+                            {event.name.length > 18 
+                              ? `${event.name.substring(0, 18)}...` 
                               : event.name}
                           </div>
                         </TooltipTrigger>
-                        <TooltipContent>{`${event.name} (${event.courseName})`}</TooltipContent>
+                        <TooltipContent side="bottom" sideOffset={4}>
+                          <div className="text-sm font-medium">{event.name}</div>
+                          <div className="text-xs text-muted-foreground">{event.courseName}</div>
+                        </TooltipContent>
                       </Tooltip>
                     ))}
                     
-                    {dayEvents.length > 2 && (
-                      <div className="text-[8px] text-muted-foreground text-center">
-                        +{dayEvents.length - 2} more
+                    {dayEvents.length > 3 && (
+                      <div className="text-xs text-muted-foreground text-center mt-0.5">
+                        +{dayEvents.length - 3} more
                       </div>
                     )}
                   </div>
                 )}
               </div>
-            </motion.div>
+            </div>
           );
         })}
       </div>
@@ -437,49 +432,55 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
     
     if (currentMonthEvents.length === 0) {
       return (
-        <div className="flex flex-col items-center justify-center p-4 text-muted-foreground">
-          <CalendarIcon className="h-8 w-8 mb-2" />
+        <div className="flex flex-col items-center justify-center p-4 text-muted-foreground h-full">
+          <CalendarIcon className="h-8 w-8 mb-2 opacity-30" />
           <p>No events for this month</p>
         </div>
       );
     }
     
     return (
-      <div className="space-y-4 mt-4">
-        <h3 className="text-lg font-semibold">Events This Month</h3>
+      <div className="space-y-4">
+        <h3 className="text-base font-medium tracking-tight">Events This Month</h3>
         <div className="space-y-3">
-          {currentMonthEvents.map(({ date, events }) => (
-            <div key={date} className="border rounded-md p-2">
-              <div className="font-medium mb-2">
-                {new Date(date).toLocaleDateString('en-US', { 
-                  weekday: 'short', 
-                  month: 'short', 
-                  day: 'numeric' 
-                })}
-              </div>
-              <div className="space-y-2">
-                {events.map((event, index) => (
-                  <div 
-                    key={index} 
-                    className={`flex items-center gap-2 text-sm p-2 rounded-md
-                      ${event.type === 'section' 
-                        ? 'bg-blue-50 dark:bg-blue-950/40' 
-                        : 'bg-red-50 dark:bg-red-950/40'}`}
-                  >
-                    {event.type === 'section' ? (
-                      <BookOpen className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                    ) : (
-                      <ClipboardList className="h-4 w-4 text-red-600 dark:text-red-400" />
-                    )}
-                    <div className="flex-1 overflow-hidden">
-                      <div className="font-medium truncate">{event.name}</div>
-                      <div className="text-xs text-muted-foreground">{event.courseName}</div>
+          {currentMonthEvents.map(({ date, events }) => {
+            const eventDate = new Date(date);
+            const isCurrentDay = new Date().toDateString() === eventDate.toDateString();
+            
+            return (
+              <div key={date} className="border border-border rounded-md overflow-hidden">
+                <div className={`p-2 border-b border-border flex justify-between items-center
+                  ${isCurrentDay ? 'bg-primary/10' : 'bg-muted/20'}`}>
+                  <span className="font-medium">
+                    {eventDate.toLocaleDateString('en-US', { 
+                      weekday: 'short', 
+                      month: 'short', 
+                      day: 'numeric' 
+                    })}
+                  </span>
+                  {isCurrentDay && <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal">Today</Badge>}
+                </div>
+                <div className="divide-y divide-border/50">
+                  {events.map((event, index) => (
+                    <div 
+                      key={index} 
+                      className="flex items-center gap-2 p-2.5 text-sm hover:bg-accent/10 transition-colors duration-100"
+                    >
+                      {event.type === 'section' ? (
+                        <BookOpen className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                      ) : (
+                        <ClipboardList className="h-3.5 w-3.5 text-red-600 dark:text-red-400 shrink-0" />
+                      )}
+                      <div className="flex-1 overflow-hidden">
+                        <div className="font-medium truncate">{event.name}</div>
+                        <div className="text-xs text-muted-foreground">{event.courseName}</div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     );
@@ -487,25 +488,26 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[900px] max-h-[90vh] flex flex-col overflow-hidden">
-        <DialogHeader>
-          <DialogTitle sr-only>Calendar</DialogTitle>
-        </DialogHeader>
-        
-        <div className="flex flex-col lg:flex-row gap-6 overflow-hidden">
-          <div className="flex-1 overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-[95vw] max-h-[90vh] flex flex-col overflow-hidden p-0 gap-0">
+        <div className="flex flex-col h-[90vh] overflow-hidden">
+          <div className="p-3 border-b">
             {renderHeader()}
-            {renderWeekdays()}
-            <div className="overflow-y-auto flex-1">
-              {renderDays()}
-            </div>
           </div>
           
-          <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l p-4 overflow-y-auto">
-            {renderEventsList()}
+          <div className="flex flex-col lg:flex-row overflow-hidden flex-1">
+            <div className="flex-1 overflow-hidden flex flex-col">
+              {renderWeekdays()}
+              <div className="overflow-y-auto flex-1">
+                {renderDays()}
+              </div>
+            </div>
+            
+            <div className="w-full lg:w-[320px] border-t lg:border-t-0 lg:border-l p-4 overflow-y-auto">
+              {renderEventsList()}
+            </div>
           </div>
         </div>
       </DialogContent>
     </Dialog>
   );
-} 
+}
