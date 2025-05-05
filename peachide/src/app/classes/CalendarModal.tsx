@@ -205,9 +205,8 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
       // 处理课程安排
       course.sections.forEach(section => {
         section.schedules.forEach(schedule => {
-          // 确保使用本地时区处理日期
-          const dateObj = new Date(schedule.date + 'T00:00:00');
-          const dateKey = dateObj.toISOString().split('T')[0];
+          // 直接使用后端提供的日期字符串，不做任何转换
+          const dateKey = schedule.date;
           
           const event: DayEvent = {
             type: 'section',
@@ -225,9 +224,8 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
       
       // 处理作业截止日期
       course.assignments.forEach(assignment => {
-        // 确保使用本地时区处理日期
-        const dateObj = new Date(assignment.deadline + 'T00:00:00');
-        const dateKey = dateObj.toISOString().split('T')[0];
+        // 直接使用后端提供的日期字符串，不做任何转换
+        const dateKey = assignment.deadline;
         
         const event: DayEvent = {
           type: 'assignment',
@@ -266,8 +264,8 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
 
   // 获取当天的事件
   const getDayEvents = (day: Date) => {
-    // 使用本地时区日期字符串格式 YYYY-MM-DD
-    const dateStr = day.toISOString().split('T')[0];
+    // 将日期格式化为与后端相同的格式: YYYY-MM-DD
+    const dateStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
     return events.get(dateStr) || [];
   };
 
@@ -417,9 +415,13 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
     const currentMonthEvents: { date: string; events: DayEvent[] }[] = [];
     
     events.forEach((eventList, dateKey) => {
-      const eventDate = new Date(dateKey);
-      if (eventDate.getMonth() === currentDate.getMonth() && 
-          eventDate.getFullYear() === currentDate.getFullYear()) {
+      // 创建日期对象，但只用于比较月份和年份
+      const dateParts = dateKey.split('-').map(part => parseInt(part, 10));
+      // 注意：JavaScript月份是0-11，所以需要减1
+      const month = dateParts[1] - 1;
+      const year = dateParts[0];
+      
+      if (month === currentDate.getMonth() && year === currentDate.getFullYear()) {
         currentMonthEvents.push({
           date: dateKey,
           events: eventList
@@ -428,7 +430,10 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
     });
     
     // 按日期排序
-    currentMonthEvents.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    currentMonthEvents.sort((a, b) => {
+      // 比较YYYY-MM-DD格式的字符串
+      return a.date.localeCompare(b.date);
+    });
     
     if (currentMonthEvents.length === 0) {
       return (
@@ -444,15 +449,23 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
         <h3 className="text-base font-medium tracking-tight">Events This Month</h3>
         <div className="space-y-3">
           {currentMonthEvents.map(({ date, events }) => {
-            const eventDate = new Date(date);
-            const isCurrentDay = new Date().toDateString() === eventDate.toDateString();
+            // 解析日期部分，仅用于格式化显示
+            const dateParts = date.split('-').map(part => parseInt(part, 10));
+            // 创建本地日期对象用于格式化
+            const displayDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+            
+            // 检查是否是今天（根据年月日判断而非时间戳）
+            const today = new Date();
+            const isCurrentDay = today.getFullYear() === dateParts[0] && 
+                               today.getMonth() === dateParts[1] - 1 && 
+                               today.getDate() === dateParts[2];
             
             return (
               <div key={date} className="border border-border rounded-md overflow-hidden">
                 <div className={`p-2 border-b border-border flex justify-between items-center
                   ${isCurrentDay ? 'bg-primary/10' : 'bg-muted/20'}`}>
                   <span className="font-medium">
-                    {eventDate.toLocaleDateString('en-US', { 
+                    {displayDate.toLocaleDateString('en-US', { 
                       weekday: 'short', 
                       month: 'short', 
                       day: 'numeric' 
