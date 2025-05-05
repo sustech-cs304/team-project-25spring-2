@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, Body
+import uuid
+from fastapi import APIRouter, Depends, Body, Form
 from sqlalchemy.orm import Session
 from app.db import SessionLocal
 from app.models.comment import Comment
@@ -44,16 +45,38 @@ async def get_comment(comment_id: str, db: Session = Depends(get_db)):
             for reply in replies
         ],
     }
+    
+    
+@router.post("/comment")
+async def create_comment(
+    content: str = Form(...),
+    current_user: User = Depends(get_current_user),
+    material_id: str = Form(...),
+    page: int = Form(...),
+    db: Session = Depends(get_db),
+):
+    comment = Comment(
+        comment_id=str(uuid.uuid4()),
+        content=content,
+        user_id=current_user.user_id,
+        material_id=material_id,
+        page=page,
+        ancestor_id=None,
+    )
+    db.add(comment)
+    db.commit()
+    return {"message": "Comment created successfully"}
+    
 
 
 @router.post("/comment/{comment_id}")
 async def reply_to_comment(
     comment_id: str,
-    content: str = Body(...),
+    content: str = Form(...),
     current_user: User = Depends(get_current_user),
-    material_id: str = Body(...),
-    page: int = Body(...),
-    ancestor_id: str = Body(...),
+    material_id: str = Form(...),
+    page: int = Form(...),
+    ancestor_id: str = Form(...),
     db: Session = Depends(get_db),
 ):
     comment = db.query(Comment).filter(Comment.comment_id == comment_id).first()
@@ -66,7 +89,7 @@ async def reply_to_comment(
         )
     db.add(
         Comment(
-            comment_id=comment_id,
+            comment_id=str(uuid.uuid4()),
             content=content,
             user_id=current_user.user_id,
             material_id=material_id,
