@@ -1,4 +1,4 @@
-import { SERVER, TreeNode } from "@/components/data/CodeEnvType";
+import { TreeNode } from "@/components/data/CodeEnvType";
 import useSWR from 'swr';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -28,7 +28,7 @@ export const findNode = (node: TreeNode, uri: string): TreeNode | undefined => {
   }
   return undefined;
 };
-  
+
 export const folderExists = (node: TreeNode, uri: string): boolean => {
   if (node.uri === uri) return true;
   if (node.children) return node.children.some(child => child.type === "directory" && folderExists(child, uri));
@@ -41,7 +41,7 @@ export const addFileToDir = (node: TreeNode, targetDirUri: string, fileNode: Tre
     node.children.push(fileNode);
     return true;
   }
-  
+
   if (node.children) {
     for (const child of node.children) {
       if (addFileToDir(child, targetDirUri, fileNode)) {
@@ -49,7 +49,7 @@ export const addFileToDir = (node: TreeNode, targetDirUri: string, fileNode: Tre
       }
     }
   }
-  
+
   return false;
 };
 
@@ -59,7 +59,7 @@ export const addFolderToDir = (node: TreeNode, targetDirUri: string, folderNode:
     node.children.push(folderNode);
     return true;
   }
-  
+
   if (node.children) {
     for (const child of node.children) {
       if (addFolderToDir(child, targetDirUri, folderNode)) {
@@ -67,7 +67,7 @@ export const addFolderToDir = (node: TreeNode, targetDirUri: string, folderNode:
       }
     }
   }
-  
+
   return false;
 };
 
@@ -78,7 +78,7 @@ export const removeNode = (node: TreeNode, uri: string): TreeNode => {
       node.children.splice(index, 1);
       return node;
     }
-    
+
     for (let i = 0; i < node.children.length; i++) {
       if (removeNode(node.children[i], uri)) {
         return node;
@@ -95,7 +95,7 @@ export const updateUrisRecursively = (node: TreeNode, oldBaseUri: string, newBas
   };
 
   if (updatedNode.children && updatedNode.children.length > 0) {
-    updatedNode.children = updatedNode.children.map(child => 
+    updatedNode.children = updatedNode.children.map(child =>
       updateUrisRecursively(child, oldBaseUri, newBaseUri)
     );
   }
@@ -106,9 +106,9 @@ export const updateUrisRecursively = (node: TreeNode, oldBaseUri: string, newBas
 export const addNodeToTarget = (node: TreeNode, targetUri: string, nodeToAdd: TreeNode, fromUri: string, newUri: string): TreeNode => {
   if (node.uri === targetUri) {
     if (!node.children) node.children = [];
-    
+
     const updatedNodeToAdd = updateUrisRecursively(nodeToAdd, fromUri, newUri);
-    
+
     node.children.push(updatedNodeToAdd);
     return node;
   }
@@ -130,7 +130,7 @@ export const deleteNode = (node: TreeNode, uri: string): TreeNode => {
       node.children.splice(index, 1);
       return node;
     }
-    
+
     for (let i = 0; i < node.children.length; i++) {
       node.children[i] = deleteNode(node.children[i], uri);
     }

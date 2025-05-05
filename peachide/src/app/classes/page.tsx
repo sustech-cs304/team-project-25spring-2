@@ -95,7 +95,7 @@ function ClassesLeftBar({ props, isVisible, onSelectCourse, selectedCourseId }: 
       try {
         setLoading(true);
         // In a real app, you'd fetch from your actual API endpoint
-        const response = await fetch('/classes/get_courses');
+        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + '/courses');
         const data = await response.json();
         setCourses(data.courses);
       } catch (error) {
@@ -156,8 +156,8 @@ function ClassesLeftBar({ props, isVisible, onSelectCourse, selectedCourseId }: 
               <CourseCardSkeleton />
               <CourseCardSkeleton />
             </>
-          ) : courses.length > 0 ? (
-            courses.map((course) => (
+          ) : courses?.length > 0 ? (
+            courses?.map((course) => (
               <CourseCard
                 key={course.course_id}
                 course={course}
@@ -299,8 +299,8 @@ function TabButton({
     <button
       onClick={onClick}
       className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${active
-          ? 'bg-background text-foreground shadow-sm'
-          : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+        ? 'bg-background text-foreground shadow-sm'
+        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
         }`}
     >
       {children}

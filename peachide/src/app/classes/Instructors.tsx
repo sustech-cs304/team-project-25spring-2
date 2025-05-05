@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { GraduationCap, Clock, MapPin, Users } from 'lucide-react';
-import {SERVER} from "@/components/data/CodeEnvType";
 
 interface Teacher {
   name: string;
@@ -28,7 +27,7 @@ export default function Instructors({ courseId }: InstructorsProps) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/classes/${courseId}/instructors`);
+        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/instructors/${courseId}`);
         if (!response.ok) {
           throw new Error('Failed to fetch instructors data');
         }
@@ -85,27 +84,19 @@ export default function Instructors({ courseId }: InstructorsProps) {
       }
     }
   };
-  
+
   const item = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0, transition: { duration: 0.5 } }
   };
 
   return (
-    <motion.div 
+    <motion.div
       className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto space-y-6"
       variants={container}
       initial="hidden"
       animate="show"
     >
-      <div className="relative bg-gradient-to-r  rounded-lg p-4 mb-8 shadow-sm">
-          <div className="absolute -top-3 left 1/2 transform -translate-x-1/2 bg-primary text-white px-3 py-1 rounded-full flex items-center gap-2">
-              <Users size={16} />
-              <span className="font-medium">Faculty</span>
-          </div>
-      </div>
-
-      
       <div className="grid gap-6 grid-cols-1">
         {data.teachers.map((teacher, index) => (
           <motion.div
@@ -118,9 +109,9 @@ export default function Instructors({ courseId }: InstructorsProps) {
                 <div className="flex flex-col items-center">
                   <div className="mb-4 relative">
                     <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-primary/20 shadow-md">
-                      <img 
-                        src={teacher.photo} 
-                        alt={teacher.name} 
+                      <img
+                        src={teacher.photo}
+                        alt={teacher.name}
                         className="w-full h-full object-cover"
                       />
                     </div>

@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  BookOpen, 
-  CalendarDays, 
+import {
+  BookOpen,
+  CalendarDays,
   Info
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +38,7 @@ export default function CourseInfo({ courseId }: CourseInfoProps) {
 
       try {
         setLoading(true);
-        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/classes/${courseId}/course_info`);
+        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/course_info/${courseId}`);
 
         if (!response.ok) {
           throw new Error(`Failed to fetch course info: ${response.status}`);

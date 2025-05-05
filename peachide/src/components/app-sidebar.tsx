@@ -1,7 +1,5 @@
 "use client";
 
-import { Book, CodeXml, ComponentIcon, Home } from "lucide-react";
-
 import {
     Sidebar,
     SidebarContent,
@@ -14,8 +12,9 @@ import {
     SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { NavUser } from "@/components/sidebar/nav-user";
-import React from "react";
+import React, { useEffect } from "react";
 import { useUserContext } from "@/app/UserEnvProvider";
+import { useRouter } from 'next/navigation';
 
 function PeachSidebarHeader() {
     return (
@@ -32,7 +31,15 @@ function PeachSidebarHeader() {
 }
 
 function FirstSidebar() {
-    const { sidebarItems } = useUserContext();
+    const { sidebarItems, setSidebarItems } = useUserContext();
+
+    const router = useRouter();
+
+    const handleCloseSidebarItem = (itemUrl: string) => {
+        setSidebarItems(sidebarItems.filter(item => item.url !== itemUrl));
+        router.push("/classes");
+    };
+
     return (<Sidebar collapsible="icon"
         className="w-[calc(var(--sidebar-width-icon))]! border-r-1">
         <SidebarHeader>
@@ -44,14 +51,32 @@ function FirstSidebar() {
                     <SidebarMenu>
                         {sidebarItems.map((item) => (
                             <SidebarMenuItem key={item.title}>
-                                <SidebarMenuButton asChild
-                                    className="hover:bg-border mb-2"
-                                    tooltip={{
-                                        children: item.title,
-                                        hidden: false,
-                                    }}>
-                                    <a href={item.url}>
+                                <SidebarMenuButton asChild className="hover:bg-border mb-2">
+                                    <a href={item.url} className="relative flex items-center justify-center">
                                         <item.icon />
+                                        {
+                                            item.title.startsWith("Slides") || item.title.startsWith("Coding") ?
+                                                (<span
+                                                    className="absolute bottom-0 right-0 bg-primary text-white text-[7px] px-1 py-0.5 rounded shadow"
+                                                    style={{ minWidth: 16, textAlign: "center", pointerEvents: "none" }}
+                                                >
+                                                    {item.title.replace("Slides ", "").replace("Coding ", "").slice(0, 2)}
+                                                </span>) : ''
+                                        }
+                                        {(item.title.startsWith("Slides") || item.title.startsWith("Coding")) && (
+                                            <button
+                                                className="absolute -top-1 -right-1 text-white rounded-full text-[10px] w-4 h-4 flex items-center justify-center hover:bg-red-600 pointer-events-auto cursor-pointer"
+                                                style={{ zIndex: 10 }}
+                                                onClick={e => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    handleCloseSidebarItem(item.url);
+                                                }}
+                                                title="Close"
+                                            >
+                                                ×
+                                            </button>
+                                        )}
                                     </a>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
