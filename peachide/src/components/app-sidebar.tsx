@@ -49,23 +49,27 @@ function FirstSidebar() {
             <SidebarGroup>
                 <SidebarGroupContent>
                     <SidebarMenu>
-                        {sidebarItems.map((item) => (
-                            <SidebarMenuItem key={item.title}>
-                                <SidebarMenuButton asChild className="hover:bg-border mb-2">
-                                    <a href={item.url} className="relative flex items-center justify-center">
-                                        <item.icon />
-                                        {
-                                            item.title.startsWith("Slides") || item.title.startsWith("Coding") ?
-                                                (<span
-                                                    className="absolute bottom-0 right-0 bg-primary text-white text-[7px] px-1 py-0.5 rounded shadow"
-                                                    style={{ minWidth: 16, textAlign: "center", pointerEvents: "none" }}
-                                                >
-                                                    {item.title.replace("Slides ", "").replace("Coding ", "").slice(0, 2)}
-                                                </span>) : ''
-                                        }
-                                        {(item.title.startsWith("Slides") || item.title.startsWith("Coding")) && (
+                        {sidebarItems.map((item) => {
+                            const isClosable = item.title.startsWith("Slides") || item.title.startsWith("Coding");
+                            return (
+                                <SidebarMenuItem key={item.title}>
+                                    <div className="relative flex items-center justify-center">
+                                        <SidebarMenuButton asChild className="hover:bg-border mb-2">
+                                            <a href={item.url} className="flex items-center justify-center">
+                                                <item.icon />
+                                                {isClosable && (
+                                                    <span
+                                                        className="absolute bottom-0 right-0 bg-primary text-white text-[7px] px-1 py-0.5 rounded shadow pointer-events-none"
+                                                        style={{ minWidth: 16, textAlign: "center" }}
+                                                    >
+                                                        {item.title.replace("Slides ", "").replace("Coding ", "").slice(0, 2)}
+                                                    </span>
+                                                )}
+                                            </a>
+                                        </SidebarMenuButton>
+                                        {isClosable && (
                                             <button
-                                                className="absolute -top-1 -right-1 text-white rounded-full text-[10px] w-4 h-4 flex items-center justify-center hover:bg-red-600 pointer-events-auto cursor-pointer"
+                                                className="absolute -top-1 -right-1 text-white rounded-full text-[10px] w-3 h-3 flex items-center justify-center hover:bg-red-600 pointer-events-auto cursor-pointer"
                                                 style={{ zIndex: 10 }}
                                                 onClick={e => {
                                                     e.preventDefault();
@@ -73,14 +77,15 @@ function FirstSidebar() {
                                                     handleCloseSidebarItem(item.url);
                                                 }}
                                                 title="Close"
+                                                tabIndex={0}
                                             >
                                                 ×
                                             </button>
                                         )}
-                                    </a>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                        ))}
+                                    </div>
+                                </SidebarMenuItem>
+                            );
+                        })}
                     </SidebarMenu>
                 </SidebarGroupContent>
             </SidebarGroup>
