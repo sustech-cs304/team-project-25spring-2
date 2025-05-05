@@ -68,7 +68,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       if (!userId) return;
 
       try {
-        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + "/user");
+        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + "/user", {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
 
         if (!response.ok) {
           throw new Error('Failed to fetch user data');

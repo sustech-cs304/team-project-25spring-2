@@ -8,6 +8,7 @@ import { FileTreeProps, FileTree } from "@/components/coding/FileStructure";
 import { assignTreeNode } from "@/components/coding/FileUtils";
 import { Input } from "@/components/ui/input";
 import { useTree, removeNode, addNodeToTarget, addFolderToDir, addFileToDir, fileExists, folderExists, deleteNode, findNode } from "../data/FileSystemBarData";
+import { useUserContext } from "@/app/UserEnvProvider";
 
 interface FileSystemBarProps {
   projectId: string;
@@ -16,14 +17,15 @@ interface FileSystemBarProps {
 }
 
 export default function FileSystemBar({ projectId, isVisible, onFileSelect }: FileSystemBarProps) {
-  const [tree, setTree] = useState<TreeNode|undefined>();
-  const [dragOverNode, setDragOverNode] = useState<string|null>(null);
+  const { token } = useUserContext();
+  const [tree, setTree] = useState<TreeNode | undefined>();
+  const [dragOverNode, setDragOverNode] = useState<string | null>(null);
   const [showFileInput, setShowFileInput] = useState(false);
   const [showFolderInput, setShowFolderInput] = useState(false);
   const [newItemName, setNewItemName] = useState("");
   const [selectedDirectory, setSelectedDirectory] = useState<string>("/");
 
-  const { fileTree, isLoading, isError } = useTree(projectId);
+  const { fileTree, isLoading, isError } = useTree(projectId, token);
 
   useEffect(() => {
     if (fileTree) {
@@ -33,56 +35,56 @@ export default function FileSystemBar({ projectId, isVisible, onFileSelect }: Fi
 
   const createNewFile = () => {
     if (!newItemName.trim()) return;
-    
+
     const targetDir = selectedDirectory;
     const newFileUri = targetDir + (targetDir.endsWith("/") ? "" : "/") + newItemName;
-    
+
     if (tree && fileExists(tree, newFileUri)) {
       alert("A file with this name already exists");
       return;
     }
-    
+
     const newFileNode: TreeNode = {
       type: "file",
       uri: newFileUri,
     };
-    
+
     setTree(currentTree => {
       if (!currentTree) return currentTree;
       const newTree = JSON.parse(JSON.stringify(currentTree));
       addFileToDir(newTree, targetDir, newFileNode);
       return newTree;
     });
-    
+
     setNewItemName("");
     setShowFileInput(false);
   };
-  
+
   const createNewFolder = () => {
     if (!newItemName.trim()) return;
-    
+
     const targetDir = selectedDirectory;
     const newFolderUri = targetDir + (targetDir.endsWith("/") ? "" : "/") + newItemName;
-   
+
     if (tree && folderExists(tree, newFolderUri)) {
-      alert("A folder with this name already exists");  
+      alert("A folder with this name already exists");
       return;
     }
-    
+
     const newFolderNode: TreeNode = {
       type: "directory",
       uri: newFolderUri,
       children: [],
       expanded: true
     };
-    
+
     setTree(currentTree => {
       if (!currentTree) return currentTree;
       const newTree = JSON.parse(JSON.stringify(currentTree));
       addFolderToDir(newTree, targetDir, newFolderNode);
       return newTree;
     });
-    
+
     setNewItemName("");
     setShowFolderInput(false);
   };
@@ -159,7 +161,7 @@ export default function FileSystemBar({ projectId, isVisible, onFileSelect }: Fi
 
   const handleDelete = (uri: string) => {
     if (!tree) return;
-    
+
     if (window.confirm('Are you sure you want to delete this item?')) {
       setTree(currentTree => {
         if (!currentTree) return currentTree;
@@ -175,9 +177,9 @@ export default function FileSystemBar({ projectId, isVisible, onFileSelect }: Fi
         overflow-hidden`}>
       <div className="flex flex-row p-3 items-center">
         <div className="flex-1">Code Space</div>
-        <Button 
-          variant="ghost" 
-          size="icon" 
+        <Button
+          variant="ghost"
+          size="icon"
           className="size-8 flex-none ml-auto"
           onClick={() => {
             setShowFileInput(true);
@@ -187,9 +189,9 @@ export default function FileSystemBar({ projectId, isVisible, onFileSelect }: Fi
         >
           <FilePlus />
         </Button>
-        <Button 
-          variant="ghost" 
-          size="icon" 
+        <Button
+          variant="ghost"
+          size="icon"
           className="size-8 flex-none ml-auto"
           onClick={() => {
             setShowFolderInput(true);
@@ -200,7 +202,7 @@ export default function FileSystemBar({ projectId, isVisible, onFileSelect }: Fi
           <FolderPlus />
         </Button>
       </div>
-      
+
       {showFileInput && (
         <div className="p-2 flex gap-2">
           <Input
@@ -219,7 +221,7 @@ export default function FileSystemBar({ projectId, isVisible, onFileSelect }: Fi
           <Button size="sm" onClick={createNewFile}>Create</Button>
         </div>
       )}
-      
+
       {showFolderInput && (
         <div className="p-2 flex gap-2">
           <Input
@@ -238,12 +240,12 @@ export default function FileSystemBar({ projectId, isVisible, onFileSelect }: Fi
           <Button size="sm" onClick={createNewFolder}>Create</Button>
         </div>
       )}
-      
+
       <hr className="border-1" />
       {tree ? (
-        <FileTree 
+        <FileTree
           tree={tree}
-          onItemClick={handleItemClick} 
+          onItemClick={handleItemClick}
           draggable={true}
           onDragOver={handleDragOver}
           onDrop={handleDrop}

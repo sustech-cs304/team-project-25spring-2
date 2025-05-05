@@ -167,11 +167,21 @@ export const PDFPart: React.FC<PDFPartProps> = ({ props, onFeedbackAction }) => 
         }
     };
 
+    const getPDFFile = () => {
+        if (!props.url) return undefined;
+        if (typeof props.url === 'string' && !props.url.startsWith('data:application/pdf;base64,')) {
+            if (/^[A-Za-z0-9+/=]+$/.test(props.url) && props.url.length > 100) {
+                return `data:application/pdf;base64,${props.url}`;
+            }
+        }
+        return props.url;
+    };
+
     return (
         <div ref={pdfContainerRef}
             className={`rounded-[var(--radius)] border-1 grow-0 h-full overflow-scroll`}
             style={{ "width": props.width }}>
-            <PDFDocument options={options} file={props.url}
+            <PDFDocument options={options} file={getPDFFile()}
                 onLoadSuccess={onDocumentLoadSuccess}>
                 {Array.from(new Array(numPages), (el, index) => (
                     <Page key={`page_${index + 1}`} pageNumber={index + 1} scale={scale}
@@ -222,11 +232,11 @@ export const PDFPart: React.FC<PDFPartProps> = ({ props, onFeedbackAction }) => 
             </PDFDocument>
             <div className="sticky bottom-0 left-0 z-[1000] flex items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <div className="flex">
-                    <Button variant="outline" size="icon" className="size-6 ml-2"
+                    <Button variant="outline" size="icon" className="size-6 ml-2 mb-2 mt-2"
                         onClick={() => setScale(scale + 0.1)}>
                         <Plus />
                     </Button>
-                    <Button variant="outline" size="icon" className="size-6 ml-1.5"
+                    <Button variant="outline" size="icon" className="size-6 ml-1.5 mb-2 mt-2"
                         onClick={() => setScale(scale - 0.1)}>
                         <Minus />
                     </Button>

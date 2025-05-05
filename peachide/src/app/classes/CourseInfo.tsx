@@ -9,6 +9,7 @@ import {
   Info
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useUserContext } from "../UserEnvProvider";
 
 interface CourseSchedule {
   date: string;
@@ -31,6 +32,7 @@ export default function CourseInfo({ courseId }: CourseInfoProps) {
   const [courseData, setCourseData] = useState<CourseInfoData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { token } = useUserContext();
 
   useEffect(() => {
     const fetchCourseInfo = async () => {
@@ -38,7 +40,11 @@ export default function CourseInfo({ courseId }: CourseInfoProps) {
 
       try {
         setLoading(true);
-        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/course_info/${courseId}`);
+        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/course_info/${courseId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
 
         if (!response.ok) {
           throw new Error(`Failed to fetch course info: ${response.status}`);

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { GraduationCap, Clock, MapPin, Users } from 'lucide-react';
+import { useUserContext } from '../UserEnvProvider';
 
 interface Teacher {
   name: string;
@@ -23,11 +24,16 @@ export default function Instructors({ courseId }: InstructorsProps) {
   const [data, setData] = useState<InstructorsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { token } = useUserContext();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/instructors/${courseId}`);
+        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/instructors/${courseId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch instructors data');
         }

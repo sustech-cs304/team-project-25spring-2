@@ -9,6 +9,7 @@ import { PDFComponent } from "@/components/pdf/PDFComponent";
 import { getConnectionUrl, getLanguageFromFileName } from "../data/EditorLayoutData";
 import CollaboratedEditorComponent from "./CollaboratedEditor";
 import { UserInfo } from "./CollaboratedEditor";
+import { useUserContext } from "@/app/UserEnvProvider";
 
 // Default layout configuration
 var defaultLayout = {
@@ -72,7 +73,7 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
     try {
       const terminalVisible = showTerminal;
       if (!terminalVisible) {
-        model.doAction(Actions.addNode({type: "tab", name: "Terminal", component: "terminal", id: "terminal-panel"}, model.getRoot().getId(), DockLocation.BOTTOM, 0, true));
+        model.doAction(Actions.addNode({ type: "tab", name: "Terminal", component: "terminal", id: "terminal-panel" }, model.getRoot().getId(), DockLocation.BOTTOM, 0, true));
         setShowTerminal(true);
       } else {
         model.doAction(Actions.deleteTab("terminal-panel"));
@@ -89,18 +90,18 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
     const filePath = config.filePath || node.getName();
     const language = config.language || getLanguageFromFileName(filePath);
 
-    switch(component) {
+    switch (component) {
       case 'editor':
-        return <CollaboratedEditorComponent 
-                 wsUrl={wsUrl}
-                 language={language}
-                 roomName={filePath}
-                 onUsersChange={handleEditorUsersChange}
-               />;
+        return <CollaboratedEditorComponent
+          wsUrl={wsUrl}
+          language={language}
+          roomName={filePath}
+          onUsersChange={handleEditorUsersChange}
+        />;
       case 'terminal':
         return <TerminalComponent />;
       case 'pdf':
-        return <PDFComponent props={{ url: config.filePath, pageNumber: config.pageNumber || 1 }} onFeedbackAction={() => {}} />;
+        return <PDFComponent props={{ url: config.filePath, pageNumber: config.pageNumber || 1 }} onFeedbackAction={() => { }} />;
       default:
         return <div>Loading...</div>;
     }
@@ -115,7 +116,7 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
       const isPDF = language === 'pdf';
 
       let existingTabId: string | undefined;
-      
+
       model.visitNodes(node => {
         if (node.getType() === "tab") {
           const tabNode = node as TabNode;
@@ -132,7 +133,7 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
       } else {
         let tabsetId: string | undefined;
         const activeTabset = model.getActiveTabset();
-        
+
         if (activeTabset) {
           tabsetId = activeTabset.getId();
         } else {
@@ -151,8 +152,8 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
             type: "tab",
             name: fileName,
             component: isPDF ? "pdf" : "editor",
-            config: { 
-              filePath, 
+            config: {
+              filePath,
               language
             }
           };
@@ -168,7 +169,8 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
   useEffect(() => {
     const fetchWsUrl = async () => {
       try {
-        const url = await getConnectionUrl(projectId);
+        const { token } = useUserContext();
+        const url = await getConnectionUrl(projectId, token);
         setWsUrl(url);
       } catch (error) {
         console.error("Error fetching WebSocket URL:", error);
@@ -192,9 +194,9 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
     if (action.type === Actions.DELETE_TAB) {
       const deletedNodeId = action.data.node;
       let deletedFilePath: string | undefined;
-      
+
       const nodeToDelete = model.getNodeById(deletedNodeId);
-      
+
       if (nodeToDelete && nodeToDelete.getType() === 'tab') {
         const tabNode = nodeToDelete as TabNode;
         const config = tabNode.getConfig();
@@ -209,7 +211,7 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
           setShowTerminal(false);
         }
       }
-      
+
       if (deletedFilePath) {
         setActiveUsersByEditor(prev => {
           const newState = { ...prev };
@@ -218,7 +220,7 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
         });
       }
       if (deletedNodeId === "terminal-panel") {
-          setShowTerminal(false);
+        setShowTerminal(false);
       }
 
     } else if (action.type === Actions.SELECT_TAB) {
@@ -229,7 +231,7 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
           setCurrentFile(config.filePath);
         }
       }
-    } 
+    }
     return processedAction;
   };
 
@@ -249,7 +251,7 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
         const isPDF = language === 'pdf';
         model.doAction(Actions.updateNodeAttributes(node.getId(), {
           name: uri.split('/').pop() || uri,
-          component: isPDF ? "pdf" : "editor", 
+          component: isPDF ? "pdf" : "editor",
           config: {
             filePath: uri,
             language: language
@@ -262,12 +264,12 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
 
   return (
     <div className="flex-1 border-1 rounded-[var(--radius)] h-full flex flex-col">
-      <EditorToolbar 
+      <EditorToolbar
         onToggleFileSystemBar={onToggleFileSystemBar}
         onToggleTerminal={onToggleTerminal}
         editingUsers={editingUsers}
       />
-      <Layout 
+      <Layout
         ref={layoutRef}
         model={model}
         factory={factory}
@@ -277,6 +279,6 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
       />
     </div>
   );
-} 
+}
 
 export default EditorLayout;

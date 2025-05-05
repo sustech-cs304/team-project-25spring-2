@@ -10,8 +10,9 @@ import { useComment, useMaterial } from "@/app/slides/[id]/swr";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { useUserContext } from "@/app/UserEnvProvider";
 
-function ReplyBox({ id, title, avatar, content, forPage, showPageNumber, children = null }:
+function ReplyBox({ id, title, avatar, content, forPage, showPageNumber, children = null, mutate }:
     {
         id: string,
         title: string,
@@ -19,17 +20,24 @@ function ReplyBox({ id, title, avatar, content, forPage, showPageNumber, childre
         forPage: number,
         showPageNumber: boolean,
         content: string,
-        children?: any | null
+        children?: any | null,
+        mutate?: any
     }) {
 
-    const { comment } = useComment(id);
+    const { token } = useUserContext();
+    const { comment, mutate: mutateReplies } = useComment(id, token);
     const { usersInfo, setUsersInfo } = usePDFContext();
+
     useEffect(() => {
         if (comment) {
             const replies = comment.replies;
             replies?.forEach((reply: any) => {
                 if (!usersInfo[reply.user_id]) {
-                    fetch(process.env.NEXT_PUBLIC_API_URL + `/user/${reply.user_id}`)
+                    fetch(process.env.NEXT_PUBLIC_API_URL + `/user/${reply.user_id}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    })
                         .then(res => res.json())
                         .then(data => {
                             usersInfo[reply.user_id] = data;
@@ -61,7 +69,7 @@ function ReplyBox({ id, title, avatar, content, forPage, showPageNumber, childre
                         <ReplyDialog trigger={
                             <Button variant="ghost" size="icon" className="size-4 ml-2 mr-2">
                                 <Reply />
-                            </Button>} props={{ page: forPage, type: "reply", id: id }} />
+                            </Button>} props={{ page: forPage, type: "reply", id: id }} mutate={mutateReplies} />
                         <span>·</span>
                         <ExtraCommentDialog trigger={
                             <Button variant="ghost" className="h-4 w-12 ml-1.5 flex items-center">
@@ -86,10 +94,11 @@ type ReplyProps = {
     id?: string,
 }
 
-function ReplyDialog({ trigger, props }: { trigger: React.ReactNode, props: ReplyProps }) {
+function ReplyDialog({ trigger, props, mutate }: { trigger: React.ReactNode, props: ReplyProps, mutate?: any }) {
     const [content, setContent] = useState('');
     const { materialId } = usePDFContext();
     const [isOpen, setIsOpen] = useState(false);
+    const { token } = useUserContext();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -102,21 +111,33 @@ function ReplyDialog({ trigger, props }: { trigger: React.ReactNode, props: Repl
         formData.append('content', content);
         formData.append('material_id', materialId);
         formData.append('page', props.page.toString());
+
+        let response;
         if (props.type === 'reply') {
             formData.append('ancestor_id', props.id || 'None');
+            response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/comment/${props.id}`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
         } else {
             formData.append('ancestor_id', 'None');
+            response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/comment`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
         }
-
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/comment/${props.id}`, {
-            method: 'POST',
-            body: formData,
-        });
 
         if (response.ok) {
             toast("Reply sent! ");
             setContent('');
             setIsOpen(false);
+            if (mutate) mutate();
         } else {
             toast("Failed to send reply.");
         }
@@ -124,7 +145,7 @@ function ReplyDialog({ trigger, props }: { trigger: React.ReactNode, props: Repl
 
     return (<Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>{trigger}</DialogTrigger>
-        <DialogContent>
+        <DialogContent className="z-[2000]">
             <DialogHeader>
                 <DialogTitle>Add {props.type === 'reply' ? 'Reply' : 'Comment'}</DialogTitle>
             </DialogHeader>
@@ -145,22 +166,26 @@ function ExtraCommentDialog({ trigger, props, replies, fromTitle }: {
     const { usersInfo } = usePDFContext();
     return (<Dialog>
         <DialogTrigger asChild>{trigger}</DialogTrigger>
-        <DialogContent>
+        <DialogContent className="z-[2000]">
             <DialogHeader>
                 <DialogTitle>Replies to {fromTitle}</DialogTitle>
             </DialogHeader>
             <div className="flex flex-col">
                 {
-                    replies?.map((reply: any) => {
-                        return <ReplyBox
-                            id={reply.id}
-                            title={usersInfo[reply.user_id]?.name}
-                            avatar={usersInfo[reply.user_id]?.avatar}
-                            forPage={reply.page}
-                            showPageNumber={props.page !== reply.page}
-                            content={reply.content}
-                            key={reply.id} />;
-                    })
+                    replies?.length > 0 ?
+                        replies?.map((reply: any) => {
+                            return <ReplyBox
+                                id={reply.id}
+                                title={usersInfo[reply.user_id]?.name}
+                                avatar={usersInfo[reply.user_id]?.avatar}
+                                forPage={reply.page}
+                                showPageNumber={props.page !== reply.page}
+                                content={reply.content}
+                                key={reply.id} />;
+                        })
+                        : <div className="text-center p-4">
+                            No replies yet.
+                        </div>
                 }
             </div>
         </DialogContent>
@@ -169,14 +194,19 @@ function ExtraCommentDialog({ trigger, props, replies, fromTitle }: {
 
 export function CommentsSection({ id }: { id: string }) {
     const { pageNumber, usersInfo, setUsersInfo, setMaterialId } = usePDFContext();
-    const { material, isLoading } = useMaterial(id);
+    const { token } = useUserContext();
+    const { material, isLoading, mutate } = useMaterial(id, token);
     const [onlyThisPage, setOnlyThisPage] = React.useState(false);
 
     useEffect(() => {
         if (isLoading || !material) return;
         material?.comments?.forEach((comment: any) => {
             if (!usersInfo[comment.user_id]) {
-                fetch(process.env.NEXT_PUBLIC_API_URL + `/user/${comment.user_id}`)
+                fetch(process.env.NEXT_PUBLIC_API_URL + `/user/${comment.user_id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                })
                     .then(res => res.json())
                     .then(data => {
                         usersInfo[comment.user_id] = data;
@@ -202,7 +232,7 @@ export function CommentsSection({ id }: { id: string }) {
                     <Button variant="ghost" size="icon">
                         <MessageSquareQuote />
                     </Button>
-                } props={{ page: pageNumber, type: "comment" }} />
+                } props={{ page: pageNumber, type: "comment" }} mutate={mutate} />
             </div>
         </div>
         <div className="overflow-scroll grow">
@@ -218,6 +248,7 @@ export function CommentsSection({ id }: { id: string }) {
                                 title={usersInfo[comment.user_id]?.name}
                                 avatar={usersInfo[comment.user_id]?.photo}
                                 content={comment.content}
+                                mutate={mutate}
                             />
                         </div>
                     ))

@@ -1,3 +1,4 @@
+import { useUserContext } from '@/app/UserEnvProvider';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from "sonner";
 
@@ -85,6 +86,7 @@ export const PDFProvider = ({ children }: { children: React.ReactNode }) => {
 
     const addBookmark = async (page: number) => {
         if (!materialId) return;
+        const { token } = useUserContext();
 
         try {
             // First, try to find an existing bookmark list for this page
@@ -98,11 +100,13 @@ export const PDFProvider = ({ children }: { children: React.ReactNode }) => {
                 formData.append('bookmark_list', JSON.stringify(updatedBookmarkList));
 
                 const response = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/marklist/${existingBookmark.list_id}/page/${page}`,
-                    {
-                        method: 'POST',
-                        body: formData,
+                    `${process.env.NEXT_PUBLIC_API_URL}/marklist/${existingBookmark.list_id}/page/${page}`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Authorization': `Bearer ${token}`
                     }
+                }
                 );
 
                 if (response.ok) {
@@ -120,11 +124,13 @@ export const PDFProvider = ({ children }: { children: React.ReactNode }) => {
                 formData.append('bookmark_list', JSON.stringify([page]));
 
                 const response = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/marklist/${materialId}/page/${page}`,
-                    {
-                        method: 'POST',
-                        body: formData,
+                    `${process.env.NEXT_PUBLIC_API_URL}/marklist/${materialId}/page/${page}`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Authorization': `Bearer ${token}`
                     }
+                }
                 );
 
                 if (response.ok) {
@@ -142,12 +148,16 @@ export const PDFProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     const removeBookmark = async (listId: string) => {
+        const { token } = useUserContext();
+
         try {
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/marklist/${listId}`,
-                {
-                    method: 'DELETE',
+                `${process.env.NEXT_PUBLIC_API_URL}/marklist/${listId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
                 }
+            }
             );
 
             if (response.ok) {
