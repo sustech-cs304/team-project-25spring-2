@@ -71,7 +71,7 @@ function PDFSection({ url, materialId }: { url: string, materialId: string }) {
                 formData.append('position_y', String(newSnippet.position.y));
 
                 try {
-                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/teacher/snippet/${materialId}/page/${newSnippet.page}`, {
+                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/snippet/${materialId}/page/${newSnippet.page}`, {
                         method: 'POST',
                         body: formData,
                         headers: {
@@ -210,14 +210,14 @@ function CodeSnippetEditor({ materialId }: { materialId: string }) {
             // Prepare form data
             const formData = new FormData();
             formData.append('content', snippetContent);
-            formData.append('lang', selectedLanguage);``
+            formData.append('lang', selectedLanguage);
             formData.append('snippet_id', currentSnippet.id);
             formData.append('position_x', String(currentSnippet.position.x));
             formData.append('position_y', String(currentSnippet.position.y));
 
             console.log("Content: ", snippetContent, "Lang: ", selectedLanguage);
 
-            let response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/teacher/snippet/${materialId}/page/${currentSnippet.page}`, {
+            let response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/snippet/${materialId}/page/${currentSnippet.page}`, {
                 method: 'POST',
                 body: formData,
                 headers: {
