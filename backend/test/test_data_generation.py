@@ -72,6 +72,31 @@ def generate_random_section(course_id):
         "schedules": selected_schedules
     }
 
+def generate_random_note(material_id):
+    """Generate random note data for testing"""
+    note_id = str(uuid.uuid4())
+    note_content = f"这是一条关于{random.choice(['计算机科学', '软件工程', '人工智能', '数据科学'])}的笔记"
+    return note_id, {
+        "note_id": note_id,
+        "material_id": material_id,
+        "content": note_content
+    }
+
+def generate_random_code_snippet():
+    """Generate random code snippet data for testing"""
+    code_snippet_id = str(uuid.uuid4())
+    code_snippet_content = f"这是一段关于{random.choice(['计算机科学', '软件工程', '人工智能', '数据科学'])}的代码"
+    lang = random.choice(["python", "java", "c", "c++", "javascript", "go", "rust", "kotlin", "swift", "typescript"])
+    page = random.randint(1, 100)
+    position_x = random.randint(1, 100)
+    position_y = random.randint(1, 100)
+    return code_snippet_id, page, {
+        "snippet_id": code_snippet_id,
+        "lang": lang,
+        "content": code_snippet_content,
+        "position_x": position_x,
+        "position_y": position_y
+    }
 
 def generate_random_user_data(is_teacher=False):
     """Generate random user data for testing"""
@@ -116,6 +141,9 @@ Student_id_list = []
 Teacher_id_list = []
 Course_id_list = []
 Section_id_list = []
+Material_id_list = []
+Note_id_list = []
+Code_snippet_id_list = []
 
 def get_token(user_id):
     return Student_id_list[user_id]
@@ -215,8 +243,52 @@ def test_create_materials():
     path =[os.path.join(os.path.dirname(__file__), "./南科大2025校历.pdf"), os.path.join(os.path.dirname(__file__), "./2503.21708v2.pdf")]
     for _ in range(2):
         material_id, material_data = generate_random_material(Section_id_list[0], path=path[_])
+        Material_id_list.append(material_id)
         response = client.post("/api/material/" + material_id, data=material_data, headers=headers)
         assert response.status_code == 200 or response.status_code == 201
         print(f"Successfully created material: {material_data['material_name']}")
     
+def test_create_notes():
+    student_token = Student_id_list[0]["token"]
+    headers = {"Authorization": f"Bearer {student_token}"}
 
+    note_id, note_data = generate_random_note(material_id=Material_id_list[0])
+    response = client.post("/api/note/" + note_id, data=note_data, headers=headers)
+    assert response.status_code == 200 or response.status_code == 201
+    Note_id_list.append(note_id)
+    print(f"Successfully created note: {note_data['content']}")
+
+    response = client.get("/api/note/" + Material_id_list[0], headers=headers)
+    assert response.status_code == 200
+    # check if node_id is right
+    assert response.json().get("note_id") == note_id
+    
+def test_create_code_snippet():
+    teacher_token = Teacher_id_list[0]["token"]
+    headers = {"Authorization": f"Bearer {teacher_token}"}
+
+    code_snippet_id, page, code_snippet_data = generate_random_code_snippet()
+    response = client.post("/api/snippet/" + Material_id_list[0] + "/page/" + str(page), data=code_snippet_data, headers=headers)
+    assert response.status_code == 200 or response.status_code == 201
+    Code_snippet_id_list.append(code_snippet_id)
+    print(f"Successfully created code snippet: {code_snippet_data['content']}")
+
+    student_token = Student_id_list[0]["token"]
+    headers = {"Authorization": f"Bearer {student_token}"}
+    _, _, code_snippet_data = generate_random_code_snippet()
+    code_snippet_data["snippet_id"] = code_snippet_id
+    response = client.post("/api/snippet/" + Material_id_list[0] + "/page/" + str(page), data=code_snippet_data, headers=headers)
+    assert response.status_code == 200 or response.status_code == 201
+    Code_snippet_id_list.append(code_snippet_id)
+    print(f"Successfully created code snippet: {code_snippet_data['content']}")
+
+    response = client.get("/api/snippet/" + Material_id_list[0], headers=headers)
+    print("#" * 200)
+    print(response.json())
+    print("#" * 200)
+    assert response.status_code == 200
+    # check if code_snippet_id is right
+    assert response.json().get("code_snippets")[0].get("snippet_id") == code_snippet_id
+    assert response.json().get("code_snippets")[0].get("user_id") == Student_id_list[0]["user_id"]
+
+    
