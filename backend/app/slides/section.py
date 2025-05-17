@@ -62,8 +62,8 @@ async def create_section(
             section_id=section_id,
             course_id=course_id,
             name=name,
-            materials=materials,
-            schedules=schedules,
+            materials=materials if materials is not None else [],
+            schedules=schedules if schedules is not None else [],
         )
         course = db.query(Course).filter(Course.course_id == course_id).first()
         if course is None:

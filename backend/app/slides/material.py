@@ -109,7 +109,6 @@ async def update_material(
     material_name: str = Form(None),
     section_id: str = Form(None),
     data: str = Form(None),
-    comments: list[str] = Form(None),
 ):
     material = db.query(Material).filter(Material.material_id == material_id).first()
     if material is None:
@@ -124,7 +123,7 @@ async def update_material(
                 material_name=material_name,
                 section_id=section_id,
                 data=data,
-                comments=comments,
+                comments=[],
             )
         )
         db.commit()
@@ -142,8 +141,6 @@ async def update_material(
             material.section_id = section_id
         if data is not None:
             material.data = data
-        if comments is not None:
-            material.comments = comments
         db.commit()
     db.refresh(material)
     return {

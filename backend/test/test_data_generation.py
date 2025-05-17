@@ -145,7 +145,7 @@ def test_create_courses():
     created_courses = []
     for _ in range(2):
         course_data = generate_random_course()
-        response = client.post("/api/course_info", json=course_data, headers=headers)
+        response = client.post("/api/course_info", data=course_data, headers=headers)
         assert response.status_code == 200 or response.status_code == 201
         Course_id_list.append(course_data["course_id"])
         created_courses.append(course_data)
@@ -156,7 +156,7 @@ def test_create_courses():
             "course_id": course_data["course_id"],
             "student_id": Student_id_list[0]["user_id"]
         }
-        response = client.post("/api/add", json=add_student_data, headers=headers)
+        response = client.post("/api/add", data=add_student_data, headers=headers)
 
     # Login as student
     student_token = Student_id_list[0]["token"]
@@ -190,7 +190,7 @@ def test_create_sections():
     headers = {"Authorization": f"Bearer {student_token}"}
     for _ in range(2):
         section_data = generate_random_section(Course_id_list[0])
-        response = client.post("/api/section", json=section_data, headers=headers)
+        response = client.post("/api/section", data=section_data, headers=headers)
         assert response.status_code == 200 or response.status_code == 201
         Section_id_list.append(section_data["section_id"])
         print(f"Successfully created section: {section_data['name']}")
@@ -208,7 +208,7 @@ def test_create_materials():
     path =[os.path.join(os.path.dirname(__file__), "./南科大2025校历.pdf"), os.path.join(os.path.dirname(__file__), "./2503.21708v2.pdf")]
     for _ in range(2):
         material_id, material_data = generate_random_material(Section_id_list[0], path=path[_])
-        response = client.post("/api/material/" + material_id, json=material_data, headers=headers)
+        response = client.post("/api/material/" + material_id, data=material_data, headers=headers)
         assert response.status_code == 200 or response.status_code == 201
         print(f"Successfully created material: {material_data['material_name']}")
     
