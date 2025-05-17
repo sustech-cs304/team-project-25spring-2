@@ -199,7 +199,7 @@ const AddUserDialog = ({
       formData.append('course_id', courseId);
       formData.append('user_id', userId);
 
-      const response = await fetch(process.env.NEXT_PUBLIC_API_URL + '/add', {
+      const response = await fetch(process.env.NEXT_PUBLIC_API_URL + '/enroll', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -307,7 +307,7 @@ const StudentsTab = ({ courseId }: { courseId: string }) => {
     
     setLoading(true);
     try {
-      const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/getStudents?course_id=${courseId}`, {
+      const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/fetch_member/${courseId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`

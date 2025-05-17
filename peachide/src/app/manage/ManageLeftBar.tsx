@@ -164,6 +164,7 @@ const CourseCard = ({
       transition={{ duration: 0.2 }}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
+      onClick={onClick}
     >
       <Card 
         className={`overflow-hidden border cursor-pointer transition-colors ${
@@ -172,7 +173,7 @@ const CourseCard = ({
       >
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-semibold truncate" onClick={onClick}>
+            <CardTitle className="text-lg font-semibold truncate">
               {course.name}
             </CardTitle>
             <Button 
@@ -191,12 +192,12 @@ const CourseCard = ({
             {course.number}
           </CardDescription>
         </CardHeader>
-        <CardContent className="pb-2" onClick={onClick}>
+        <CardContent className="pb-2">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>Instructors: {course.teachers_name.join(", ")}</span>
           </div>
         </CardContent>
-        <CardFooter className="pt-2 border-t bg-muted/20" onClick={onClick}>
+        <CardFooter className="pt-2 border-t bg-muted/20">
           <Button variant="ghost" size="sm" className="ml-auto text-xs">Manage Course</Button>
         </CardFooter>
       </Card>
