@@ -29,11 +29,7 @@ async def get_note(material_id: str, db: Session = Depends(get_db)):
                 "note_id": note.note_id,
                 "user_id": note.user_id,
                 "material_id": note.material_id,
-                "is_snippet": note.is_snippet,
                 "content": note.content,
-                "code_snippet": db.query(CodeSnippet)
-                .filter(CodeSnippet.snippet_id == note.code_snippet)
-                .first(),
             }
             for note in note
         ],
@@ -45,9 +41,7 @@ async def create_note(
     note_id: str,
     current_user: User = Depends(get_current_user),
     material_id: str = Form(None),
-    is_snippet: bool = Form(None),
     content: str = Form(None),
-    code_snippet: str = Form(None),
     db: Session = Depends(get_db),
 ):
     note = db.query(Note).filter(Note.note_id == note_id).first()
@@ -56,9 +50,7 @@ async def create_note(
             note_id=note_id,
             user_id=current_user.user_id,
             material_id=material_id,
-            is_snippet=is_snippet,
             content=content,
-            code_snippet=code_snippet,
         )
         db.add(note)
         db.commit()
@@ -68,16 +60,7 @@ async def create_note(
             "note_id": note.note_id,
             "user_id": note.user_id,
             "material_id": note.material_id,
-            "is_snippet": note.is_snippet,
             "content": note.content,
-            "code_snippet": {
-                "snippet_id": note.code_snippet,
-                "material_id": note.material_id,
-                "lang": note.lang,
-                "page": note.page,
-                "content": note.content,
-                "position": {"x": note.position_x, "y": note.position_y},
-            },
         }
     else:
         if note_id is not None:
@@ -86,12 +69,8 @@ async def create_note(
             note.user_id = current_user.user_id
         if material_id is not None:
             note.material_id = material_id
-        if is_snippet is not None:
-            note.is_snippet = is_snippet
         if content is not None:
             note.content = content
-        if code_snippet is not None:
-            note.code_snippet = code_snippet
         db.commit()
         db.refresh(note)
         return {
@@ -99,16 +78,7 @@ async def create_note(
             "note_id": note.note_id,
             "user_id": note.user_id,
             "material_id": note.material_id,
-            "is_snippet": note.is_snippet,
             "content": note.content,
-            "code_snippet": {
-                "snippet_id": note.code_snippet,
-                "material_id": note.material_id,
-                "lang": note.lang,
-                "page": note.page,
-                "content": note.content,
-                "position": {"x": note.position_x, "y": note.position_y},
-            },
         }
 
 

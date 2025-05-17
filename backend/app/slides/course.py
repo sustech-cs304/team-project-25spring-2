@@ -9,6 +9,7 @@ from app.models.assignment import Assignment
 from app.models.user import User
 from app.models.course import Course
 from app.models.section import Section
+from app.models.schedule import Schedule
 from app.models.bookmarklist import BookmarkList
 import json
 from app.auth.middleware import get_current_user
@@ -55,12 +56,23 @@ async def get_courses(
 @router.get("/course_info/{course_id}")
 async def get_course_info(course_id: str, db: Session = Depends(get_db)):
     course = db.query(Course).filter(Course.course_id == course_id).first()
+    sections = db.query(Section).filter(Section.course_id == course_id).all()
+    section_ids = [section.section_id for section in sections] 
+    section_ids = list(set(section_ids))
+    schedules = db.query(Schedule).filter(Schedule.section_id.in_(section_ids)).all()
     return {
         "message": "Course retrieved successfully",
         "course_id": course.course_id if course else None,
         "name": course.name if course else None,
         "number": course.number if course else None,
         "description": course.description if course else None,
+        "schedules": [
+            {
+                "date": schedule.date,
+                "section_name": schedule.section_name,
+            }
+            for schedule in schedules
+        ],
     }
 
 
