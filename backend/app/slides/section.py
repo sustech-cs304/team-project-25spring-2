@@ -53,7 +53,6 @@ async def create_section(
     section_id: str = Form(None),
     course_id: str = Form(None),
     name: str = Form(None),
-    materials: list[str] = Form(None),
     schedules: list[str] = Form(None),
 ):
     section = db.query(Section).filter(Section.section_id == section_id).first()
@@ -62,7 +61,7 @@ async def create_section(
             section_id=section_id,
             course_id=course_id,
             name=name,
-            materials=materials if materials is not None else [],
+            materials=[],
             schedules=schedules if schedules is not None else [],
         )
         course = db.query(Course).filter(Course.course_id == course_id).first()
@@ -86,8 +85,6 @@ async def create_section(
 
         if name is not None:
             section.name = name
-        if materials is not None:
-            section.materials = materials
         if schedules is not None:
             section.schedules = schedules
         db.commit()

@@ -56,13 +56,20 @@ def generate_random_section(course_id):
         "第六章 项目实践",
         "第七章 总结与展望"
     ]
-    
+    schedules = [
+        "2025-01-01",
+        "2025-01-02",
+        "2025-01-03",
+        "2025-01-04",
+        "2025-01-05",
+    ]
+    # select 3 random schedules
+    selected_schedules = random.sample(schedules, 3)
     return {
         "section_id": section_id,
         "course_id": course_id,
         "name": random.choice(section_names),
-        "materials": [],
-        "schedules": []
+        "schedules": selected_schedules
     }
 
 
