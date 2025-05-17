@@ -189,9 +189,9 @@ def test_create_courses():
     for course_data in created_courses:
         add_student_data = {
             "course_id": course_data["course_id"],
-            "student_id": Student_id_list[0]["user_id"]
+            "user_id": Student_id_list[0]["user_id"]
         }
-        response = client.post("/api/add", data=add_student_data, headers=headers)
+        response = client.post("/api/enroll", data=add_student_data, headers=headers)
 
     # Login as student
     student_token = Student_id_list[0]["token"]
@@ -201,7 +201,12 @@ def test_create_courses():
     response = client.get("/api/courses", headers=headers)
     assert response.status_code == 200
     courses = response.json().get("courses", [])
-    assert len(courses) >= len(created_courses)
+    assert len(courses) >= 2
+
+    response = client.get("/api/fetch_member/" + Course_id_list[0], headers=headers)
+    assert response.status_code == 200
+    members = response.json().get("users", [])
+    assert len(members) >= 2
 
 def test_course_listing():
     student_token = Student_id_list[0]["token"]

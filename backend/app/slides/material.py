@@ -117,6 +117,7 @@ async def update_material(
             return {"message": "Section not found"}
         if material_id not in section.materials:
             section.materials = section.materials + [material_id]
+        section.materials = list(set(section.materials))
         db.add(
             Material(
                 material_id=material_id,

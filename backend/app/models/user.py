@@ -12,6 +12,7 @@ class User(Base):
 
     user_id = Column(String, primary_key=True, index=True)
     name = Column(String, nullable=False)
+    email = Column(String, nullable=True)
     password = Column(String, nullable=False)
     is_teacher = Column(Boolean, default=False)
     courses = Column(
@@ -57,6 +58,7 @@ class UserLogin(BaseModel):
 class UserResponse(BaseModel):
     user_id: str
     name: str
+    email: str
     is_teacher: bool
     courses: Optional[list[str]] = None
     photo: Optional[str] = None

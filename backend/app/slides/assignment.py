@@ -11,6 +11,8 @@ from app.models.course import Course
 from app.models.section import Section
 from app.models.bookmarklist import BookmarkList
 import json
+from fastapi import Form
+from app.auth.middleware import get_current_user
 
 router = APIRouter()
 
@@ -35,14 +37,22 @@ async def get_assignments(course_id: str, db: Session = Depends(get_db)):
     )
     if not assignments:
         return {"message": "No assignments found for this course."}
-    assignment_list = []
-    for assignment in assignments:
-        assignment_list.append(
-            {
-                "assignment_id": assignment.assignment_id,
-                "name": assignment.name,
-                "deadline": assignment.deadline,
-                "isOver": assignment.isOver,
+    return {"message": "Assignments found.", 
+            "assignments": [
+                    {
+                        "assignment_id": assignment.assignment_id,
+                        "name": assignment.name,
+                        "deadline": assignment.deadline,
+                        "isOver": assignment.isOver,
+                    } for assignment in assignments
+                ],
             }
-        )
-    return {"message": "Assignments found.", "assignments": assignment_list}
+
+@router.post("/assignment")
+async def create_assignment(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    course_id: str = Form(None),
+):
+    #TODO: Implement this
+    pass

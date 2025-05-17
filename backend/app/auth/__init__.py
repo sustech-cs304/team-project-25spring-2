@@ -43,6 +43,7 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
         user_id=user_data.user_id,
         name=user_data.name,
         password=hashed_password,
+        email=user_data.email,
         is_teacher=user_data.is_teacher,
         courses=[],
     )

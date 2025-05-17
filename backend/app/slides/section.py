@@ -32,6 +32,7 @@ async def get_sections(course_id: str, db: Session = Depends(get_db)):
             {
                 "section_id": section.section_id,
                 "name": section.name,
+                "schedules": section.schedules,
                 "materials": [
                     {
                         "material_id": material.material_id,
@@ -69,6 +70,7 @@ async def create_section(
             return {"message": "Course not found"}
         if section_id not in course.sections:
             course.sections = course.sections + [section_id]
+        course.sections = list(set(course.sections))
         db.add(section)
         db.commit()
         db.refresh(section)
