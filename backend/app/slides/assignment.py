@@ -41,9 +41,13 @@ async def get_assignments(course_id: str, db: Session = Depends(get_db)):
             "assignments": [
                     {
                         "assignment_id": assignment.assignment_id,
+                        "is_group_assign": assignment.is_group_assign,
                         "name": assignment.name,
+                        "course_id": assignment.course_id,
+                        "teacher_id": assignment.teacher_id,
                         "deadline": assignment.deadline,
-                        "isOver": assignment.isOver,
+                        "is_over": assignment.is_over,
+
                     } for assignment in assignments
                 ],
             }
@@ -52,7 +56,7 @@ async def get_assignments(course_id: str, db: Session = Depends(get_db)):
 async def create_assignment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    is_group_assign: bool = Form(None),
     course_id: str = Form(None),
 ):
-    #TODO: Implement this
     pass
