@@ -50,7 +50,7 @@ def test_user_registration_and_login_flow():
     # Test whoami endpoint with valid token
     token = login_data["token"]
     whoami_response = client.get(
-        "/api/whoami", headers={"Authorization": f"Bearer {token}"}
+        "/api/user", headers={"Authorization": f"Bearer {token}"}
     )
     assert whoami_response.status_code == 200
     whoami_data = whoami_response.json()
@@ -67,7 +67,7 @@ def test_user_registration_and_login_flow():
 
     # Verify token is invalid after logout
     whoami_response = client.get(
-        "/api/whoami", headers={"Authorization": f"Bearer {token}"}
+        "/api/user", headers={"Authorization": f"Bearer {token}"}
     )
     assert whoami_response.status_code == 401
 
@@ -119,12 +119,12 @@ def test_invalid_login_attempts():
 
 def test_protected_endpoint_access():
     # Try to access whoami without token
-    response = client.get("/api/whoami")
+    response = client.get("/api/user")
     assert response.status_code == 403 # HTTPBearer default error
 
     # Try to access whoami with invalid token
     invalid_token = f"invalid_{uuid.uuid4().hex}"
     response = client.get(
-        "/api/whoami", headers={"Authorization": f"Bearer {invalid_token}"}
+        "/api/user", headers={"Authorization": f"Bearer {invalid_token}"}
     )
     assert response.status_code == 401

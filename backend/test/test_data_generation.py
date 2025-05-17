@@ -70,7 +70,7 @@ def generate_random_user_data(is_teacher=False):
     """Generate random user data for testing"""
     user_id = f"1221" + str(random.randint(1000, 9999))
     name = f"Test User {generate_random_string(4)}"
-    password = f"Pass_{generate_random_string(10)}"
+    password = f"password"
     email = f"test{generate_random_string(4)}@gmail.com"
     return {
         "user_id": user_id,
