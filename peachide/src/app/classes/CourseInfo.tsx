@@ -156,7 +156,7 @@ export default function CourseInfo({ courseId }: CourseInfoProps) {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col space-y-2">
-            {courseData.schedules.map((schedule) => (
+            {courseData.schedules?.map((schedule) => (
               <div key={schedule.date} className="flex justify-between items-center py-2 border-b last:border-0">
                 <span className="text-sm text-muted-foreground">
                   {new Date(schedule.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}

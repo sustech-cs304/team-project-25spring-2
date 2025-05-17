@@ -368,10 +368,17 @@ export default function Slides({ params }: {
     const { snippets, setSnippets } = usePDFContext();
 
     useEffect(() => {
-        console.log("Note: ", note);
         if (note) {
-            setMdNote(note.content);
-            setNoteId(note.id);
+            if (note.content) {
+                setMdNote(note.content);
+            } else {
+                setMdNote('');
+            }
+            if (note.id) {
+                setNoteId(note.id);
+            } else {
+                setNoteId(uuidv4());
+            }
         }
     }, [note]);
 
