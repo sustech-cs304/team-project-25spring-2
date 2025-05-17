@@ -41,3 +41,18 @@ async def get_instructors(class_id: str, db: Session = Depends(get_db)):
             }
         )
     return {"message": "Instructors retrieved successfully", "teachers": instructors}
+
+@router.get("/search_user/{name}")
+async def search_user(name: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.name.like(f"%{name}%")).all()
+    if not user:
+        return {"message": "No user found."}
+    return {"message": "User found.", 
+            "user": [
+                {
+                    "name": user.name,
+                    "user_id": user.user_id,
+                    "is_teacher": user.is_teacher,
+                }
+            ]
+        }
