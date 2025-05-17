@@ -15,6 +15,7 @@ from app.slides.bookmarklist import router as bookmarklist_router
 from app.slides.course import router as course_router
 from app.slides.section import router as section_router
 from app.auth import router as auth_router
+from app.ai import router as ai_router
 
 
 @asynccontextmanager
@@ -51,6 +52,7 @@ app.include_router(code_snippet_router, tags=["code_snippets"], prefix="/api")
 app.include_router(bookmarklist_router, tags=["bookmarklists"], prefix="/api")
 app.include_router(course_router, tags=["courses"], prefix="/api")
 app.include_router(section_router, tags=["sections"], prefix="/api")
+app.include_router(ai_router, tags=["ai"], prefix="/api")
 app.include_router(
     auth_router,
     tags=["authentication"],
