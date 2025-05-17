@@ -21,18 +21,12 @@ def get_db():
 
 @router.get("/note/{material_id}")
 async def get_note(material_id: str, db: Session = Depends(get_db)):
-    note = db.query(Note).filter(Note.material_id == material_id).all()
+    note = db.query(Note).filter(Note.material_id == material_id).first()
     return {
-        "message": "Note retrieved successfully",
-        "notes": [
-            {
-                "note_id": note.note_id,
-                "user_id": note.user_id,
-                "material_id": note.material_id,
-                "content": note.content,
-            }
-            for note in note
-        ],
+        "note_id": note.note_id if note else None,
+        "user_id": note.user_id if note else None,
+        "material_id": note.material_id if note else None,
+        "content": note.content if note else None,
     }
 
 
