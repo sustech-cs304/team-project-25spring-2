@@ -1,0 +1,14 @@
+{
+    "mcpServers": {
+      "PeachIDE API Docs": {
+        "command": "cmd",
+        "args": [
+          "/c",
+          "npx",
+          "-y",
+          "apifox-mcp-server@latest",
+          "--site-id=5445272"
+        ]
+      }
+    }
+  }
