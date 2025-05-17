@@ -30,6 +30,13 @@ async def get_courses(
     current_user: User = Depends(get_current_user),
 ):
     courses = db.query(Course).filter(Course.course_id.in_(current_user.courses)).all() if current_user.courses else []
+    # Collect all teacher_ids from all courses
+    all_teacher_ids = set()
+    for course in courses:
+        if course.teacher_id:
+            all_teacher_ids.update(course.teacher_id)
+    teachers = db.query(User).filter(User.user_id.in_(all_teacher_ids)).all() if all_teacher_ids else []
+    teacher_id_to_name = {teacher.user_id: teacher.name for teacher in teachers}
     return {
         "message": "Courses retrieved successfully",
         "courses": [
@@ -38,6 +45,7 @@ async def get_courses(
                 "name": course.name,
                 "number": course.number,
                 "description": course.description,
+                "teachers_name": [teacher_id_to_name.get(tid, "Unknown") for tid in (course.teacher_id or [])],
             }
             for course in courses
         ],
@@ -49,10 +57,10 @@ async def get_course_info(course_id: str, db: Session = Depends(get_db)):
     course = db.query(Course).filter(Course.course_id == course_id).first()
     return {
         "message": "Course retrieved successfully",
-        "course_id": course.course_id,
-        "name": course.name,
-        "number": course.number,
-        "description": course.description,
+        "course_id": course.course_id if course else None,
+        "name": course.name if course else None,
+        "number": course.number if course else None,
+        "description": course.description if course else None,
     }
 
 
