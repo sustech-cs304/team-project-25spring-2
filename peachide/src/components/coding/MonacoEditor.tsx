@@ -21,6 +21,7 @@ const MonacoEditorComponent: React.FC<MonacoEditorProps> = ({
     const handleEditorChange = useCallback((value: string | undefined, event: any) => {
         if (value !== undefined) {
             contentRef.current = value;
+            onSave?.(value);
         }
     }, []);
 

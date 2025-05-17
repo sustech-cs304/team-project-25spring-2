@@ -64,13 +64,14 @@ function PDFSection({ url, materialId }: { url: string, materialId: string }) {
 
                 // Save the new snippet to backend
                 const formData = new FormData();
+                formData.append('snippet_id', newSnippet.id);
                 formData.append('content', newSnippet.text);
                 formData.append('lang', newSnippet.lang);
                 formData.append('position_x', String(newSnippet.position.x));
                 formData.append('position_y', String(newSnippet.position.y));
 
                 try {
-                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/snippet/${materialId}/page/${newSnippet.page}`, {
+                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/teacher/snippet/${materialId}/page/${newSnippet.page}`, {
                         method: 'POST',
                         body: formData,
                         headers: {
@@ -106,6 +107,7 @@ function PDFSection({ url, materialId }: { url: string, materialId: string }) {
                 if (response.ok) {
                     // Update local state
                     setSnippets(snippets.filter(s => s.id !== feedback.deleteSnippet.id));
+                    setCurrentSnippet({ text: '', position: { x: 0, y: 0 }, page: 0, id: '', lang: '' });
                     toast.success("Snippet deleted successfully");
                 } else {
                     toast.error("Failed to delete snippet");
@@ -208,12 +210,14 @@ function CodeSnippetEditor({ materialId }: { materialId: string }) {
             // Prepare form data
             const formData = new FormData();
             formData.append('content', snippetContent);
-            formData.append('lang', selectedLanguage);
+            formData.append('lang', selectedLanguage);``
             formData.append('snippet_id', currentSnippet.id);
             formData.append('position_x', String(currentSnippet.position.x));
             formData.append('position_y', String(currentSnippet.position.y));
 
-            let response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/snippet/${materialId}/page/${currentSnippet.page}`, {
+            console.log("Content: ", snippetContent, "Lang: ", selectedLanguage);
+
+            let response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/teacher/snippet/${materialId}/page/${currentSnippet.page}`, {
                 method: 'POST',
                 body: formData,
                 headers: {
@@ -314,7 +318,7 @@ function CodeSnippetEditor({ materialId }: { materialId: string }) {
                 </div>
             </div>
             <div className="flex flex-col h-full">
-                <div className={`${showResults ? 'h-3/4' : 'h-full'}`}>
+                <div className={`${currentSnippet.id ? (showResults ? 'h-3/4' : 'h-full') : 'hidden'}`}>
                     {editor}
                 </div>
                 {showResults && (
@@ -364,6 +368,7 @@ export default function Slides({ params }: {
     const { snippets, setSnippets } = usePDFContext();
 
     useEffect(() => {
+        console.log("Note: ", note);
         if (note) {
             setMdNote(note.content);
             setNoteId(note.id);
@@ -390,8 +395,6 @@ export default function Slides({ params }: {
     }, [fetchedSnippets, setSnippets]);
 
     async function saveMdNote(markdown: string) {
-        const { token } = useUserContext();
-
         setMdNote(markdown);
 
         const formData = new FormData();

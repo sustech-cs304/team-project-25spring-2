@@ -50,7 +50,7 @@ const DeleteSnippetButton: React.FC<{
                         <Minus />
                     </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="z-[1000]">
                     <DialogTitle>Sure to delete?</DialogTitle>
                     <DialogDescription>
                         Are you sure you want to delete this code snippet?
