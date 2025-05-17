@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Body
+from fastapi import APIRouter, Depends, Body, Form
 from sqlalchemy.orm import Session
 from app.db import SessionLocal
 from app.models.material import Material
@@ -43,11 +43,11 @@ async def get_code_snippet(material_id: str, db: Session = Depends(get_db)):
 async def create_code_snippet(
     material_id: str,
     page: int,
-    snippet_id: str = Body(...),
-    lang: str = Body(None),
-    content: str = Body(None),
-    position_x: float = Body(None),
-    position_y: float = Body(None),
+    snippet_id: str = Form(None),
+    lang: str = Form(None),
+    content: str = Form(None),
+    position_x: float = Form(None),
+    position_y: float = Form(None),
     db: Session = Depends(get_db),
 ):
     snippet = db.query(CodeSnippet).filter(CodeSnippet.snippet_id == snippet_id).first()

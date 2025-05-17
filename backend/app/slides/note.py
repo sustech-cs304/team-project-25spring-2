@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Body
+from fastapi import APIRouter, Depends, Body, Form
 from sqlalchemy.orm import Session
 from app.db import SessionLocal
 from app.models.material import Material
@@ -44,10 +44,10 @@ async def get_note(material_id: str, db: Session = Depends(get_db)):
 async def create_note(
     note_id: str,
     current_user: User = Depends(get_current_user),
-    material_id: str = Body(None),
-    is_snippet: bool = Body(None),
-    content: str = Body(None),
-    code_snippet: str = Body(None),
+    material_id: str = Form(None),
+    is_snippet: bool = Form(None),
+    content: str = Form(None),
+    code_snippet: str = Form(None),
     db: Session = Depends(get_db),
 ):
     note = db.query(Note).filter(Note.note_id == note_id).first()

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Body
+from fastapi import APIRouter, Depends, Body, Form
 from sqlalchemy.orm import Session
 from app.db import SessionLocal
 from app.models.material import Material
@@ -58,8 +58,8 @@ async def create_marklist(
     list_id: str,
     page: int,
     current_user: User = Depends(get_current_user),
-    material_id: str = Body(None),
-    bookmark_list: str = Body(None),
+    material_id: str = Form(None),
+    bookmark_list: str = Form(None),
     db: Session = Depends(get_db),
 ):
     marklist = db.query(BookmarkList).filter(BookmarkList.list_id == list_id).first()

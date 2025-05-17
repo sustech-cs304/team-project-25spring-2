@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Body, HTTPException, status
+from fastapi import APIRouter, Depends, Body, Form, HTTPException, status
 from sqlalchemy.orm import Session
 from app.db import SessionLocal
 from app.models.material import Material
@@ -39,11 +39,11 @@ async def get_materials(db: Session = Depends(get_db)):
 @router.post("/materials")
 async def create_material(
     current_user: User = Depends(get_current_user),
-    material_id: str = Body(None),
-    material_name: str = Body(None),
-    section_id: str = Body(None),
-    data: str = Body(None),
-    comments: list[str] = Body(None),
+    material_id: str = Form(None),
+    material_name: str = Form(None),
+    section_id: str = Form(None),
+    data: str = Form(None),
+    comments: list[str] = Form(None),
     db: Session = Depends(get_db),
 ):
     material = Material(
@@ -106,10 +106,10 @@ async def get_material(material_id: str, db: Session = Depends(get_db)):
 async def update_material(
     material_id: str,
     db: Session = Depends(get_db),
-    material_name: str = Body(None),
-    section_id: str = Body(None),
-    data: str = Body(None),
-    comments: list[str] = Body(None),
+    material_name: str = Form(None),
+    section_id: str = Form(None),
+    data: str = Form(None),
+    comments: list[str] = Form(None),
 ):
     material = db.query(Material).filter(Material.material_id == material_id).first()
     if material is None:

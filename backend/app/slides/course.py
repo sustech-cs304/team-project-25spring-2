@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Body
+from fastapi import APIRouter, Depends, Body, Form
 from sqlalchemy.orm import Session
 from app.db import SessionLocal
 from app.models.material import Material
@@ -67,13 +67,13 @@ async def get_course_info(course_id: str, db: Session = Depends(get_db)):
 @router.post("/course_info")
 async def create_course(
     db: Session = Depends(get_db),
-    course_id: str = Body(None),
-    name: str = Body(None),
-    description: str = Body(None),
-    number: str = Body(None),
-    teacher_id: list[str] = Body(None),
-    sections: list[str] = Body(None),
-    assignments: list[str] = Body(None),
+    course_id: str = Form(None),
+    name: str = Form(None),
+    description: str = Form(None),
+    number: str = Form(None),
+    teacher_id: list[str] = Form(None),
+    sections: list[str] = Form(None),
+    assignments: list[str] = Form(None),
 ):
     course = db.query(Course).filter(Course.course_id == course_id).first()
     if course is None:
@@ -111,8 +111,8 @@ async def create_course(
 async def add_student_to_course(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    course_id: str = Body(None),
-    student_id: str = Body(None),
+    course_id: str = Form(None),
+    student_id: str = Form(None),
 ):
     course = db.query(Course).filter(Course.course_id == course_id).first()
     if current_user.is_teacher == False:

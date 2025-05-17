@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Body
+from fastapi import APIRouter, Depends, Body, Form
 from sqlalchemy.orm import Session
 from app.db import SessionLocal
 from app.models.material import Material
@@ -50,11 +50,11 @@ async def get_sections(course_id: str, db: Session = Depends(get_db)):
 @router.post("/section")
 async def create_section(
     db: Session = Depends(get_db),
-    section_id: str = Body(None),
-    course_id: str = Body(None),
-    name: str = Body(None),
-    materials: list[str] = Body(None),
-    schedules: list[str] = Body(None),
+    section_id: str = Form(None),
+    course_id: str = Form(None),
+    name: str = Form(None),
+    materials: list[str] = Form(None),
+    schedules: list[str] = Form(None),
 ):
     section = db.query(Section).filter(Section.section_id == section_id).first()
     if section is None:
