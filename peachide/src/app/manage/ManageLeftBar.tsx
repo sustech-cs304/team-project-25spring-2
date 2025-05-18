@@ -244,6 +244,7 @@ export default function ManageLeftBar({ isVisible, onSelectCourse, selectedCours
 
   const fetchCourses = async () => {
     try {
+        console.log(token)
       setLoading(true);
       const response = await fetch(process.env.NEXT_PUBLIC_API_URL + '/courses', {
         headers: {
@@ -282,8 +283,9 @@ export default function ManageLeftBar({ isVisible, onSelectCourse, selectedCours
   };
 
   useEffect(() => {
-    fetchCourses();
-  }, []);
+      if (!token) return;
+        fetchCourses();
+  }, [token]);
 
   const handleAddCourse = () => {
     setCourseToEdit(undefined);
