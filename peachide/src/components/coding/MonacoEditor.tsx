@@ -25,6 +25,12 @@ const MonacoEditorComponent: React.FC<MonacoEditorProps> = ({
         }
     }, []);
 
+    useEffect(() => {
+        if (editorRef.current) {
+            editorRef.current.setValue(initialData);
+        }
+    }, [initialData]);
+
     const handleSave = useCallback(() => {
         if (onSave) {
             onSave(contentRef.current);
@@ -48,20 +54,20 @@ const MonacoEditorComponent: React.FC<MonacoEditorProps> = ({
         const handleResize = () => {
             if (editorRef.current) {
                 try {
-                editorRef.current.layout();
+                    editorRef.current.layout();
                 } catch (err) {
-                console.warn("Could not update editor layout:", err);
+                    console.warn("Could not update editor layout:", err);
                 }
             }
         };
-      
+
         const resizeObserver = new ResizeObserver(handleResize);
         const currentEditor = editorRef.current;
-        
+
         if (currentEditor?.getContainerDomNode()) {
             resizeObserver.observe(currentEditor.getContainerDomNode());
         }
-      
+
         return () => {
             resizeObserver.disconnect();
             editorRef.current?.dispose();
