@@ -137,6 +137,18 @@ def generate_random_material(section_id=None, path=None):
         "comments": []
     }
 
+def generate_random_bookmarklist(material_id, user_id):
+    """Generate random bookmarklist data for testing"""
+    list_id = str(uuid.uuid4())
+    bookmarklist_data = {
+        "list_id": list_id,
+        "material_id": material_id,
+        "user_id": user_id,
+        "page": random.randint(1, 100),
+        "bookmark_list": []
+    }
+    return list_id, bookmarklist_data
+
 Student_id_list = []
 Teacher_id_list = []
 Course_id_list = []
@@ -144,6 +156,7 @@ Section_id_list = []
 Material_id_list = []
 Note_id_list = []
 Code_snippet_id_list = []
+Bookmarklist_id_list = []
 
 def get_token(user_id):
     return Student_id_list[user_id]
@@ -309,3 +322,16 @@ def test_user_search():
     print("*" * 200)
     assert response.status_code == 200
     assert response.json().get("teachers")[0].get("name") == Teacher_id_list[0]["name"]
+
+def test_create_bookmarklist():
+    student_token = Student_id_list[0]["token"]
+    headers = {"Authorization": f"Bearer {student_token}"}
+
+    list_id, bookmarklist_data = generate_random_bookmarklist(Material_id_list[0], Student_id_list[0]["user_id"])
+    Bookmarklist_id_list.append(list_id)
+    response = client.post("/api/marklist/" + list_id + "/page/" + str(bookmarklist_data["page"]), data=bookmarklist_data, headers=headers)
+    assert response.status_code == 200 or response.status_code == 201
+
+    response = client.get("/api/marklist/" + Material_id_list[0], headers=headers)
+    assert response.status_code == 200
+    assert response.json().get("marklists")[0].get("list_id") == Bookmarklist_id_list[0]
