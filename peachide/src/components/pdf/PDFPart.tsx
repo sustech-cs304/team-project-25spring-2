@@ -72,17 +72,15 @@ const BookmarkButton: React.FC<{
     pageNumber: number,
     position: { x: number; y: number }
 }> = ({ onFeedbackAction, props, buttonClassName, pageNumber, position }) => {
-    const { bookmarks, addBookmark, removeBookmark } = usePDFContext();
-    const existingBookmark = bookmarks.find(b => b.page === pageNumber);
+    const { bookmarks, addBookmark, removeBookmark, materialId } = usePDFContext();
+    const existingBookmark = bookmarks.find(b => b.material_id === materialId);
 
     const handleAddBookmark = async () => {
         await addBookmark(pageNumber);
     };
 
     const handleRemoveBookmark = async () => {
-        if (existingBookmark) {
-            await removeBookmark(existingBookmark.list_id);
-        }
+        await removeBookmark(pageNumber);
     };
 
     return (
@@ -90,9 +88,9 @@ const BookmarkButton: React.FC<{
             variant="outline"
             size="icon"
             className={buttonClassName}
-            onClick={existingBookmark ? handleRemoveBookmark : handleAddBookmark}
+            onClick={existingBookmark?.bookmark_list.includes(pageNumber) ? handleRemoveBookmark : handleAddBookmark}
         >
-            {existingBookmark ? (
+            {existingBookmark?.bookmark_list.includes(pageNumber) ? (
                 <BookmarkCheck className="text-yellow-500" />
             ) : (
                 <Bookmark />
@@ -104,8 +102,10 @@ const BookmarkButton: React.FC<{
 export const PDFPart: React.FC<PDFPartProps> = ({ props, onFeedbackAction }) => {
     const [numPages, setNumPages] = useState<number>();
     const [scale, setScale] = useState(1);
+    const [pageWidth, setPageWidth] = useState(0);
+    const [pageHeight, setPageHeight] = useState(0);
     const pdfContainerRef = useRef<HTMLDivElement>(null);
-    const { snippets, bookmarks, setPageNumber } = usePDFContext();
+    const { snippets, bookmarks, setPageNumber, materialId } = usePDFContext();
     const [localSnippets, setLocalSnippets] = useState<SnippetsData>([]);
     const { isTeacher } = useUserContext();
 
@@ -121,6 +121,8 @@ export const PDFPart: React.FC<PDFPartProps> = ({ props, onFeedbackAction }) => 
     const onPageLoadSuccess = (page: any) => {
         const containerWidth = pdfContainerRef.current?.clientWidth;
         const pdfWidth = page?.originalWidth;
+        setPageWidth(pdfWidth);
+        setPageHeight(page?.originalHeight);
         if (containerWidth && pdfWidth && scale === 1) // in initial load, set scale to fit the width
             setScale(containerWidth / pdfWidth);
     };
@@ -151,19 +153,19 @@ export const PDFPart: React.FC<PDFPartProps> = ({ props, onFeedbackAction }) => 
         const rect = e.currentTarget.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
-        const position = { x, y };
+        const position = { x: x / scale, y: y / scale };
         onFeedbackAction({ clickPosition: position, pageNumber: pageNumber });
     };
 
-    const handleBookmarkClick = (bookmark: BookmarkType) => {
+    const handleBookmarkClick = (bookmark: number) => {
         if (pdfContainerRef.current) {
             const pageHeight = (pdfContainerRef.current.scrollHeight - 50) / numPages!;
-            const targetScroll = (bookmark.page - 1) * pageHeight + 1;
+            const targetScroll = (bookmark - 1) * pageHeight + 1;
             pdfContainerRef.current.scrollTo({
                 top: targetScroll,
                 behavior: 'smooth'
             });
-            setPageNumber(bookmark.page);
+            setPageNumber(bookmark);
         }
     };
 
@@ -189,8 +191,8 @@ export const PDFPart: React.FC<PDFPartProps> = ({ props, onFeedbackAction }) => 
                     >
                         <div className="react-pdf__Page__textContent textLayer" data-main-rotation="0"
                             style={{
-                                width: 'round(down, var(--scale-factor) * 960px, var(--scale-round-x, 1px))',
-                                height: 'round(down, var(--scale-factor) * 540px, var(--scale-round-y, 1px))',
+                                width: `round(down, ${scale * pageWidth}px, var(--scale-round-x, 1px))`,
+                                height: `round(down, ${scale * pageHeight}px, var(--scale-round-y, 1px))`,
                                 pointerEvents: 'none',
                             }}>
                             {localSnippets.map((snippet, idx) => (
@@ -198,8 +200,8 @@ export const PDFPart: React.FC<PDFPartProps> = ({ props, onFeedbackAction }) => 
                                 <div key={idx}
                                     style={{
                                         position: 'absolute',
-                                        left: snippet.position.x,
-                                        top: snippet.position.y,
+                                        left: snippet.position.x * scale,
+                                        top: snippet.position.y * scale,
                                         pointerEvents: 'auto',
                                     }}>
                                     <Button variant="outline" size="icon" className="size-6 ml-2 mb-2"
@@ -243,17 +245,19 @@ export const PDFPart: React.FC<PDFPartProps> = ({ props, onFeedbackAction }) => 
                 </div>
                 <div className="ml-2 flex space-x-2 overflow-x-auto max-w-full mt-2 mb-2">
                     {bookmarks
-                        .slice()
-                        .sort((a, b) => a.page - b.page)
+                        .filter(bookmark => bookmark.material_id === materialId)
+                        .map(bookmark => bookmark.bookmark_list)
+                        .flat()
+                        .sort((a, b) => a - b)
                         .map(bookmark => (
                             <Button
-                                key={bookmark.list_id}
-                                variant={props.pageNumber === bookmark.page ? "default" : "outline"}
+                                key={bookmark}
+                                variant={props.pageNumber === bookmark ? "default" : "outline"}
                                 size="sm"
                                 className="text-xs whitespace-nowrap"
                                 onClick={() => handleBookmarkClick(bookmark)}
                             >
-                                Page {bookmark.page}
+                                Page {bookmark}
                             </Button>
                         ))}
                 </div>
