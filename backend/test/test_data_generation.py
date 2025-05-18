@@ -101,7 +101,7 @@ def generate_random_code_snippet():
 def generate_random_user_data(is_teacher=False):
     """Generate random user data for testing"""
     user_id = f"1221" + str(random.randint(1000, 9999))
-    name = f"Test User {generate_random_string(4)}"
+    name = f"{generate_random_string(4)}"
     password = f"password"
     email = f"test{generate_random_string(4)}@gmail.com"
     return {
@@ -165,9 +165,9 @@ def setup_test_user(is_teacher=False):
     
     token = login_response.json()["token"]
     if user_data["is_teacher"]:
-        Teacher_id_list.append({"user_id": user_data["user_id"], "token": token})
+        Teacher_id_list.append({"user_id": user_data["user_id"], "token": token, "name": user_data["name"]})
     else:
-        Student_id_list.append({"user_id": user_data["user_id"], "token": token})
+        Student_id_list.append({"user_id": user_data["user_id"], "token": token, "name": user_data["name"]})
 
     return token, user_data
 
@@ -297,3 +297,15 @@ def test_create_code_snippet():
     assert response.json().get("code_snippets")[0].get("user_id") == Student_id_list[0]["user_id"]
 
     
+def test_user_search():
+    student_token = Student_id_list[0]["token"]
+    headers = {"Authorization": f"Bearer {student_token}"}
+    response = client.get("/api/search_user/" + Student_id_list[0]["name"], headers=headers)
+    assert response.status_code == 200
+    assert response.json().get("user")[0].get("user_id") == Student_id_list[0]["user_id"]
+    response = client.get("/api/instructors/" + Course_id_list[0], headers=headers)
+    print("*" * 200)
+    print(response.json())
+    print("*" * 200)
+    assert response.status_code == 200
+    assert response.json().get("teachers")[0].get("name") == Teacher_id_list[0]["name"]

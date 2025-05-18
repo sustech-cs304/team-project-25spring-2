@@ -16,6 +16,7 @@ from app.slides.course import router as course_router
 from app.slides.section import router as section_router
 from app.auth import router as auth_router
 from app.ai import router as ai_router
+from app.slides.user import router as user_router
 
 
 @asynccontextmanager
@@ -48,6 +49,7 @@ app.add_middleware(
 app.include_router(comment_router, tags=["comments"], prefix="/api")
 app.include_router(material_router, tags=["materials"], prefix="/api")
 app.include_router(note_router, tags=["notes"], prefix="/api")
+app.include_router(user_router, tags=["users"], prefix="/api")
 app.include_router(code_snippet_router, tags=["code_snippets"], prefix="/api")
 app.include_router(bookmarklist_router, tags=["bookmarklists"], prefix="/api")
 app.include_router(course_router, tags=["courses"], prefix="/api")

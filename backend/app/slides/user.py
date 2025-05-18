@@ -23,10 +23,9 @@ def get_db():
         db.close()
 
 
-@router.get("/instructors/{class_id}/")
-async def get_instructors(class_id: str, db: Session = Depends(get_db)):
-    course = db.query(Course).filter(Course.course_id == class_id).first()
-    # teacher_id = Column(ARRAY(String), nullable=False) # corresponding to the user_id, but whole user in the api
+@router.get("/instructors/{course_id}")
+async def get_instructors(course_id: str, db: Session = Depends(get_db)):
+    course = db.query(Course).filter(Course.course_id == course_id).first()
     teachers = db.query(User).filter(User.user_id.in_(course.teacher_id)).all()
     if not teachers:
         return {"message": "No instructors found for this course."}
@@ -44,8 +43,8 @@ async def get_instructors(class_id: str, db: Session = Depends(get_db)):
 
 @router.get("/search_user/{name}")
 async def search_user(name: str, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.name.like(f"%{name}%")).all()
-    if not user:
+    users = db.query(User).filter(User.name.like(f"%{name}%")).all()
+    if not users:
         return {"message": "No user found."}
     return {"message": "User found.", 
             "user": [
@@ -53,6 +52,6 @@ async def search_user(name: str, db: Session = Depends(get_db)):
                     "name": user.name,
                     "user_id": user.user_id,
                     "is_teacher": user.is_teacher,
-                }
+                } for user in users
             ]
         }
