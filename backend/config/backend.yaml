@@ -46,6 +46,8 @@ spec:
         env:
         - name: ENVNAME
           value: "k3s"
+        - name: OPENAI_API_KEY
+          value: ""
         envFrom:
         - configMapRef:
             name: postgres-config
