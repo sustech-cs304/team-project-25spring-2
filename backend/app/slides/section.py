@@ -92,3 +92,11 @@ async def create_section(
         db.commit()
         db.refresh(section)
         return {"message": "Section updated successfully"}
+
+@router.delete("/section/{section_id}")
+async def delete_section(section_id: str, db: Session = Depends(get_db)):
+    section = db.query(Section).filter(Section.section_id == section_id).first()
+    if section is None:
+        return {"message": "Section not found"}
+    db.delete(section)
+    db.commit()
