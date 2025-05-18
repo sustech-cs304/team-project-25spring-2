@@ -9,15 +9,19 @@ from app.models.user import User
 from app.models.course import Course
 from app.models.section import Section
 from app.models.bookmarklist import BookmarkList
-import json
 from app.auth.middleware import get_current_user
+import json
 from . import get_db
 
 router = APIRouter()
 
 
 @router.get("/marklist/{material_id}")
-async def get_marklist(material_id: str, db: Session = Depends(get_db)):
+async def get_marklist(
+    material_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     marklist = (
         db.query(BookmarkList).filter(BookmarkList.material_id == material_id).all()
     )
@@ -100,7 +104,11 @@ async def create_marklist(
 
 
 @router.delete("/marklist/{list_id}")
-async def delete_marklist(list_id: str, db: Session = Depends(get_db)):
+async def delete_marklist(
+    list_id: str,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user_id)
+):
     marklist = db.query(BookmarkList).filter(BookmarkList.list_id == list_id).first()
     if marklist is None:
         return {"message": "Marklist not found"}

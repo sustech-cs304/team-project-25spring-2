@@ -12,7 +12,10 @@ router = APIRouter()
 
 
 @router.get("/materials")
-async def get_materials(db: Session = Depends(get_db)):
+async def get_materials(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     materials = db.query(Material).all()
     return {
         "message": "Materials retrieved successfully",
@@ -63,7 +66,11 @@ async def create_material(
 
 
 @router.get("/material/{material_id}")
-async def get_material(material_id: str, db: Session = Depends(get_db)):
+async def get_material(
+    material_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     material = db.query(Material).filter(Material.material_id == material_id).first()
     if not material:
         raise HTTPException(
@@ -101,6 +108,7 @@ async def update_material(
     material_name: str = Form(None),
     section_id: str = Form(None),
     data: str = Form(None),
+    current_user: User = Depends(get_current_user)
 ):
     material = db.query(Material).filter(Material.material_id == material_id).first()
     if material is None:
@@ -163,7 +171,11 @@ async def update_material(
 
 
 @router.delete("/material/{material_id}")
-async def delete_material(material_id: str, db: Session = Depends(get_db)):
+async def delete_material(
+    material_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     material = db.query(Material).filter(Material.material_id == material_id).first()
     if material is None:
         return {"message": "Material not found"}

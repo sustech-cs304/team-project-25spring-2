@@ -18,7 +18,11 @@ router = APIRouter()
 
 
 @router.get("/assignments/{course_id}")
-async def get_assignments(course_id: str, db: Session = Depends(get_db)):
+async def get_assignments(
+    course_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     course = db.query(Course).filter(Course.course_id == course_id).first()
     if not course:
         return {"message": "Course not found."}

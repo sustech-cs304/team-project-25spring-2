@@ -9,6 +9,7 @@ from app.models.user import User
 from app.models.course import Course
 from app.models.section import Section
 from app.models.bookmarklist import BookmarkList
+from app.auth.middleware import get_current_user
 import json
 from . import get_db
 
@@ -16,7 +17,11 @@ router = APIRouter()
 
 
 @router.get("/sections/{course_id}")
-async def get_sections(course_id: str, db: Session = Depends(get_db)):
+async def get_sections(
+    course_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     sections = db.query(Section).filter(Section.course_id == course_id).all()
     return {
         "message": "Sections retrieved successfully",
@@ -47,6 +52,7 @@ async def create_section(
     course_id: str = Form(None),
     name: str = Form(None),
     schedules: list[str] = Form(None),
+    current_user: User = Depends(get_current_user)
 ):
     section = db.query(Section).filter(Section.section_id == section_id).first()
     if section is None:
@@ -89,7 +95,11 @@ async def create_section(
 
 
 @router.delete("/section/{section_id}")
-async def delete_section(section_id: str, db: Session = Depends(get_db)):
+async def delete_section(
+    section_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     section = db.query(Section).filter(Section.section_id == section_id).first()
     if section is None:
         return {"message": "Section not found"}

@@ -62,7 +62,11 @@ async def get_courses(
 
 
 @router.get("/course_info/{course_id}")
-async def get_course_info(course_id: str, db: Session = Depends(get_db)):
+async def get_course_info(
+    course_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     course = db.query(Course).filter(Course.course_id == course_id).first()
     if course is None:
         return {"message": "Course not found"}

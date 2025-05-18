@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Body, Form
+from fastapi import APIRouter, Depends, Body, Form, HTTPException, status
 from sqlalchemy.orm import Session
 from app.models.material import Material
 from app.models.comment import Comment
@@ -132,7 +132,16 @@ async def create_code_snippet(
 
 
 @router.delete("/teacher/{snippet_id}")
-async def delete_code_snippet(snippet_id: str, db: Session = Depends(get_db)):
+async def delete_code_snippet(
+    snippet_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if not current_user.is_teacher:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized"
+        )
+
     snippets = db.query(CodeSnippet).filter(CodeSnippet.snippet_id == snippet_id).all()
     if snippets:
         for snippet in snippets:
@@ -144,11 +153,24 @@ async def delete_code_snippet(snippet_id: str, db: Session = Depends(get_db)):
 
 
 @router.post("/execute/snippet/{snippet_id}")
-async def execute_code_snippet(snippet_id: str, db: Session = Depends(get_db)):
+async def execute_code_snippet(
+    snippet_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     snippet = db.query(CodeSnippet).filter(CodeSnippet.snippet_id == snippet_id).first()
     if not snippet:
         return {"error": "Snippet not found"}
 
-    client = PystonClient(base_url="http://piston:2000/api/v2")
-    result = await client.execute(snippet.lang, File(snippet.content))
-    return result
+    try:
+        client = PystonClient(base_url="http://piston:2000/api/v2/")
+        result = await client.execute(snippet.lang, [File(snippet.content)])
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+
+    return {
+        "result": result["raw_json"]["run"]["stdout"],
+        "error": result["raw_json"]["run"]["stderr"],
+    }

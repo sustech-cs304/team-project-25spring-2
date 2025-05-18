@@ -1,4 +1,3 @@
-import os
 from fastapi import APIRouter, Form, Response, BackgroundTasks
 from fastapi import APIRouter, Depends, Body
 from fastapi.responses import StreamingResponse
@@ -6,11 +5,14 @@ from openai import OpenAI
 from sqlalchemy.orm import Session
 from app.db import SessionLocal
 from app.models.chat import Chat
-import uuid
 from app.models.material import Material
+from app.models.user import User
+from app.auth.middleware import get_current_user
 import base64
+import os
 import io
 import json
+import uuid
 
 
 router = APIRouter()
@@ -31,7 +33,10 @@ client = OpenAI(
 
 
 @router.get("/chat")
-async def chat(db: Session = Depends(get_db)):
+async def chat(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     chats = db.query(Chat).all()
     if not chats:
         return []
@@ -46,7 +51,11 @@ async def chat(db: Session = Depends(get_db)):
 
 
 @router.get("/chat/{chat_id}")
-async def get_chat(chat_id: str, db: Session = Depends(get_db)):
+async def get_chat(
+    chat_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     chat = db.query(Chat).filter(Chat.chat_id == chat_id).first()
     if not chat:
         return None
@@ -61,7 +70,10 @@ async def get_chat(chat_id: str, db: Session = Depends(get_db)):
 
 
 @router.post("/chat")
-async def create_chat(db: Session = Depends(get_db)):
+async def create_chat(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     chat_id = str(uuid.uuid4())
     chat = Chat(
         chat_id=chat_id, user_id=None, material_id=None, title="New Chat", messages=[]
@@ -76,7 +88,10 @@ async def create_chat(db: Session = Depends(get_db)):
 
 @router.post("/chat/{chat_id}/name")
 async def update_chat_name(
-    chat_id: str, title: str = Form(...), db: Session = Depends(get_db)
+    chat_id: str,
+    title: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     chat = db.query(Chat).filter(Chat.chat_id == chat_id).first()
     if not chat:
@@ -103,7 +118,11 @@ async def update_chat_name(
 
 
 @router.delete("/chat/{chat_id}")
-async def delete_chat(chat_id: str, db: Session = Depends(get_db)):
+async def delete_chat(
+    chat_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     chat = db.query(Chat).filter(Chat.chat_id == chat_id).first()
     if not chat:
         return {"message": "Chat not found"}

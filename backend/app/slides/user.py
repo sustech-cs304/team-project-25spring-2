@@ -9,6 +9,8 @@ from app.models.user import User
 from app.models.course import Course
 from app.models.section import Section
 from app.models.bookmarklist import BookmarkList
+from app.auth.middleware import get_current_user
+
 import json
 from . import get_db
 
@@ -16,7 +18,11 @@ router = APIRouter()
 
 
 @router.get("/instructors/{course_id}")
-async def get_instructors(course_id: str, db: Session = Depends(get_db)):
+async def get_instructors(
+    course_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
     course = db.query(Course).filter(Course.course_id == course_id).first()
     teachers = db.query(User).filter(User.user_id.in_(course.teacher_id)).all()
     if not teachers:
@@ -35,7 +41,11 @@ async def get_instructors(course_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/search_user/{name}")
-async def search_user(name: str, db: Session = Depends(get_db)):
+async def search_user(
+    name: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
     users = db.query(User).filter(User.name.like(f"%{name}%")).all()
     if not users:
         return {"message": "No user found."}

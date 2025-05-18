@@ -10,7 +10,11 @@ router = APIRouter()
 
 
 @router.get("/comment/{comment_id}")
-async def get_comment(comment_id: str, db: Session = Depends(get_db)):
+async def get_comment(
+    comment_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     comment = db.query(Comment).filter(Comment.comment_id == comment_id).first()
     if comment is None:
         return {"error": "Comment not found"}
@@ -96,6 +100,7 @@ async def reply_to_comment(
 async def delete_comment(
     comment_id: str,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     comment = db.query(Comment).filter(Comment.comment_id == comment_id).first()
     if comment is None:
