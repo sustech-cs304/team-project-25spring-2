@@ -21,7 +21,7 @@ import { AIChatButton } from '@/components/ai/AIChatButton';
 const EditorComp = dynamic(() =>
     import('../../../components/editors/markdown-editor'), { ssr: false });
 
-function PDFSection({ url, materialId }: { url: string, materialId: string }) {
+function PDFSection({ url, materialId, materialName }: { url: string, materialId: string, materialName: string }) {
     const {
         pageNumber,
         setPageNumber,
@@ -36,6 +36,15 @@ function PDFSection({ url, materialId }: { url: string, materialId: string }) {
     const [isAddingSnippet, setIsAddingSnippet] = useState<boolean>(false);
     const { isTeacher } = useUserContext();
     const { token } = useUserContext();
+
+    const downloadPDF = () => {
+        const pdfUrl = 'data:application/pdf;base64,' + url;
+        const link = document.createElement('a');
+        link.href = pdfUrl;
+        link.download = `${materialName}.pdf`;
+        console.log(materialName, pdfUrl);
+        link.click();
+    };
 
     const handleFeedback = async (feedback: any) => {
         if (feedback.pageNumber) {
@@ -140,6 +149,11 @@ function PDFSection({ url, materialId }: { url: string, materialId: string }) {
                 Page {pageNumber} / {numPages}
             </div>
             <div className="text-right">
+                <Button className="mr-2 h-6 text-xs" onClick={() => {
+                    downloadPDF();
+                }}>
+                    Download
+                </Button>
                 <Button className={`${isTeacher ? 'h-6 text-xs' : 'hidden'}`} onClick={() => {
                     setIsAddingSnippet(!isAddingSnippet);
                     toast.info("Click on the PDF to add a snippet");
@@ -458,7 +472,7 @@ export default function Slides({ params }: {
             transition={{ duration: 0.5 }}>
             <ResizablePanelGroup direction="horizontal">
                 <ResizablePanel defaultSize={70} className="col-span-2 h-full flex flex-col pr-5">
-                    <PDFSection url={material?.data} materialId={material?.material_id || ''} />
+                    <PDFSection url={material?.data} materialId={material?.material_id || ''} materialName={material?.material_name || ''} />
                     <CommentsSection id={resolvedParams.id} />
                 </ResizablePanel>
                 <ResizableHandle />
