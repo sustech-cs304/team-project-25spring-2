@@ -23,9 +23,9 @@ from app.slides.user import router as user_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: setup database
-    Base.metadata.reflect(bind=engine)
-    Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
+    # Base.metadata.reflect(bind=engine)
+    # Base.metadata.drop_all(bind=engine)
+    # Base.metadata.create_all(bind=engine)
     yield
     # Shutdown: no cleanup needed
 

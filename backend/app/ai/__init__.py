@@ -208,6 +208,7 @@ async def send_message(
                         "content": full_assistant_message,
                     }
                 )
+                print(full_assistant_message, "FULL_ASSISTANT_MESSAGE")
 
         # Signal end of stream
         yield ""
