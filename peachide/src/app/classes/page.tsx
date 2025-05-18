@@ -139,9 +139,11 @@ function ClassesLeftBar({ props, isVisible, onSelectCourse, selectedCourseId }: 
         setLoading(false);
       }
     };
-
+    if(token==null){
+        return;
+    }
     fetchCourses();
-  }, []);
+  }, [token]);
 
   return (
     <div
@@ -193,9 +195,9 @@ function ClassesLeftBar({ props, isVisible, onSelectCourse, selectedCourseId }: 
               <p className="text-sm text-muted-foreground mt-1">
                 You don't have any courses yet
               </p>
-              <Button className="mt-4" size="sm">
-                Enroll in a course
-              </Button>
+              {/*<Button className="mt-4" size="sm">*/}
+              {/*  Enroll in a course*/}
+              {/*</Button>*/}
             </div>
           )}
         </div>

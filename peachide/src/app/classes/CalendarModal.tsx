@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { motion } from "framer-motion";
+import {useUserContext} from "@/app/UserEnvProvider";
 
 // 定义API响应的类型
 interface CalendarData {
@@ -53,8 +54,10 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarDays, setCalendarDays] = useState<Date[]>([]);
   const [events, setEvents] = useState<Map<string, DayEvent[]>>(new Map());
+  const { token } = useUserContext();
 
-  // 每当弹窗打开时获取数据
+
+    // 每当弹窗打开时获取数据
   useEffect(() => {
     if (open) {
       fetchCalendarData();
@@ -78,18 +81,22 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(process.env.NEXT_PUBLIC_API_URL + '/classes/calendar');
-      
+        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + '/courses/calendar', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
       if (!response.ok) {
         throw new Error(`Failed to fetch calendar data: ${response.status}`);
       }
-      
+
       const data = await response.json();
       setCalendarData(data);
     } catch (error) {
       console.error('Error fetching calendar data:', error);
       setError('Failed to load calendar data. Please try again later.');
-      
+
       // 使用模拟数据进行开发测试
       setCalendarData({
         "courses": [
@@ -168,52 +175,52 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
   const generateCalendarDays = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-    
+
     // 获取当月第一天
     const firstDay = new Date(year, month, 1);
     // 获取当月最后一天
     const lastDay = new Date(year, month + 1, 0);
-    
+
     // 确定日历的起始日期（上月末尾几天）
     const startDay = new Date(firstDay);
     startDay.setDate(startDay.getDate() - startDay.getDay());
-    
+
     // 确定日历的结束日期（下月开始几天）
     const endDay = new Date(lastDay);
     const daysToAdd = 6 - endDay.getDay();
     endDay.setDate(endDay.getDate() + daysToAdd);
-    
+
     // 生成所有日历天数
     const days: Date[] = [];
     let currentDay = new Date(startDay);
-    
+
     while (currentDay <= endDay) {
       days.push(new Date(currentDay));
       currentDay.setDate(currentDay.getDate() + 1);
     }
-    
+
     setCalendarDays(days);
   };
 
   // 处理课程和作业事件
   const processEvents = () => {
     if (!calendarData) return;
-    
+
     const newEvents = new Map<string, DayEvent[]>();
-    
+
     calendarData.courses.forEach(course => {
       // 处理课程安排
       course.sections.forEach(section => {
         section.schedules.forEach(schedule => {
           // 直接使用后端提供的日期字符串，不做任何转换
           const dateKey = schedule.date;
-          
+
           const event: DayEvent = {
             type: 'section',
             name: section.name,
             courseName: course.course_name
           };
-          
+
           if (newEvents.has(dateKey)) {
             newEvents.get(dateKey)!.push(event);
           } else {
@@ -221,18 +228,18 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
           }
         });
       });
-      
+
       // 处理作业截止日期
       course.assignments.forEach(assignment => {
         // 直接使用后端提供的日期字符串，不做任何转换
         const dateKey = assignment.deadline;
-        
+
         const event: DayEvent = {
           type: 'assignment',
           name: assignment.name,
           courseName: course.course_name
         };
-        
+
         if (newEvents.has(dateKey)) {
           newEvents.get(dateKey)!.push(event);
         } else {
@@ -240,7 +247,7 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
         }
       });
     });
-    
+
     setEvents(newEvents);
   };
 
@@ -285,15 +292,15 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
   // 渲染日历头部
   const renderHeader = () => {
     const monthName = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
-    
+
     return (
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h3 className="text-xl font-semibold tracking-tight">{monthName}</h3>
         </div>
         <div className="flex items-center gap-2">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="sm"
             onClick={() => setCurrentDate(new Date())}
             className="text-xs font-medium px-3 h-7"
@@ -319,7 +326,7 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
   // 渲染星期头部
   const renderWeekdays = () => {
     const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    
+
     return (
       <div className="grid grid-cols-7 text-center border-b">
         {weekdays.map(day => (
@@ -342,7 +349,7 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
         </div>
       );
     }
-    
+
     return (
       <div className="grid grid-cols-7 border-collapse">
         {calendarDays.map((day, index) => {
@@ -351,13 +358,13 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
           const isCurrentDay = isToday(day);
           const isWeekend = day.getDay() === 0 || day.getDay() === 6;
           const isLastInRow = (index + 1) % 7 === 0;
-          
+
           return (
             <div
               key={day.toISOString()}
               className={`h-28 relative border-r border-b ${isLastInRow ? 'border-r-0' : ''}
-                ${isCurrentMonth(day) 
-                  ? isWeekend ? 'bg-card/80' : 'bg-card' 
+                ${isCurrentMonth(day)
+                  ? isWeekend ? 'bg-card/80' : 'bg-card'
                   : isWeekend ? 'bg-muted/30' : 'bg-muted/20 text-muted-foreground'} 
                 ${isCurrentDay ? 'bg-primary/5' : ''}
                 hover:bg-accent/10 transition-colors duration-150`}
@@ -368,7 +375,7 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
                   {day.getDate()}
                 </span>
               </div>
-              
+
               {/* 显示事件 */}
               <div className="p-[3px] pt-0 overflow-hidden">
                 {dayEvents.length > 0 && (
@@ -376,14 +383,14 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
                     {dayEvents.slice(0, 3).map((event, i) => (
                       <Tooltip key={i}>
                         <TooltipTrigger asChild>
-                          <div 
+                          <div
                             className={`px-1.5 py-0.5 text-xs leading-tight truncate rounded-[2px]
-                              ${event.type === 'section' 
-                                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200' 
+                              ${event.type === 'section'
+                                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200'
                                 : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200'}`}
                           >
-                            {event.name.length > 18 
-                              ? `${event.name.substring(0, 18)}...` 
+                            {event.name.length > 18
+                              ? `${event.name.substring(0, 18)}...`
                               : event.name}
                           </div>
                         </TooltipTrigger>
@@ -393,7 +400,7 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
                         </TooltipContent>
                       </Tooltip>
                     ))}
-                    
+
                     {dayEvents.length > 3 && (
                       <div className="text-xs text-muted-foreground text-center mt-0.5">
                         +{dayEvents.length - 3} more
@@ -413,14 +420,14 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
   const renderEventsList = () => {
     // 获取当前月份所有事件
     const currentMonthEvents: { date: string; events: DayEvent[] }[] = [];
-    
+
     events.forEach((eventList, dateKey) => {
       // 创建日期对象，但只用于比较月份和年份
       const dateParts = dateKey.split('-').map(part => parseInt(part, 10));
       // 注意：JavaScript月份是0-11，所以需要减1
       const month = dateParts[1] - 1;
       const year = dateParts[0];
-      
+
       if (month === currentDate.getMonth() && year === currentDate.getFullYear()) {
         currentMonthEvents.push({
           date: dateKey,
@@ -428,13 +435,13 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
         });
       }
     });
-    
+
     // 按日期排序
     currentMonthEvents.sort((a, b) => {
       // 比较YYYY-MM-DD格式的字符串
       return a.date.localeCompare(b.date);
     });
-    
+
     if (currentMonthEvents.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center p-4 text-muted-foreground h-full">
@@ -443,7 +450,7 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
         </div>
       );
     }
-    
+
     return (
       <div className="space-y-4">
         <h3 className="text-base font-medium tracking-tight">Events This Month</h3>
@@ -453,30 +460,30 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
             const dateParts = date.split('-').map(part => parseInt(part, 10));
             // 创建本地日期对象用于格式化
             const displayDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
-            
+
             // 检查是否是今天（根据年月日判断而非时间戳）
             const today = new Date();
-            const isCurrentDay = today.getFullYear() === dateParts[0] && 
-                               today.getMonth() === dateParts[1] - 1 && 
-                               today.getDate() === dateParts[2];
-            
+            const isCurrentDay = today.getFullYear() === dateParts[0] &&
+              today.getMonth() === dateParts[1] - 1 &&
+              today.getDate() === dateParts[2];
+
             return (
               <div key={date} className="border border-border rounded-md overflow-hidden">
                 <div className={`p-2 border-b border-border flex justify-between items-center
                   ${isCurrentDay ? 'bg-primary/10' : 'bg-muted/20'}`}>
                   <span className="font-medium">
-                    {displayDate.toLocaleDateString('en-US', { 
-                      weekday: 'short', 
-                      month: 'short', 
-                      day: 'numeric' 
+                    {displayDate.toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric'
                     })}
                   </span>
                   {isCurrentDay && <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal">Today</Badge>}
                 </div>
                 <div className="divide-y divide-border/50">
                   {events.map((event, index) => (
-                    <div 
-                      key={index} 
+                    <div
+                      key={index}
                       className="flex items-center gap-2 p-2.5 text-sm hover:bg-accent/10 transition-colors duration-100"
                     >
                       {event.type === 'section' ? (
@@ -506,7 +513,7 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
           <div className="p-3 border-b">
             {renderHeader()}
           </div>
-          
+
           <div className="flex flex-col lg:flex-row overflow-hidden flex-1">
             <div className="flex-1 overflow-hidden flex flex-col">
               {renderWeekdays()}
@@ -514,7 +521,7 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
                 {renderDays()}
               </div>
             </div>
-            
+
             <div className="w-full lg:w-[320px] border-t lg:border-t-0 lg:border-l p-4 overflow-y-auto">
               {renderEventsList()}
             </div>
