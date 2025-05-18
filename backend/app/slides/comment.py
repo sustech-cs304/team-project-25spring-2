@@ -1,20 +1,12 @@
 import uuid
 from fastapi import APIRouter, Depends, Body, Form
 from sqlalchemy.orm import Session
-from app.db import SessionLocal
 from app.models.comment import Comment
 from app.auth.middleware import get_current_user
 from app.models.user import User
+from . import get_db
 
 router = APIRouter()
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 @router.get("/comment/{comment_id}")
@@ -45,8 +37,8 @@ async def get_comment(comment_id: str, db: Session = Depends(get_db)):
             for reply in replies
         ],
     }
-    
-    
+
+
 @router.post("/comment")
 async def create_comment(
     content: str = Form(...),
@@ -66,7 +58,6 @@ async def create_comment(
     db.add(comment)
     db.commit()
     return {"message": "Comment created successfully"}
-    
 
 
 @router.post("/comment/{comment_id}")

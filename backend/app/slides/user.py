@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, Body
 from sqlalchemy.orm import Session
-from app.db import SessionLocal
 from app.models.material import Material
 from app.models.comment import Comment
 from app.models.note import Note
@@ -11,16 +10,9 @@ from app.models.course import Course
 from app.models.section import Section
 from app.models.bookmarklist import BookmarkList
 import json
+from . import get_db
 
 router = APIRouter()
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 @router.get("/instructors/{course_id}")
@@ -41,17 +33,20 @@ async def get_instructors(course_id: str, db: Session = Depends(get_db)):
         )
     return {"message": "Instructors retrieved successfully", "teachers": instructors}
 
+
 @router.get("/search_user/{name}")
 async def search_user(name: str, db: Session = Depends(get_db)):
     users = db.query(User).filter(User.name.like(f"%{name}%")).all()
     if not users:
         return {"message": "No user found."}
-    return {"message": "User found.", 
-            "user": [
-                {
-                    "name": user.name,
-                    "user_id": user.user_id,
-                    "is_teacher": user.is_teacher,
-                } for user in users
-            ]
-        }
+    return {
+        "message": "User found.",
+        "user": [
+            {
+                "name": user.name,
+                "user_id": user.user_id,
+                "is_teacher": user.is_teacher,
+            }
+            for user in users
+        ],
+    }

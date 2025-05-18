@@ -14,6 +14,4 @@ class Assignment(Base):
     deadline = Column(String, index=True)
     is_over = Column(Boolean, index=True)
     is_group_assign = Column(Boolean, index=True)
-    files = Column(
-        ARRAY(String), index=True
-    )
+    files = Column(ARRAY(String), index=True)

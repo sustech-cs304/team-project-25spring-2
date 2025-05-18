@@ -11,6 +11,4 @@ class Group(Base):
     course_id = Column(
         String, ForeignKey("courses.course_id"), nullable=False, index=True
     )
-    users = Column(
-        ARRAY(String), index=True
-    )  
+    users = Column(ARRAY(String), index=True)

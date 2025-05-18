@@ -62,7 +62,6 @@ async def get_chat(chat_id: str, db: Session = Depends(get_db)):
 
 @router.post("/chat")
 async def create_chat(db: Session = Depends(get_db)):
-
     chat_id = str(uuid.uuid4())
     chat = Chat(
         chat_id=chat_id, user_id=None, material_id=None, title="New Chat", messages=[]

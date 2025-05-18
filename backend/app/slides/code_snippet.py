@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, Body, Form
 from sqlalchemy.orm import Session
-from app.db import SessionLocal
 from app.models.material import Material
 from app.models.comment import Comment
 from app.models.note import Note
@@ -8,22 +7,16 @@ from app.models.code_snippet import CodeSnippet
 from pyston import PystonClient, File
 from app.auth.middleware import get_current_user
 from app.models.user import User
+from . import get_db
 
 router = APIRouter()
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
 @router.get("/snippet/{material_id}")
-async def get_code_snippet(material_id: str, 
-                           db: Session = Depends(get_db),
-                           current_user: User = Depends(get_current_user)
+async def get_code_snippet(
+    material_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     code_snippets = (
         db.query(CodeSnippet).filter(CodeSnippet.material_id == material_id).all()
@@ -37,12 +30,19 @@ async def get_code_snippet(material_id: str,
     current_user_code_snippets = []
     for snippet in teacher_code_snippets:
         # 搜索出 当前user的code_snippet中snippet_id与snippet.snippet_id相同的snippet
-        current_user_code_snippet = db.query(CodeSnippet).filter(CodeSnippet.snippet_id == snippet.snippet_id, CodeSnippet.user_id == current_user.user_id).first()
+        current_user_code_snippet = (
+            db.query(CodeSnippet)
+            .filter(
+                CodeSnippet.snippet_id == snippet.snippet_id,
+                CodeSnippet.user_id == current_user.user_id,
+            )
+            .first()
+        )
         if current_user_code_snippet is None:
             current_user_code_snippets.append(snippet)
         else:
             current_user_code_snippets.append(current_user_code_snippet)
-        
+
     return {
         "message": "Code snippets retrieved successfully",
         "code_snippets": [
@@ -72,7 +72,14 @@ async def create_code_snippet(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    snippet = db.query(CodeSnippet).filter(CodeSnippet.snippet_id == snippet_id, CodeSnippet.user_id == current_user.user_id).first()
+    snippet = (
+        db.query(CodeSnippet)
+        .filter(
+            CodeSnippet.snippet_id == snippet_id,
+            CodeSnippet.user_id == current_user.user_id,
+        )
+        .first()
+    )
     if snippet is None:
         snippet = CodeSnippet(
             snippet_id=snippet_id,

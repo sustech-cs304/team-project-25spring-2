@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, Body, Form
 from sqlalchemy.orm import Session
-from app.db import SessionLocal
 from app.models.material import Material
 from app.models.comment import Comment
 from app.models.note import Note
@@ -14,16 +13,9 @@ from app.models.group import Group
 import uuid
 import json
 from app.auth.middleware import get_current_user
+from . import get_db
 
 router = APIRouter()
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 @router.get("/courses")
@@ -31,13 +23,21 @@ async def get_courses(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    courses = db.query(Course).filter(Course.course_id.in_(current_user.courses)).all() if current_user.courses else []
+    courses = (
+        db.query(Course).filter(Course.course_id.in_(current_user.courses)).all()
+        if current_user.courses
+        else []
+    )
     # Collect all teacher_ids from all courses
     all_teacher_ids = set()
     for course in courses:
         if course.teacher_id:
             all_teacher_ids.update(course.teacher_id)
-    teachers = db.query(User).filter(User.user_id.in_(all_teacher_ids)).all() if all_teacher_ids else []
+    teachers = (
+        db.query(User).filter(User.user_id.in_(all_teacher_ids)).all()
+        if all_teacher_ids
+        else []
+    )
     teacher_id_to_name = {teacher.user_id: teacher.name for teacher in teachers}
     return {
         "message": "Courses retrieved successfully",
@@ -51,7 +51,10 @@ async def get_courses(
                 "group_num": course.group_num,
                 "people_per_group": course.people_per_group,
                 "group_deadline": course.group_deadline,
-                "teachers_name": [teacher_id_to_name.get(tid, "Unknown") for tid in (course.teacher_id or [])],
+                "teachers_name": [
+                    teacher_id_to_name.get(tid, "Unknown")
+                    for tid in (course.teacher_id or [])
+                ],
             }
             for course in courses
         ],
@@ -106,11 +109,7 @@ async def create_course(
         db.refresh(course)
         if require_group:
             for _ in range(group_num):
-                group = Group(
-                    group_id=str(uuid.uuid4()),
-                    course_id=course_id,
-                    users=[]
-                )
+                group = Group(group_id=str(uuid.uuid4()), course_id=course_id, users=[])
                 db.add(group)
                 db.commit()
                 db.refresh(group)
@@ -125,12 +124,12 @@ async def create_course(
         if require_group is not None:
             if course.require_group == False and require_group == True:
                 if group_num is None:
-                    return {"message": "Group number is required when require_group is True"}
+                    return {
+                        "message": "Group number is required when require_group is True"
+                    }
                 for _ in range(group_num):
                     group = Group(
-                        group_id=str(uuid.uuid4()),
-                        course_id=course_id,
-                        users=[]
+                        group_id=str(uuid.uuid4()), course_id=course_id, users=[]
                     )
                     db.add(group)
                     db.commit()
@@ -148,6 +147,7 @@ async def create_course(
         db.commit()
         db.refresh(course)
         return {"message": "Course updated successfully"}
+
 
 @router.post("/enroll")
 async def enroll_student_to_course(
@@ -171,31 +171,35 @@ async def enroll_student_to_course(
     db.refresh(member)
     return {"message": "Student added to course successfully"}
 
+
 @router.get("/courses/calendar")
 async def get_calendar(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    courses = db.query(Course).filter(Course.course_id.in_(current_user.courses)).all() if current_user.courses else []
-    return {"message": "Calendar retrieved successfully", 
-            "courses": [
-                {
-                    "sections": [
-                        {
-                            "name": section.name,
-                            "schedules": section.schedules
-                        } for section in course.sections
-                    ],
-                    "course_name": course.name,
-                    "assignments": [
-                        {
-                            "name": assignment.name,
-                            "deadline": assignment.deadline
-                        } for assignment in course.assignments
-                    ]
-                } for course in courses
-            ]
-        }
+    courses = (
+        db.query(Course).filter(Course.course_id.in_(current_user.courses)).all()
+        if current_user.courses
+        else []
+    )
+    return {
+        "message": "Calendar retrieved successfully",
+        "courses": [
+            {
+                "sections": [
+                    {"name": section.name, "schedules": section.schedules}
+                    for section in course.sections
+                ],
+                "course_name": course.name,
+                "assignments": [
+                    {"name": assignment.name, "deadline": assignment.deadline}
+                    for assignment in course.assignments
+                ],
+            }
+            for course in courses
+        ],
+    }
+
 
 @router.get("/fetch_member/{course_id}")
 async def fetch_member(
@@ -206,20 +210,27 @@ async def fetch_member(
     course = db.query(Course).filter(Course.course_id == course_id).first()
     if course is None:
         return {"message": "Course not found"}
-    teachers = db.query(User).filter(User.user_id.in_(course.teacher_id)).all() if course.teacher_id else []
+    teachers = (
+        db.query(User).filter(User.user_id.in_(course.teacher_id)).all()
+        if course.teacher_id
+        else []
+    )
     students = db.query(User).filter(User.is_teacher == False).all()
-    enrolled_students = [student for student in students if course_id in student.courses]
-    return {"message": "Members retrieved successfully",
-            "users": [
-                {
-                    "user_id": user.user_id,
-                    "name": user.name,
-                    "email": user.email,
-                    "is_teacher": user.is_teacher,
-                    "photo": user.photo,
-                    "office_hour": user.office_hour,
-                    "office_place": user.office_place,
-                } for user in teachers + enrolled_students
-            ]
-        }
-
+    enrolled_students = [
+        student for student in students if course_id in student.courses
+    ]
+    return {
+        "message": "Members retrieved successfully",
+        "users": [
+            {
+                "user_id": user.user_id,
+                "name": user.name,
+                "email": user.email,
+                "is_teacher": user.is_teacher,
+                "photo": user.photo,
+                "office_hour": user.office_hour,
+                "office_place": user.office_place,
+            }
+            for user in teachers + enrolled_students
+        ],
+    }

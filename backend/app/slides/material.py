@@ -1,22 +1,14 @@
 from fastapi import APIRouter, Depends, Body, Form, HTTPException, status
 from sqlalchemy.orm import Session
-from app.db import SessionLocal
 from app.models.material import Material
 from app.models.comment import Comment
 from app.auth.middleware import get_current_user
 from app.models.user import User
 from app.models.section import Section
 import uuid
+from . import get_db
 
 router = APIRouter()
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 @router.get("/materials")
@@ -133,10 +125,16 @@ async def update_material(
         if material_name is not None:
             material.material_name = material_name
         if section_id is not None and section_id != material.section_id:
-            origin_section = db.query(Section).filter(Section.section_id == material.section_id).first()
+            origin_section = (
+                db.query(Section)
+                .filter(Section.section_id == material.section_id)
+                .first()
+            )
             if origin_section is not None:
                 origin_section.materials.remove(material_id)
-            new_section = db.query(Section).filter(Section.section_id == section_id).first()
+            new_section = (
+                db.query(Section).filter(Section.section_id == section_id).first()
+            )
             if new_section is not None:
                 new_section.materials = new_section.materials + [material_id]
             material.section_id = section_id
@@ -169,7 +167,9 @@ async def delete_material(material_id: str, db: Session = Depends(get_db)):
     material = db.query(Material).filter(Material.material_id == material_id).first()
     if material is None:
         return {"message": "Material not found"}
-    section = db.query(Section).filter(Section.section_id == material.section_id).first()
+    section = (
+        db.query(Section).filter(Section.section_id == material.section_id).first()
+    )
     if section is not None and material_id in section.materials:
         section.materials.remove(material_id)
     db.delete(material)

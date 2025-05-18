@@ -27,20 +27,30 @@ def generate_random_course():
         "人工智能",
         "机器学习",
         "计算机图形学",
-        "编译原理"
+        "编译原理",
     ]
     course_numbers = [
-        "CS101", "CS102", "CS201", "CS202", "CS301", "CS302",
-        "CS401", "CS402", "CS501", "CS502"
+        "CS101",
+        "CS102",
+        "CS201",
+        "CS202",
+        "CS301",
+        "CS302",
+        "CS401",
+        "CS402",
+        "CS501",
+        "CS502",
     ]
     require_group = random.choice([True, False])
     group_num = random.randint(1, 3) if require_group else 0
     people_per_group = random.randint(2, 5) if require_group else 0
-    group_deadline = random.choice([
-        "2025-01-01",
-        "2025-01-02",
-    ])
-    
+    group_deadline = random.choice(
+        [
+            "2025-01-01",
+            "2025-01-02",
+        ]
+    )
+
     return {
         "course_id": course_id,
         "name": random.choice(course_names),
@@ -49,7 +59,7 @@ def generate_random_course():
         "require_group": require_group,
         "group_num": group_num,
         "people_per_group": people_per_group,
-        "group_deadline": group_deadline
+        "group_deadline": group_deadline,
     }
 
 
@@ -63,7 +73,7 @@ def generate_random_section(course_id):
         "第四章 实践应用",
         "第五章 案例分析",
         "第六章 项目实践",
-        "第七章 总结与展望"
+        "第七章 总结与展望",
     ]
     schedules = [
         "2025-01-01",
@@ -78,8 +88,9 @@ def generate_random_section(course_id):
         "section_id": section_id,
         "course_id": course_id,
         "name": random.choice(section_names),
-        "schedules": selected_schedules
+        "schedules": selected_schedules,
     }
+
 
 def generate_random_note(material_id):
     """Generate random note data for testing"""
@@ -88,24 +99,43 @@ def generate_random_note(material_id):
     return note_id, {
         "note_id": note_id,
         "material_id": material_id,
-        "content": note_content
+        "content": note_content,
     }
+
 
 def generate_random_code_snippet():
     """Generate random code snippet data for testing"""
     code_snippet_id = str(uuid.uuid4())
     code_snippet_content = f"这是一段关于{random.choice(['计算机科学', '软件工程', '人工智能', '数据科学'])}的代码"
-    lang = random.choice(["python", "java", "c", "c++", "javascript", "go", "rust", "kotlin", "swift", "typescript"])
+    lang = random.choice(
+        [
+            "python",
+            "java",
+            "c",
+            "c++",
+            "javascript",
+            "go",
+            "rust",
+            "kotlin",
+            "swift",
+            "typescript",
+        ]
+    )
     page = random.randint(1, 100)
     position_x = random.randint(1, 100)
     position_y = random.randint(1, 100)
-    return code_snippet_id, page, {
-        "snippet_id": code_snippet_id,
-        "lang": lang,
-        "content": code_snippet_content,
-        "position_x": position_x,
-        "position_y": position_y
-    }
+    return (
+        code_snippet_id,
+        page,
+        {
+            "snippet_id": code_snippet_id,
+            "lang": lang,
+            "content": code_snippet_content,
+            "position_x": position_x,
+            "position_y": position_y,
+        },
+    )
+
 
 def generate_random_user_data(is_teacher=False):
     """Generate random user data for testing"""
@@ -121,6 +151,7 @@ def generate_random_user_data(is_teacher=False):
         "email": email,
     }
 
+
 def generate_random_material(section_id=None, path=None):
     """Generate random material data for testing"""
     material_id = str(uuid.uuid4())
@@ -132,19 +163,20 @@ def generate_random_material(section_id=None, path=None):
         "参考文献",
         "课后作业",
         "项目案例",
-        "视频讲解"
+        "视频讲解",
     ]
-    
+
     # Process a pdf as base64
     with open(path, "rb") as pdf_file:
         content = base64.b64encode(pdf_file.read()).decode("utf-8")
-    
+
     return material_id, {
         "material_name": random.choice(material_names),
         "section_id": section_id,
         "data": content,
-        "comments": []
+        "comments": [],
     }
+
 
 def generate_random_bookmarklist(material_id, user_id):
     """Generate random bookmarklist data for testing"""
@@ -154,9 +186,10 @@ def generate_random_bookmarklist(material_id, user_id):
         "material_id": material_id,
         "user_id": user_id,
         "page": random.randint(1, 100),
-        "bookmark_list": []
+        "bookmark_list": [],
     }
     return list_id, bookmarklist_data
+
 
 Student_id_list = []
 Teacher_id_list = []
@@ -167,29 +200,35 @@ Note_id_list = []
 Code_snippet_id_list = []
 Bookmarklist_id_list = []
 
+
 def get_token(user_id):
     return Student_id_list[user_id]
+
 
 def setup_test_user(is_teacher=False):
     """Set up a test user and return authentication token"""
     user_data = generate_random_user_data(is_teacher)
-    
+
     # Register user
     register_response = client.post("/api/register", json=user_data)
     assert register_response.status_code == 201 or register_response.status_code == 200
-    
+
     # Login to get token
     login_response = client.post(
         "/api/login",
-        json={"name": user_data["user_id"], "password": user_data["password"]}
+        json={"name": user_data["user_id"], "password": user_data["password"]},
     )
     assert login_response.status_code == 200
-    
+
     token = login_response.json()["token"]
     if user_data["is_teacher"]:
-        Teacher_id_list.append({"user_id": user_data["user_id"], "token": token, "name": user_data["name"]})
+        Teacher_id_list.append(
+            {"user_id": user_data["user_id"], "token": token, "name": user_data["name"]}
+        )
     else:
-        Student_id_list.append({"user_id": user_data["user_id"], "token": token, "name": user_data["name"]})
+        Student_id_list.append(
+            {"user_id": user_data["user_id"], "token": token, "name": user_data["name"]}
+        )
 
     return token, user_data
 
@@ -198,7 +237,7 @@ def test_create_courses():
     token, user_data = setup_test_user(is_teacher=True)
     setup_test_user(is_teacher=False)
     headers = {"Authorization": f"Bearer {token}"}
-    
+
     created_courses = []
     for _ in range(2):
         course_data = generate_random_course()
@@ -211,7 +250,7 @@ def test_create_courses():
     for course_data in created_courses:
         add_student_data = {
             "course_id": course_data["course_id"],
-            "user_id": Student_id_list[0]["user_id"]
+            "user_id": Student_id_list[0]["user_id"],
         }
         response = client.post("/api/enroll", data=add_student_data, headers=headers)
 
@@ -230,16 +269,17 @@ def test_create_courses():
     members = response.json().get("users", [])
     assert len(members) >= 2
 
+
 def test_course_listing():
     student_token = Student_id_list[0]["token"]
     headers = {"Authorization": f"Bearer {student_token}"}
-    
+
     response = client.get("/api/courses", headers=headers)
     assert response.status_code == 200
-    
+
     courses = response.json().get("courses", [])
     assert isinstance(courses, list)
-    
+
     if courses:
         course = courses[0]
         assert "course_id" in course
@@ -261,20 +301,29 @@ def test_create_sections():
     assert response.status_code == 200
     sections = response.json().get("sections", [])
     assert len(sections) >= 2
-    
+
+
 def test_create_materials():
     """Test creating materials"""
     student_token = Student_id_list[0]["token"]
     headers = {"Authorization": f"Bearer {student_token}"}
 
-    path =[os.path.join(os.path.dirname(__file__), "./南科大2025校历.pdf"), os.path.join(os.path.dirname(__file__), "./2503.21708v2.pdf")]
+    path = [
+        os.path.join(os.path.dirname(__file__), "./南科大2025校历.pdf"),
+        os.path.join(os.path.dirname(__file__), "./2503.21708v2.pdf"),
+    ]
     for _ in range(2):
-        material_id, material_data = generate_random_material(Section_id_list[0], path=path[_])
+        material_id, material_data = generate_random_material(
+            Section_id_list[0], path=path[_]
+        )
         Material_id_list.append(material_id)
-        response = client.post("/api/material/" + material_id, data=material_data, headers=headers)
+        response = client.post(
+            "/api/material/" + material_id, data=material_data, headers=headers
+        )
         assert response.status_code == 200 or response.status_code == 201
         print(f"Successfully created material: {material_data['material_name']}")
-    
+
+
 def test_create_notes():
     student_token = Student_id_list[0]["token"]
     headers = {"Authorization": f"Bearer {student_token}"}
@@ -289,13 +338,18 @@ def test_create_notes():
     assert response.status_code == 200
     # check if node_id is right
     assert response.json().get("note_id") == note_id
-    
+
+
 def test_create_code_snippet():
     teacher_token = Teacher_id_list[0]["token"]
     headers = {"Authorization": f"Bearer {teacher_token}"}
 
     code_snippet_id, page, code_snippet_data = generate_random_code_snippet()
-    response = client.post("/api/snippet/" + Material_id_list[0] + "/page/" + str(page), data=code_snippet_data, headers=headers)
+    response = client.post(
+        "/api/snippet/" + Material_id_list[0] + "/page/" + str(page),
+        data=code_snippet_data,
+        headers=headers,
+    )
     assert response.status_code == 200 or response.status_code == 201
     Code_snippet_id_list.append(code_snippet_id)
     print(f"Successfully created code snippet: {code_snippet_data['content']}")
@@ -304,7 +358,11 @@ def test_create_code_snippet():
     headers = {"Authorization": f"Bearer {student_token}"}
     _, _, code_snippet_data = generate_random_code_snippet()
     code_snippet_data["snippet_id"] = code_snippet_id
-    response = client.post("/api/snippet/" + Material_id_list[0] + "/page/" + str(page), data=code_snippet_data, headers=headers)
+    response = client.post(
+        "/api/snippet/" + Material_id_list[0] + "/page/" + str(page),
+        data=code_snippet_data,
+        headers=headers,
+    )
     assert response.status_code == 200 or response.status_code == 201
     Code_snippet_id_list.append(code_snippet_id)
     print(f"Successfully created code snippet: {code_snippet_data['content']}")
@@ -316,15 +374,22 @@ def test_create_code_snippet():
     assert response.status_code == 200
     # check if code_snippet_id is right
     assert response.json().get("code_snippets")[0].get("snippet_id") == code_snippet_id
-    assert response.json().get("code_snippets")[0].get("user_id") == Student_id_list[0]["user_id"]
+    assert (
+        response.json().get("code_snippets")[0].get("user_id")
+        == Student_id_list[0]["user_id"]
+    )
 
-    
+
 def test_user_search():
     student_token = Student_id_list[0]["token"]
     headers = {"Authorization": f"Bearer {student_token}"}
-    response = client.get("/api/search_user/" + Student_id_list[0]["name"], headers=headers)
+    response = client.get(
+        "/api/search_user/" + Student_id_list[0]["name"], headers=headers
+    )
     assert response.status_code == 200
-    assert response.json().get("user")[0].get("user_id") == Student_id_list[0]["user_id"]
+    assert (
+        response.json().get("user")[0].get("user_id") == Student_id_list[0]["user_id"]
+    )
     response = client.get("/api/instructors/" + Course_id_list[0], headers=headers)
     print("*" * 200)
     print(response.json())
@@ -332,13 +397,20 @@ def test_user_search():
     assert response.status_code == 200
     assert response.json().get("teachers")[0].get("name") == Teacher_id_list[0]["name"]
 
+
 def test_create_bookmarklist():
     student_token = Student_id_list[0]["token"]
     headers = {"Authorization": f"Bearer {student_token}"}
 
-    list_id, bookmarklist_data = generate_random_bookmarklist(Material_id_list[0], Student_id_list[0]["user_id"])
+    list_id, bookmarklist_data = generate_random_bookmarklist(
+        Material_id_list[0], Student_id_list[0]["user_id"]
+    )
     Bookmarklist_id_list.append(list_id)
-    response = client.post("/api/marklist/" + list_id + "/page/" + str(bookmarklist_data["page"]), data=bookmarklist_data, headers=headers)
+    response = client.post(
+        "/api/marklist/" + list_id + "/page/" + str(bookmarklist_data["page"]),
+        data=bookmarklist_data,
+        headers=headers,
+    )
     assert response.status_code == 200 or response.status_code == 201
 
     response = client.get("/api/marklist/" + Material_id_list[0], headers=headers)

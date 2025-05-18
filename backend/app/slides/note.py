@@ -1,22 +1,14 @@
 from fastapi import APIRouter, Depends, Body, Form
 from sqlalchemy.orm import Session
-from app.db import SessionLocal
 from app.models.material import Material
 from app.models.comment import Comment
 from app.models.note import Note
 from app.models.code_snippet import CodeSnippet
 from app.auth.middleware import get_current_user
 from app.models.user import User
+from . import get_db
 
 router = APIRouter()
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 @router.get("/note/{material_id}")

@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, Body, Form
 from sqlalchemy.orm import Session
-from app.db import SessionLocal
 from app.models.material import Material
 from app.models.comment import Comment
 from app.models.note import Note
@@ -12,16 +11,9 @@ from app.models.section import Section
 from app.models.bookmarklist import BookmarkList
 import json
 from app.auth.middleware import get_current_user
+from . import get_db
 
 router = APIRouter()
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 @router.get("/marklist/{material_id}")

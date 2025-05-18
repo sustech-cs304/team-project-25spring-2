@@ -120,7 +120,7 @@ def test_invalid_login_attempts():
 def test_protected_endpoint_access():
     # Try to access whoami without token
     response = client.get("/api/user")
-    assert response.status_code == 403 # HTTPBearer default error
+    assert response.status_code == 403  # HTTPBearer default error
 
     # Try to access whoami with invalid token
     invalid_token = f"invalid_{uuid.uuid4().hex}"

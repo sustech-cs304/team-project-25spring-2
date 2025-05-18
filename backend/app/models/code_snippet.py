@@ -1,5 +1,12 @@
 # app/models/code_snippet.py
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, PrimaryKeyConstraint
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Boolean,
+    ForeignKey,
+    PrimaryKeyConstraint,
+)
 from app.db import Base
 
 
@@ -16,7 +23,5 @@ class CodeSnippet(Base):
     content = Column(String, nullable=False)
     position_x = Column(Integer, nullable=False)
     position_y = Column(Integer, nullable=False)
-    
-    __table_args__ = (
-        PrimaryKeyConstraint("snippet_id", "user_id"),
-    )
+
+    __table_args__ = (PrimaryKeyConstraint("snippet_id", "user_id"),)

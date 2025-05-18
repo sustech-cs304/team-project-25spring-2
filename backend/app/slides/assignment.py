@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, Body
 from sqlalchemy.orm import Session
-from app.db import SessionLocal
 from app.models.material import Material
 from app.models.comment import Comment
 from app.models.note import Note
@@ -13,16 +12,9 @@ from app.models.bookmarklist import BookmarkList
 import json
 from fastapi import Form
 from app.auth.middleware import get_current_user
+from . import get_db
 
 router = APIRouter()
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 @router.get("/assignments/{course_id}")
@@ -37,20 +29,22 @@ async def get_assignments(course_id: str, db: Session = Depends(get_db)):
     )
     if not assignments:
         return {"message": "No assignments found for this course."}
-    return {"message": "Assignments found.", 
-            "assignments": [
-                    {
-                        "assignment_id": assignment.assignment_id,
-                        "is_group_assign": assignment.is_group_assign,
-                        "name": assignment.name,
-                        "course_id": assignment.course_id,
-                        "teacher_id": assignment.teacher_id,
-                        "deadline": assignment.deadline,
-                        "is_over": assignment.is_over,
-
-                    } for assignment in assignments
-                ],
+    return {
+        "message": "Assignments found.",
+        "assignments": [
+            {
+                "assignment_id": assignment.assignment_id,
+                "is_group_assign": assignment.is_group_assign,
+                "name": assignment.name,
+                "course_id": assignment.course_id,
+                "teacher_id": assignment.teacher_id,
+                "deadline": assignment.deadline,
+                "is_over": assignment.is_over,
             }
+            for assignment in assignments
+        ],
+    }
+
 
 @router.post("/assignment")
 async def create_assignment(
