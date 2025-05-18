@@ -11,6 +11,10 @@ class Course(Base):
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
     number = Column(String, nullable=False)
+    require_group = Column(Boolean, nullable=False)
+    group_num = Column(Integer, nullable=False)
+    people_per_group = Column(Integer, nullable=False)
+    group_deadline = Column(String, nullable=False)
     teacher_id = Column(
         ARRAY(String), nullable=False
     )  # corresponding to the user_id, but whole user in the api

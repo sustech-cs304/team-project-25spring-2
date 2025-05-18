@@ -33,14 +33,23 @@ def generate_random_course():
         "CS101", "CS102", "CS201", "CS202", "CS301", "CS302",
         "CS401", "CS402", "CS501", "CS502"
     ]
+    require_group = random.choice([True, False])
+    group_num = random.randint(1, 3) if require_group else 0
+    people_per_group = random.randint(2, 5) if require_group else 0
+    group_deadline = random.choice([
+        "2025-01-01",
+        "2025-01-02",
+    ])
     
     return {
         "course_id": course_id,
         "name": random.choice(course_names),
         "description": f"这是一门关于{random.choice(['计算机科学', '软件工程', '人工智能', '数据科学'])}的课程",
         "number": random.choice(course_numbers),
-        "teacher_id": [str(uuid.uuid4()) for _ in range(random.randint(1, 3))],
-        "sections": [],
+        "require_group": require_group,
+        "group_num": group_num,
+        "people_per_group": people_per_group,
+        "group_deadline": group_deadline
     }
 
 

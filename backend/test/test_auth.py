@@ -16,7 +16,7 @@ def generate_random_user_data():
     """Generate random user data for testing"""
     user_id = f"1221" + str(random.randint(1000, 9999))
     name = f"Test User {generate_random_string(4)}"
-    password = f"Pass_{generate_random_string(10)}"
+    password = f"password"
     email = f"test{generate_random_string(4)}@gmail.com"
     return {
         "user_id": user_id,
@@ -82,7 +82,7 @@ def test_duplicate_registration():
     # Try to register with same user_id but different other fields
     duplicate_data = user_data.copy()
     duplicate_data["name"] = f"Different {generate_random_string(6)}"
-    duplicate_data["password"] = f"New_{generate_random_string(10)}"
+    duplicate_data["password"] = f"password"
 
     response = client.post("/api/register", json=duplicate_data)
     assert response.status_code == 400

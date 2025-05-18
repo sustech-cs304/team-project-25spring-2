@@ -10,6 +10,8 @@ from app.models.user import User
 from app.models.course import Course
 from app.models.section import Section
 from app.models.bookmarklist import BookmarkList
+from app.models.group import Group
+import uuid
 import json
 from app.auth.middleware import get_current_user
 
@@ -45,6 +47,10 @@ async def get_courses(
                 "name": course.name,
                 "number": course.number,
                 "description": course.description,
+                "require_group": course.require_group,
+                "group_num": course.group_num,
+                "people_per_group": course.people_per_group,
+                "group_deadline": course.group_deadline,
                 "teachers_name": [teacher_id_to_name.get(tid, "Unknown") for tid in (course.teacher_id or [])],
             }
             for course in courses
@@ -74,6 +80,10 @@ async def create_course(
     name: str = Form(None),
     description: str = Form(None),
     number: str = Form(None),
+    require_group: bool = Form(None),
+    group_num: int = Form(None),
+    people_per_group: int = Form(None),
+    group_deadline: str = Form(None),
     current_user: User = Depends(get_current_user),
 ):
     course = db.query(Course).filter(Course.course_id == course_id).first()
@@ -83,6 +93,10 @@ async def create_course(
             name=name,
             description=description,
             number=number,
+            require_group=require_group,
+            group_num=group_num,
+            people_per_group=people_per_group,
+            group_deadline=group_deadline,
             teacher_id=[current_user.user_id],
             sections=[],
             assignments=[],
@@ -90,6 +104,16 @@ async def create_course(
         db.add(course)
         db.commit()
         db.refresh(course)
+        if require_group:
+            for _ in range(group_num):
+                group = Group(
+                    group_id=str(uuid.uuid4()),
+                    course_id=course_id,
+                    users=[]
+                )
+                db.add(group)
+                db.commit()
+                db.refresh(group)
         return {"message": "Course created successfully"}
     else:
         if name is not None:
@@ -98,6 +122,29 @@ async def create_course(
             course.description = description
         if number is not None:
             course.number = number
+        if require_group is not None:
+            if course.require_group == False and require_group == True:
+                if group_num is None:
+                    return {"message": "Group number is required when require_group is True"}
+                for _ in range(group_num):
+                    group = Group(
+                        group_id=str(uuid.uuid4()),
+                        course_id=course_id,
+                        users=[]
+                    )
+                    db.add(group)
+                    db.commit()
+                    db.refresh(group)
+            elif course.require_group == True and require_group == False:
+                for group in course.groups:
+                    db.delete(group)
+                    db.commit()
+                    db.refresh(group)
+                course.require_group = require_group
+        if group_num is not None:
+            course.group_num = group_num
+        if people_per_group is not None:
+            course.people_per_group = people_per_group
         db.commit()
         db.refresh(course)
         return {"message": "Course updated successfully"}
