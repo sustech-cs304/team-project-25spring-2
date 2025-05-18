@@ -7,6 +7,8 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "sonner";
 import { UserProvider } from "./UserEnvProvider";
 import AuthGuard from "@/components/auth-guard";
+import 'katex/dist/katex.min.css';
+import 'highlight.js/styles/github.css';
 
 export const metadata: Metadata = {
     title: "PeachIDE: Course-aware IDE",

@@ -3,7 +3,6 @@ import { MessageSquare, X, Check, ChevronDown, Trash2, Pencil } from 'lucide-rea
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Textarea } from '@/components/ui/textarea';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -13,9 +12,9 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
-import ReactMarkdown from 'react-markdown';
 import { chatPresets } from './presets';
 import { useUserContext } from '@/app/UserEnvProvider';
+import MarkdownRenderer from '@/components/ai/MarkdownRenderer';
 
 interface Message {
     role: 'user' | 'assistant' | 'system';
@@ -90,7 +89,12 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
             if (!response.ok) throw new Error('Failed to fetch messages');
             const data = await response.json();
             setMessages(Array.isArray(data.messages) ? data.messages : []);
-            console.log(data.messages);
+            for (const message of data.messages) {
+                if (message.content.startsWith("fileid:/")) {
+                    setIsMaterialSelected(true);
+                    setShowMaterialPrompt(false);
+                }
+            }
         } catch (error) {
             console.error('Error fetching messages:', error);
             toast.error('Failed to load messages');
@@ -98,7 +102,7 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
         }
     };
 
-    const createNewChat = async () => {
+    const createNewChat = async (includeMaterial: boolean = false) => {
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat`, {
                 method: 'POST',
@@ -110,8 +114,13 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
             const data = await response.json();
             setCurrentChatId(data.chat_id);
             setMessages([]);
-            setIsMaterialSelected(false);
-            setShowMaterialPrompt(true);
+            if (includeMaterial) {
+                setIsMaterialSelected(true);
+                setShowMaterialPrompt(false);
+            } else {
+                setIsMaterialSelected(false);
+                setShowMaterialPrompt(true);
+            }
             await fetchChats();
         } catch (error) {
             console.error('Error creating chat:', error);
@@ -372,7 +381,7 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
                                             variant="outline"
                                             className="w-full justify-start"
                                             onClick={() => {
-                                                createNewChat();
+                                                createNewChat(true);
                                                 handlePresetSelect(preset.prompt);
                                                 setShowPresetDialog(false);
                                             }}
@@ -384,8 +393,8 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
                             </DialogContent>
                         </Dialog>
 
-                        <ScrollArea className="flex-1 p-4">
-                            <div className="space-y-4">
+                        <div className="flex-1 p-4 w-full overflow-y-scroll">
+                            <div className="space-y-4 w-full">
                                 {!currentChatId && (
                                     <div className="flex flex-col items-center justify-center h-full text-center p-8">
                                         <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
@@ -414,26 +423,25 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
                                     </div>
                                 )}
                                 {currentChatId && Array.isArray(messages) && messages.map((message, index) => (
-                                    <div
-                                        key={index}
-                                        className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                                    >
+                                    message.content.startsWith("fileid:/") ? ('') : (
                                         <div
-                                            className={`max-w-[80%] text-sm rounded-lg p-2 ${message.role === 'user'
-                                                ? 'bg-primary text-primary-foreground'
-                                                : 'bg-muted'
-                                                }`}
+                                            key={index}
+                                            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                                         >
-                                            <div className="prose prose-sm dark:prose-invert max-w-none">
-                                                <ReactMarkdown>
+                                            <div
+                                                className={`max-w-[80%] text-sm rounded-lg p-2 ${message.role === 'user'
+                                                    ? 'bg-primary text-primary-foreground'
+                                                    : 'bg-muted'
+                                                    }`}
+                                            >
+                                                <MarkdownRenderer>
                                                     {message.content}
-                                                </ReactMarkdown>
+                                                </MarkdownRenderer>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    )))}
                             </div>
-                        </ScrollArea>
+                        </div>
 
                         <div className="p-4 border-t">
                             <div className="flex gap-2">

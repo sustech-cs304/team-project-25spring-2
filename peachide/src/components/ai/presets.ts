@@ -18,5 +18,13 @@ export const chatPresets = [
     {
         title: "Study Guide",
         prompt: "Create a study guide for this material."
-    }
+    },
+    {
+        title: "Flowchart",
+        prompt: "Create a simple flowchart for this material, containing only keywords, using mermaid."
+    },
+    {
+        title: "Mind Map",
+        prompt: "Create a simple mind map for this material, containing only keywords, using mermaid."
+    },
 ];

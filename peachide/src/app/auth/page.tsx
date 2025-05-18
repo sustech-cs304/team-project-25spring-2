@@ -180,7 +180,7 @@ export default function AuthPage() {
                         className="space-y-2"
                         variants={itemVariants}
                       >
-                        <Label htmlFor="login-name" className="text-sm font-medium">Username</Label>
+                        <Label htmlFor="login-name" className="text-sm font-medium">User ID</Label>
                         <Input
                           id="login-name"
                           name="user_id"
