@@ -64,3 +64,12 @@ Create a new route with single py or a directory.
 ## Deployment
 
 TBD
+
+## Test Report
+
+To generate the test coverage report. 
+run
+
+```
+cd backend && pytest --cov=app --cov-report=html test/
+```
