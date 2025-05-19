@@ -30,7 +30,7 @@ function PeachSidebarHeader() {
     );
 }
 
-function FirstSidebar() {
+function FirstSidebar({ userInfo }: { userInfo: any }) {
     const { sidebarItems, setSidebarItems } = useUserContext();
 
     const router = useRouter();
@@ -90,26 +90,26 @@ function FirstSidebar() {
                 </SidebarGroupContent>
             </SidebarGroup>
         </SidebarContent>
+        <SidebarFooter className="mb-1">
+            <NavUser user={userInfo} />
+        </SidebarFooter>
     </Sidebar>);
 }
 
 export function AppSidebar() {
-    const { userId } = useUserContext();
+    const { userId, userData } = useUserContext();
 
     const userInfo = {
-        name: userId ? `User-${userId.slice(0, 5)}` : "Guest",
-        email: userId ? `user-${userId.slice(0, 5)}@example.com` : "Not logged in",
-        avatar: "",
+        name: userData?.name || "Guest",
+        email: userData?.email || (userData?.name ? '' : "Not logged in"),
+        avatar: userData?.photo || "",
     };
 
     return (
         <Sidebar
             className="h-full border-none"
         >
-            <FirstSidebar />
-            <SidebarFooter className="mb-1">
-                <NavUser user={userInfo} />
-            </SidebarFooter>
+            <FirstSidebar userInfo={userInfo} />
         </Sidebar>
     );
 }
