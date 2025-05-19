@@ -99,7 +99,7 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
           onUsersChange={handleEditorUsersChange}
         />;
       case 'terminal':
-        return <TerminalComponent />;
+        return <TerminalComponent env_id={projectId} />;
       case 'pdf':
         return <PDFComponent props={{ url: config.filePath, pageNumber: config.pageNumber || 1 }} onFeedbackAction={() => { }} />;
       default:

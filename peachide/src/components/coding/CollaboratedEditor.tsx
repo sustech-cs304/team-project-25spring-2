@@ -6,12 +6,11 @@ import { useTheme } from 'next-themes';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import { MonacoBinding } from '@/lib/y-monaco';
-import { useMonaco } from '@monaco-editor/react';
 import { editor } from "monaco-editor";
 import { updateUserCursorStyle, cleanupCursorStyles, getRandomUserColor } from '@/lib/cursorUtils';
 import '@/styles/cursor.css';
 import { useUserContext } from '@/app/UserEnvProvider';
-import { getConnectionUrl } from '../data/EditorLayoutData';
+
 const Editor = dynamic(
     () => import('@monaco-editor/react'),
     { ssr: false }
@@ -29,10 +28,6 @@ interface CollaboratedEditorProps {
     onUsersChange?: (roomName: string, users: UserInfo[]) => void;
     roomName?: string;
 }
-
-// TODO:
-// The cursor is now working, but the style is ugly.
-// The style should be improved. (Add Flag for user name)
 
 const CollaboratedEditorComponent: React.FC<CollaboratedEditorProps> = ({
     wsUrl,
