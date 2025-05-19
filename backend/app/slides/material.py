@@ -6,7 +6,7 @@ from app.auth.middleware import get_current_user
 from app.models.user import User
 from app.models.section import Section
 import uuid
-from . import get_db
+from app.db import get_db
 
 router = APIRouter()
 

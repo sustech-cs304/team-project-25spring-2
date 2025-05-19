@@ -7,7 +7,7 @@ from app.models.code_snippet import CodeSnippet
 from pyston import PystonClient, File
 from app.auth.middleware import get_current_user
 from app.models.user import User
-from . import get_db
+from app.db import get_db
 
 router = APIRouter()
 

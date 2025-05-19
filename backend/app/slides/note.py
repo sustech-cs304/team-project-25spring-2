@@ -6,7 +6,7 @@ from app.models.note import Note
 from app.models.code_snippet import CodeSnippet
 from app.auth.middleware import get_current_user
 from app.models.user import User
-from . import get_db
+from app.db import get_db
 
 router = APIRouter()
 

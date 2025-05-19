@@ -2,7 +2,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
-from app.db import SessionLocal
+from app.db import get_db
 from app.auth.utils import (
     decode_access_token,
     get_user_by_id,
@@ -11,14 +11,6 @@ from app.auth.utils import (
 )
 
 security = HTTPBearer()
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 async def get_current_user(

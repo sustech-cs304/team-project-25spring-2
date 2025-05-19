@@ -3,11 +3,11 @@ from fastapi import APIRouter, Depends, Body
 from fastapi.responses import StreamingResponse
 from openai import OpenAI
 from sqlalchemy.orm import Session
-from app.db import SessionLocal
 from app.models.chat import Chat
 from app.models.material import Material
 from app.models.user import User
 from app.auth.middleware import get_current_user
+from app.db import get_db, SessionLocal
 import base64
 import os
 import io
@@ -16,14 +16,6 @@ import uuid
 
 
 router = APIRouter()
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 client = OpenAI(

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.models.comment import Comment
 from app.auth.middleware import get_current_user
 from app.models.user import User
-from . import get_db
+from app.db import get_db
 
 router = APIRouter()
 

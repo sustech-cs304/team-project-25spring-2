@@ -10,9 +10,9 @@ from app.models.course import Course
 from app.models.section import Section
 from app.models.bookmarklist import BookmarkList
 from app.auth.middleware import get_current_user
+from app.db import get_db
 
 import json
-from . import get_db
 
 router = APIRouter()
 

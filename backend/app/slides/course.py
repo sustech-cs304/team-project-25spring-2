@@ -13,7 +13,7 @@ from app.models.group import Group
 import uuid
 import json
 from app.auth.middleware import get_current_user
-from . import get_db
+from app.db import get_db
 
 router = APIRouter()
 

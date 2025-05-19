@@ -12,7 +12,7 @@ from app.models.bookmarklist import BookmarkList
 from app.models.group import Group
 from app.auth.middleware import get_current_user
 import json
-from . import get_db
+from app.db import get_db
 
 router = APIRouter()
 
