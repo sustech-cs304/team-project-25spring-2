@@ -12,7 +12,6 @@ class Assignment(Base):
     course_id = Column(String, ForeignKey("courses.course_id"), index=True)
     teacher_id = Column(String, ForeignKey("users.user_id"), index=True)
     deadline = Column(String, index=True)
-    isOver = Column(Boolean, index=True)
-    materials = Column(
-        ARRAY(String), index=True
-    )  # corresponding to the material_id, but whole material in the api
+    is_over = Column(Boolean, index=True)
+    is_group_assign = Column(Boolean, index=True)
+    files = Column(ARRAY(String), index=True)

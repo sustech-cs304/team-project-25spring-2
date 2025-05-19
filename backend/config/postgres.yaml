@@ -8,7 +8,7 @@ metadata:
     app: postgres
 data:
   POSTGRES_USER: postgres
-  POSTGRES_PASSWORD: 'REDACTED'
+  POSTGRES_PASSWORD: "REDACTED"
   POSTGRES_DB: postgres
 
 ---

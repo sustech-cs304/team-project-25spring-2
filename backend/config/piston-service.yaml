@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: piston
+  namespace: default
+subsets:
+  - addresses:
+    - ip: 172.24.158.173
+    ports:
+    - port: 2000
+      name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: piston
+  namespace: default
+spec:
+  ports:
+  - port: 2000
+    targetPort: 2000
+    protocol: TCP
+    name: http
+  type: ClusterIP

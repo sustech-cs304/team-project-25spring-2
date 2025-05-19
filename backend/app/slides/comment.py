@@ -1,21 +1,20 @@
-from fastapi import APIRouter, Depends, Body
+import uuid
+from fastapi import APIRouter, Depends, Body, Form
 from sqlalchemy.orm import Session
-from app.db import SessionLocal
 from app.models.comment import Comment
+from app.auth.middleware import get_current_user
+from app.models.user import User
+from app.db import get_db
 
 router = APIRouter()
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
 @router.get("/comment/{comment_id}")
-async def get_comment(comment_id: str, db: Session = Depends(get_db)):
+async def get_comment(
+    comment_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     comment = db.query(Comment).filter(Comment.comment_id == comment_id).first()
     if comment is None:
         return {"error": "Comment not found"}
@@ -44,14 +43,35 @@ async def get_comment(comment_id: str, db: Session = Depends(get_db)):
     }
 
 
+@router.post("/comment")
+async def create_comment(
+    content: str = Form(...),
+    current_user: User = Depends(get_current_user),
+    material_id: str = Form(...),
+    page: int = Form(...),
+    db: Session = Depends(get_db),
+):
+    comment = Comment(
+        comment_id=str(uuid.uuid4()),
+        content=content,
+        user_id=current_user.user_id,
+        material_id=material_id,
+        page=page,
+        ancestor_id=None,
+    )
+    db.add(comment)
+    db.commit()
+    return {"message": "Comment created successfully"}
+
+
 @router.post("/comment/{comment_id}")
 async def reply_to_comment(
     comment_id: str,
-    content: str = Body(...),
-    user_id: str = Body(...),
-    material_id: str = Body(...),
-    page: int = Body(...),
-    ancestor_id: str = Body(...),
+    content: str = Form(...),
+    current_user: User = Depends(get_current_user),
+    material_id: str = Form(...),
+    page: int = Form(...),
+    ancestor_id: str = Form(...),
     db: Session = Depends(get_db),
 ):
     comment = db.query(Comment).filter(Comment.comment_id == comment_id).first()
@@ -64,9 +84,9 @@ async def reply_to_comment(
         )
     db.add(
         Comment(
-            comment_id=comment_id,
+            comment_id=str(uuid.uuid4()),
             content=content,
-            user_id=user_id,
+            user_id=current_user.user_id,
             material_id=material_id,
             page=page,
             ancestor_id=ancestor.comment_id,
@@ -80,6 +100,7 @@ async def reply_to_comment(
 async def delete_comment(
     comment_id: str,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     comment = db.query(Comment).filter(Comment.comment_id == comment_id).first()
     if comment is None:

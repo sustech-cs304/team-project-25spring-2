@@ -15,3 +15,4 @@ class Section(Base):
     materials = Column(
         ARRAY(String), index=True
     )  # corresponding to the material_id, but whole material in the api
+    schedules = Column(ARRAY(String), index=True)

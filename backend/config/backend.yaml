@@ -10,9 +10,9 @@ spec:
   selector:
     app: backend
   ports:
-  - port: 5000
-    protocol: TCP
-    targetPort: 5000
+    - port: 5000
+      protocol: TCP
+      targetPort: 5000
   sessionAffinity: None
 status:
   loadBalancer: {}
@@ -38,15 +38,45 @@ spec:
         app: backend
     spec:
       containers:
-      - name: backend
-        image: ghcr.io/chanbengz/peach-backend:latest
-        imagePullPolicy: Always
-        name: backend
-        resources: {}
-        env:
-        - name: ENVNAME
-          value: "k3s"
-        envFrom:
-        - configMapRef:
-            name: postgres-config
+        - name: backend
+          image: ghcr.io/chanbengz/peach-backend:latest
+          imagePullPolicy: Always
+          resources: {}
+          env:
+            - name: ENVNAME
+              value: "k3s"
+          envFrom:
+            - configMapRef:
+                name: postgres-config
+          volumeMounts:
+            - name: backend-data
+              mountPath: /app/data
       restartPolicy: Always
+      volumes:
+        - name: backend-data
+          persistentVolumeClaim:
+            claimName: backend-pv-claim
+
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: backend-acc
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["*"]
+
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: backend-acc
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: backend-acc
+  apiGroup: rbac.authorization.k8s.io

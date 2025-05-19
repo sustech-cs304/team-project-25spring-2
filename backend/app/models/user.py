@@ -1,10 +1,10 @@
 # app/models/user.py
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
+from sqlalchemy import Column, String, Boolean, ForeignKey, DateTime
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from app.db import Base
-from datetime import datetime, timedelta
 from pydantic import BaseModel
 from typing import Optional
+import uuid
 
 
 class User(Base):
@@ -12,6 +12,7 @@ class User(Base):
 
     user_id = Column(String, primary_key=True, index=True)
     name = Column(String, nullable=False)
+    email = Column(String, nullable=True)
     password = Column(String, nullable=False)
     is_teacher = Column(Boolean, default=False)
     courses = Column(
@@ -22,33 +23,19 @@ class User(Base):
     office_place = Column(String, nullable=True)
 
 
-class AuthToken(Base):
-    __tablename__ = "auth_tokens"
-    id = Column(Integer, primary_key=True, index=True)
+class Sessions(Base):
+    __tablename__ = "sessions"
 
-    # Session identification
-    session_id = Column(UUID, unique=True, index=True, nullable=False)
-
-    # Token data
-    token = Column(String, nullable=False, index=True)
-    token_type = Column(String, nullable=False, default="bearer")
-
-    # User relationship
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     user_id = Column(String, ForeignKey("users.user_id"), nullable=False)
-
-    # Status and expiration
-    expires = Column(
-        DateTime, nullable=False, default=datetime.now() + timedelta(days=1)
-    )
-    is_revoked = Column(Boolean, default=False)
-    created_at = Column(DateTime, nullable=False, default=datetime.now())
+    created_at = Column(DateTime, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
 
 
 # Pydantic models for API schemas
 class TokenSchema(BaseModel):
-    access_token: str
-    token_type: str
-    session_id: str
+    token: str
+    user_id: str
 
 
 class TokenData(BaseModel):
@@ -56,20 +43,22 @@ class TokenData(BaseModel):
 
 
 class UserCreate(BaseModel):
-    user_id: str
     name: str
     password: str
+    email: str
+    user_id: str
     is_teacher: bool = False
 
 
 class UserLogin(BaseModel):
-    user_id: str
+    name: str
     password: str
 
 
 class UserResponse(BaseModel):
     user_id: str
     name: str
+    email: str
     is_teacher: bool
     courses: Optional[list[str]] = None
     photo: Optional[str] = None

@@ -7,12 +7,19 @@ from fastapi.security import HTTPBearer
 from app.db import Base, engine
 from app.models import *
 
-from app.slide.comment import router as comment_router
-from app.slide.material import router as material_router
-from app.slide.note import router as note_router
-from app.slide.code_snippet import router as code_snippet_router
-from app.slide.bookmarklist import router as bookmarklist_router
+from app.ai import router as ai_router
 from app.auth import router as auth_router
+from app.coding import router as coding_router
+from app.slides.assignment import router as assignment_router
+from app.slides.bookmarklist import router as bookmarklist_router
+from app.slides.code_snippet import router as code_snippet_router
+from app.slides.course import router as course_router
+from app.slides.comment import router as comment_router
+from app.slides.group import router as group_router
+from app.slides.material import router as material_router
+from app.slides.note import router as note_router
+from app.slides.section import router as section_router
+from app.slides.user import router as user_router
 
 
 @asynccontextmanager
@@ -42,11 +49,18 @@ app.add_middleware(
 )
 
 # Register routers
+app.include_router(ai_router, tags=["ai"], prefix="/api")
+app.include_router(assignment_router, tags=["assignments"], prefix="/api")
+app.include_router(bookmarklist_router, tags=["bookmarklists"], prefix="/api")
+app.include_router(code_snippet_router, tags=["code_snippets"], prefix="/api")
+app.include_router(coding_router, tags=["coding"], prefix="/api")
+app.include_router(course_router, tags=["courses"], prefix="/api")
 app.include_router(comment_router, tags=["comments"], prefix="/api")
+app.include_router(group_router, tags=["groups"], prefix="/api")
 app.include_router(material_router, tags=["materials"], prefix="/api")
 app.include_router(note_router, tags=["notes"], prefix="/api")
-app.include_router(code_snippet_router, tags=["code_snippets"], prefix="/api")
-app.include_router(bookmarklist_router, tags=["bookmarklists"], prefix="/api")
+app.include_router(section_router, tags=["sections"], prefix="/api")
+app.include_router(user_router, tags=["users"], prefix="/api")
 app.include_router(
     auth_router,
     tags=["authentication"],
