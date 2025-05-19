@@ -29,13 +29,13 @@ jobs:
         username: chanbengz
         password: ${{ secrets.HUB_GITHUB_TOKEN }}
 
-    - name: [backend] Build and push Docker image
+    - name: Build and push backend
       working-directory: backend
       run: |
         docker build . --file Dockerfile --tag ghcr.io/chanbengz/peach-backend:latest
         docker push ghcr.io/chanbengz/peach-backend:latest
 
-    - name: [websocket] Build and push Docker image
+    - name: Build and push websocket
       working-directory: backend/websocket
       run: |
         docker build . --file Dockerfile --tag ghcr.io/chanbengz/peach-websocket:latest
