@@ -12,6 +12,7 @@
 }
 
 .file-tree__filename {
+    -webkit-user-select: none;
     user-select: none;
     cursor: pointer;
     opacity: 65%;
@@ -60,18 +61,19 @@
 }
 
 .placeholder {
-  font-family: Arial;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: var(--background);
-  box-sizing: border-box;
+    font-family: Arial;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--background);
+    box-sizing: border-box;
 }
 
 /* File tree drag and drop styles */
 .file-tree__tree-item {
     cursor: pointer;
+    -webkit-user-select: none;
     user-select: none;
     padding: 2px 0;
     transition: background-color 0.1s ease;

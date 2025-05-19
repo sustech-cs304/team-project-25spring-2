@@ -1,9 +1,13 @@
 import useSWR from 'swr';
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher = (url: string, token: string | null) => {
+  return fetch(url, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  }).then((res) => res.json());
+};
 
-export const getEditorLayout = (projectId: string) => {
-  const { data, error, isLoading } = useSWR(process.env.NEXT_PUBLIC_API_URL + `/environment/${projectId}/layout`, fetcher);
+export const getEditorLayout = (projectId: string, token: string | null) => {
+  const { data, error, isLoading } = useSWR(process.env.NEXT_PUBLIC_API_URL + `/environment/${projectId}/layout`, (url) => fetcher(url, token));
   return {
     data,
     error,
@@ -11,13 +15,27 @@ export const getEditorLayout = (projectId: string) => {
   };
 };
 
-export const loadFileContent = async (projectId: string, filePath: string) => {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/environment/${projectId}/file?path=${encodeURIComponent(filePath)}`);
+export const getConnectionUrl = async (projectId: string, token: string | null) => {
+
+  try {
+    const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/environment/${projectId}/collaboration/url`, {
+      method: 'GET',
+      credentials: 'include', // This ensures cookies are sent with the request
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
     if (!response.ok) {
-        throw new Error(`Failed to load file: ${response.status} ${response.statusText}`);
+      throw new Error('Failed to get collaboration URL');
     }
-    const data = await response.text();
-    return data;
+
+    const data = await response.json();
+    return data.url;
+  } catch (error) {
+    console.error('Error getting collaboration URL:', error);
+    return 'ws://localhost:1234';
+  }
 };
 
 export const getLanguageFromFileName = (fileName: string): string => {

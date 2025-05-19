@@ -11,7 +11,7 @@ import { LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
-interface UserData {
+export interface UserData {
   user_id: string;
   name: string;
   email?: string;
@@ -23,37 +23,8 @@ interface UserData {
 }
 
 export default function Home() {
-  const { userId, logout } = useUserContext();
+  const { userId, logout, isTeacher, setIsTeacher, userData, setUserData } = useUserContext();
   const router = useRouter();
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-
-  useEffect(() => {
-    // Fetch user data when component mounts
-    const fetchUserData = async () => {
-      if (!userId) return;
-      
-      try {
-        setLoading(true);
-        const response = await fetch(process.env.NEXT_PUBLIC_API_URL+`/user`);
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch user data');
-        }
-        
-        const data = await response.json();
-        setUserData(data);
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        toast.error('Failed to load user information');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, [userId]);
 
   const handleLogout = () => {
     logout();
@@ -71,7 +42,7 @@ export default function Home() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -97,14 +68,7 @@ export default function Home() {
               </Button>
             </CardHeader>
             <CardContent className="flex flex-col items-center pt-4">
-              {loading ? (
-                <>
-                  <Skeleton className="h-24 w-24 rounded-full" />
-                  <Skeleton className="h-4 w-[250px] mt-4" />
-                  <Skeleton className="h-4 w-[200px] mt-2" />
-                  <Skeleton className="h-4 w-[150px] mt-2" />
-                </>
-              ) : userData ? (
+              {userData != null ? (
                 <>
                   <Avatar className="h-24 w-24 border-2 border-primary">
                     <AvatarImage src={userData.photo} alt={userData.name} />
@@ -113,17 +77,16 @@ export default function Home() {
                   <h2 className="text-xl font-semibold mt-4">{userData.name}</h2>
                   {userData.email && <p className="text-muted-foreground">{userData.email}</p>}
                   <div className="flex flex-wrap gap-2 mt-2 justify-center">
-                    <span className={`px-3 py-1 rounded-full text-sm ${
-                      userData.is_teacher ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                    }`}>
-                      {userData.is_teacher ? 'Teacher' : 'Student'}
+                    <span className={`px-3 py-1 rounded-full text-sm ${isTeacher ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                      }`}>
+                      {isTeacher ? 'Teacher' : 'Student'}
                     </span>
                     <span className="bg-primary/10 px-3 py-1 rounded-full text-sm">
                       {userData.courses.length} Course{userData.courses.length !== 1 ? 's' : ''}
                     </span>
                   </div>
-                  
-                  {userData.is_teacher && (
+
+                  {isTeacher && (
                     <div className="w-full mt-4 space-y-1 border-t pt-4">
                       {userData.office_hour && (
                         <p className="text-sm flex justify-between">

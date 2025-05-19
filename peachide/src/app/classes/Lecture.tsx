@@ -8,13 +8,14 @@ import {
   ExternalLink,
   MoreHorizontal,
   Clock,
+  ComponentIcon,
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
-import {SERVER} from "@/components/data/CodeEnvType";
+import { useUserContext } from '../UserEnvProvider';
 
 interface Material {
   material_id: string;
@@ -41,18 +42,25 @@ export default function Lecture({ courseId }: LectureProps) {
   const [error, setError] = useState<string | null>(null);
   const [selectedSection, setSelectedSection] = useState<Section | null>(null);
   const [materialsOpen, setMaterialsOpen] = useState(false);
+  const { setSidebarItems, sidebarItems } = useUserContext();
   const router = useRouter();
+  const { token } = useUserContext();
 
   useEffect(() => {
     const fetchSections = async () => {
       try {
         setLoading(true);
-        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/classes/${courseId}/sections`);
+        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/sections/${courseId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
 
         if (!response.ok) {
           throw new Error('Failed to fetch sections data');
         }
 
+        console.log(response);
         const result = await response.json();
         setData(result);
       } catch (err) {
@@ -118,9 +126,17 @@ export default function Lecture({ courseId }: LectureProps) {
     setMaterialsOpen(true);
   };
 
-  const handleMaterialClick = (sectionId: string, materialId: string) => {
+  const handleMaterialClick = (sectionId: string, materialId: string, materialName: string) => {
     router.push(`/slides/${materialId}`);
     setMaterialsOpen(false);
+    setSidebarItems([
+      ...sidebarItems,
+      {
+        title: "Slides " + materialName,
+        url: `/slides/${materialId}`,
+        icon: ComponentIcon
+      }
+    ]);
   };
 
   const container = {
@@ -141,10 +157,10 @@ export default function Lecture({ courseId }: LectureProps) {
 
   // Get current date for comparison
   const currentDate = new Date();
-  const formattedDate = currentDate.toLocaleDateString('en-US', { 
-    weekday: 'long', 
-    month: 'short', 
-    day: 'numeric' 
+  const formattedDate = currentDate.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric'
   });
 
   if (loading) {
@@ -196,7 +212,7 @@ export default function Lecture({ courseId }: LectureProps) {
 
   return (
     <>
-      <motion.div 
+      <motion.div
         className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto space-y-6"
         variants={container}
         initial="hidden"
@@ -245,8 +261,8 @@ export default function Lecture({ courseId }: LectureProps) {
                         <FileText size={12} className="mr-1" />
                         <span>Section {index + 1}</span>
                       </div>
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="sm"
                         onClick={() => handleOpenMaterials(section)}
                         className="flex items-center gap-1 hover:gap-2 transition-all hover:text-primary"
@@ -283,15 +299,15 @@ export default function Lecture({ courseId }: LectureProps) {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    transition={{ 
-                      duration: 0.3, 
+                    transition={{
+                      duration: 0.3,
                       delay: index * 0.05,
                       ease: "easeOut"
                     }}
                     className="group"
                   >
                     <div
-                      onClick={() => handleMaterialClick(selectedSection.section_id, material.material_id)}
+                      onClick={() => handleMaterialClick(selectedSection.section_id, material.material_id, material.material_name)}
                       className="flex items-center justify-between p-3 rounded-md cursor-pointer border hover:border-primary/50 hover:bg-muted/50 transition-all duration-200"
                     >
                       <div className="flex items-center gap-3">

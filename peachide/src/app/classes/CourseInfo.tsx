@@ -3,13 +3,13 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  BookOpen, 
-  CalendarDays, 
+import {
+  BookOpen,
+  CalendarDays,
   Info
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {SERVER} from "@/components/data/CodeEnvType";
+import { useUserContext } from "../UserEnvProvider";
 
 interface CourseSchedule {
   date: string;
@@ -32,6 +32,7 @@ export default function CourseInfo({ courseId }: CourseInfoProps) {
   const [courseData, setCourseData] = useState<CourseInfoData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { token } = useUserContext();
 
   useEffect(() => {
     const fetchCourseInfo = async () => {
@@ -39,7 +40,11 @@ export default function CourseInfo({ courseId }: CourseInfoProps) {
 
       try {
         setLoading(true);
-        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/classes/${courseId}/course_info`);
+        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/course_info/${courseId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
 
         if (!response.ok) {
           throw new Error(`Failed to fetch course info: ${response.status}`);
@@ -151,7 +156,7 @@ export default function CourseInfo({ courseId }: CourseInfoProps) {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col space-y-2">
-            {courseData.schedules.map((schedule) => (
+            {courseData.schedules?.map((schedule) => (
               <div key={schedule.date} className="flex justify-between items-center py-2 border-b last:border-0">
                 <span className="text-sm text-muted-foreground">
                   {new Date(schedule.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}

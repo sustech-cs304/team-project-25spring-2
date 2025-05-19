@@ -1,6 +1,4 @@
-import React, {CSSProperties, FC, memo} from "react";
-
-export const SERVER = "http://127.0.0.1:4523/m1/5988343-5676752-default";
+import React, { CSSProperties, FC, memo } from "react";
 
 export type TreeNodeType = "directory" | "file";
 
@@ -80,7 +78,7 @@ export const TreeItem: FC<TreeItemProps> = memo(
           e.dataTransfer.setData("text/plain", treeNode.uri);
           e.dataTransfer.setData("text/file-type", treeNode.type);
           e.currentTarget.classList.add("file-tree__tree-item--dragging");
-          
+
           // Create a drag image with a more subtle appearance
           const ghostElement = e.currentTarget.cloneNode(true) as HTMLElement;
           ghostElement.style.opacity = "0.7";
@@ -88,9 +86,9 @@ export const TreeItem: FC<TreeItemProps> = memo(
           ghostElement.style.position = "absolute";
           ghostElement.style.top = "-1000px";
           document.body.appendChild(ghostElement);
-          
+
           e.dataTransfer.setDragImage(ghostElement, 0, 0);
-          
+
           // Clean up the ghost element after dragging ends
           setTimeout(() => {
             document.body.removeChild(ghostElement);

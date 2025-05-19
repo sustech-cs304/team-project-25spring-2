@@ -11,44 +11,55 @@ import { useUserContext } from "../UserEnvProvider";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { EyeIcon, EyeOffIcon, LogInIcon, UserPlusIcon } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 export default function AuthPage() {
   const router = useRouter();
   const { login } = useUserContext();
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const [showPassword, setShowPassword] = useState(false);
-  
+  const [isTeacher, setIsTeacher] = useState(false);
+
   // Shared form state for both login and register
   const [formData, setFormData] = useState({
     name: "",
     password: "",
-    email: ""
+    email: "",
+    user_id: ""
   });
-  
+
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-  
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     try {
-      // Mock successful login response
-      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate API call
-      
-      // Use mock data for login
-      const mockResponse = {
-        token: "mock-token-12345",
-        user_id: "user-123"
-      };
-      
-      // Store token and user_id in UserContext
-      login(mockResponse.token, mockResponse.user_id);
-      
-      // Redirect to home page
+      const response = await fetch(process.env.NEXT_PUBLIC_API_URL + "/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name: formData.user_id,
+          password: formData.password
+        })
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Wrong username or password");
+        }
+        throw new Error("Login failed, please try again");
+      }
+
+      const data = await response.json();
+      // data: { token, user_id }
+      login(data.token, data.user_id, isTeacher);
       router.push('/');
       toast.success('Logged in successfully');
     } catch (error) {
@@ -58,19 +69,34 @@ export default function AuthPage() {
       setIsLoading(false);
     }
   };
-  
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     try {
-      // Mock successful registration
-      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate API call
-      
-      // Notify success
+      const response = await fetch(process.env.NEXT_PUBLIC_API_URL + "/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          password: formData.password,
+          email: formData.email,
+          user_id: formData.user_id,
+          is_teacher: isTeacher
+        })
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Unauthorized");
+        }
+        throw new Error("Registration failed, please try again");
+      }
+
       toast.success('Registration successful, please login');
-      
-      // Switch to login tab
       setActiveTab("login");
     } catch (error) {
       console.error('Registration error:', error);
@@ -82,9 +108,9 @@ export default function AuthPage() {
 
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: { 
+    visible: {
       opacity: 1,
-      transition: { 
+      transition: {
         when: "beforeChildren",
         staggerChildren: 0.1
       }
@@ -104,22 +130,22 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background/50 to-background/95 p-4">
-      <motion.div 
+      <motion.div
         initial="hidden"
         animate="visible"
         variants={containerVariants}
         className="w-full max-w-md mt-16"
       >
-        <motion.div 
-          variants={itemVariants} 
+        <motion.div
+          variants={itemVariants}
           className="text-center mb-12"
         >
           <h1 className="text-4xl font-bold text-primary mb-3">PeachIDE</h1>
           <p className="text-muted-foreground">Your course-aware integrated development environment</p>
         </motion.div>
-        
-        <Tabs 
-          defaultValue="login" 
+
+        <Tabs
+          defaultValue="login"
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as "login" | "register")}
           className="w-full"
@@ -130,7 +156,7 @@ export default function AuthPage() {
               <TabsTrigger value="register">Register</TabsTrigger>
             </TabsList>
           </motion.div>
-          
+
           <AnimatePresence mode="wait">
             {activeTab === "login" && (
               <motion.div
@@ -150,30 +176,30 @@ export default function AuthPage() {
                   </CardHeader>
                   <form onSubmit={handleLogin}>
                     <CardContent className="space-y-6">
-                      <motion.div 
+                      <motion.div
                         className="space-y-2"
                         variants={itemVariants}
                       >
-                        <Label htmlFor="login-name" className="text-sm font-medium">Username</Label>
-                        <Input 
-                          id="login-name" 
-                          name="name" 
-                          required 
-                          value={formData.name}
+                        <Label htmlFor="login-name" className="text-sm font-medium">User ID</Label>
+                        <Input
+                          id="login-name"
+                          name="user_id"
+                          required
+                          value={formData.user_id}
                           onChange={handleFormChange}
-                          placeholder="Enter your username"
+                          placeholder="Enter your user ID"
                           className="h-11 transition-all"
                         />
                       </motion.div>
-                      <motion.div 
+                      <motion.div
                         className="space-y-2"
                         variants={itemVariants}
                       >
                         <Label htmlFor="login-password" className="text-sm font-medium">Password</Label>
                         <div className="relative">
-                          <Input 
-                            id="login-password" 
-                            name="password" 
+                          <Input
+                            id="login-password"
+                            name="password"
                             type={showPassword ? "text" : "password"}
                             required
                             value={formData.password}
@@ -181,7 +207,7 @@ export default function AuthPage() {
                             placeholder="Enter your password"
                             className="h-11 pr-10 transition-all"
                           />
-                          <button 
+                          <button
                             type="button"
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                             onClick={() => setShowPassword(!showPassword)}
@@ -196,8 +222,8 @@ export default function AuthPage() {
                       </motion.div>
                     </CardContent>
                     <CardFooter className="mt-4">
-                      <Button 
-                        type="submit" 
+                      <Button
+                        type="submit"
                         className="w-full mt-4 h-12 text-base transition-all"
                         disabled={isLoading}
                       >
@@ -213,7 +239,7 @@ export default function AuthPage() {
                 </Card>
               </motion.div>
             )}
-            
+
             {activeTab === "register" && (
               <motion.div
                 key="register"
@@ -232,14 +258,14 @@ export default function AuthPage() {
                   </CardHeader>
                   <form onSubmit={handleRegister}>
                     <CardContent className="space-y-6">
-                      <motion.div 
+                      <motion.div
                         className="space-y-2"
                         variants={itemVariants}
                       >
                         <Label htmlFor="register-name" className="text-sm font-medium">Username</Label>
-                        <Input 
-                          id="register-name" 
-                          name="name" 
+                        <Input
+                          id="register-name"
+                          name="name"
                           required
                           value={formData.name}
                           onChange={handleFormChange}
@@ -247,15 +273,15 @@ export default function AuthPage() {
                           className="h-11 transition-all"
                         />
                       </motion.div>
-                      <motion.div 
+                      <motion.div
                         className="space-y-2"
                         variants={itemVariants}
                       >
                         <Label htmlFor="register-password" className="text-sm font-medium">Password</Label>
                         <div className="relative">
-                          <Input 
-                            id="register-password" 
-                            name="password" 
+                          <Input
+                            id="register-password"
+                            name="password"
                             type={showPassword ? "text" : "password"}
                             required
                             value={formData.password}
@@ -263,7 +289,7 @@ export default function AuthPage() {
                             placeholder="Choose a password"
                             className="h-11 pr-10 transition-all"
                           />
-                          <button 
+                          <button
                             type="button"
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                             onClick={() => setShowPassword(!showPassword)}
@@ -276,14 +302,14 @@ export default function AuthPage() {
                           </button>
                         </div>
                       </motion.div>
-                      <motion.div 
+                      <motion.div
                         className="space-y-2"
                         variants={itemVariants}
                       >
                         <Label htmlFor="register-email" className="text-sm font-medium">Email (optional)</Label>
-                        <Input 
-                          id="register-email" 
-                          name="email" 
+                        <Input
+                          id="register-email"
+                          name="email"
                           type="email"
                           value={formData.email}
                           onChange={handleFormChange}
@@ -291,10 +317,37 @@ export default function AuthPage() {
                           className="h-11 transition-all"
                         />
                       </motion.div>
+                      <motion.div
+                        className="space-y-2"
+                        variants={itemVariants}
+                      >
+                        <Label htmlFor="register-userid" className="text-sm font-medium">User ID</Label>
+                        <Input
+                          id="register-userid"
+                          name="user_id"
+                          required
+                          value={formData.user_id}
+                          onChange={handleFormChange}
+                          placeholder="Enter your user ID"
+                          className="h-11 transition-all"
+                        />
+                      </motion.div>
+
+                      <motion.div
+                        className="flex items-center space-x-2"
+                        variants={itemVariants}
+                      >
+                        <Switch
+                          id="register-teacher-mode"
+                          checked={isTeacher}
+                          onCheckedChange={setIsTeacher}
+                        />
+                        <Label htmlFor="register-teacher-mode" className="text-sm">Register as Teacher</Label>
+                      </motion.div>
                     </CardContent>
                     <CardFooter className="mt-4">
-                      <Button 
-                        type="submit" 
+                      <Button
+                        type="submit"
                         className="w-full mt-4 h-12 text-base transition-all"
                         disabled={isLoading}
                       >

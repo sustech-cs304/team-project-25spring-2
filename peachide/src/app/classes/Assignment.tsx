@@ -8,13 +8,15 @@ import {
   XCircle,
   ChevronRight,
   AlertCircle,
-  BookOpen
+  BookOpen,
+  CodeXml
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useUserContext } from '../UserEnvProvider';
 
 interface Assignment {
   assignment_id: string;
@@ -35,18 +37,24 @@ export default function Assignment({ courseId }: AssignmentProps) {
   const [data, setData] = useState<AssignmentData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { setSidebarItems, sidebarItems } = useUserContext();
   const router = useRouter();
+  const { token } = useUserContext();
 
   useEffect(() => {
     const fetchAssignments = async () => {
       try {
         setLoading(true);
-        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/classes/${courseId}/assignments`);
-        
+        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/assignments/${courseId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
         if (!response.ok) {
           throw new Error('Failed to fetch assignments data');
         }
-        
+
         const result = await response.json();
         setData(result);
       } catch (err) {
@@ -87,7 +95,7 @@ export default function Assignment({ courseId }: AssignmentProps) {
             {
               assignment_id: "asn_006",
               name: "Basic Programming Concepts",
-              deadline: "2023-05-30T23:59:59Z", 
+              deadline: "2023-05-30T23:59:59Z",
               isOver: true
             }
           ]
@@ -102,20 +110,43 @@ export default function Assignment({ courseId }: AssignmentProps) {
     }
   }, [courseId]);
 
-  const handleStartAssignment = (assignmentId: string) => {
+  const handleStartAssignment = (assignmentId: string, assignmentName: string) => {
     router.push(`/coding/${assignmentId}`);
+    setSidebarItems([
+      ...sidebarItems,
+      {
+        title: "Coding " + assignmentName,
+        url: `/coding/${assignmentId}`,
+        icon: CodeXml
+      }
+    ]);
   };
 
   // Sort assignments: active ones by deadline (earliest first), then completed ones
   const sortedAssignments = data?.assignments
     ? [...data.assignments].sort((a, b) => {
-        // First separate by isOver status
-        if (a.isOver !== b.isOver) {
-          return a.isOver ? 1 : -1; // Active assignments first
+      // First separate by isOver status
+      if (a.isOver !== b.isOver) {
+        return a.isOver ? 1 : -1; // Active/incomplete assignments first
+      }
+
+      // For incomplete assignments, prioritize by deadline
+      if (!a.isOver) {
+        const aDeadline = new Date(a.deadline);
+        const bDeadline = new Date(b.deadline);
+        const now = new Date();
+        const aIsPastDeadline = aDeadline < now;
+        const bIsPastDeadline = bDeadline < now;
+
+        // If one is past deadline and the other isn't, prioritize upcoming deadlines
+        if (aIsPastDeadline !== bIsPastDeadline) {
+          return aIsPastDeadline ? 1 : -1; // Non-missed assignments first
         }
-        // Then sort by deadline
-        return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
-      })
+      }
+
+      // Then sort by deadline
+      return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+    })
     : [];
 
   const container = {
@@ -138,24 +169,24 @@ export default function Assignment({ courseId }: AssignmentProps) {
   const formatDeadline = (deadlineStr: string) => {
     const deadline = new Date(deadlineStr);
     const now = new Date();
-    
+
     // Format the date
     const formattedDate = deadline.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
     });
-    
+
     // Format the time
     const formattedTime = deadline.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit'
     });
-    
+
     // Calculate days remaining
     const diffTime = deadline.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     return {
       date: formattedDate,
       time: formattedTime,
@@ -165,6 +196,11 @@ export default function Assignment({ courseId }: AssignmentProps) {
 
   // Function to render deadline info with appropriate styling
   const renderDeadlineInfo = (deadline: string, isOver: boolean) => {
+    const deadlineDate = new Date(deadline);
+    const now = new Date();
+    const isPastDeadline = deadlineDate < now;
+    const { date, time, daysRemaining } = formatDeadline(deadline);
+
     if (isOver) {
       return (
         <div className="flex items-center gap-2 text-muted-foreground">
@@ -173,24 +209,40 @@ export default function Assignment({ courseId }: AssignmentProps) {
         </div>
       );
     }
-    
-    const { date, time, daysRemaining } = formatDeadline(deadline);
-    
+
+    if (isPastDeadline) {
+      return (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Calendar size={14} className="text-muted-foreground" />
+            <span className="font-medium text-sm">{date} at {time}</span>
+          </div>
+          <Badge
+            variant="destructive"
+            className="flex items-center gap-1 text-xs bg-red-500 hover:bg-red-600"
+          >
+            <XCircle size={10} />
+            <span>Missed</span>
+          </Badge>
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-2">
           <Calendar size={14} className="text-primary" />
           <span className="font-medium text-sm">{date} at {time}</span>
         </div>
-        <Badge 
-          variant={daysRemaining <= 0 ? "destructive" : daysRemaining < 3 ? "default" : daysRemaining < 7 ? "outline" : "secondary"} 
+        <Badge
+          variant={daysRemaining <= 0 ? "destructive" : daysRemaining < 3 ? "default" : daysRemaining < 7 ? "outline" : "secondary"}
           className={`flex items-center gap-1 text-xs ${daysRemaining <= 0 ? 'bg-red-500 hover:bg-red-600' : daysRemaining < 3 ? 'bg-amber-500 hover:bg-amber-600 text-white' : ''}`}
         >
           <Clock size={10} />
-          {daysRemaining <= 0 
-            ? 'Due today!' 
-            : daysRemaining === 1 
-              ? '1 day remaining' 
+          {daysRemaining <= 0
+            ? 'Due today!'
+            : daysRemaining === 1
+              ? '1 day remaining'
               : `${daysRemaining} days remaining`}
         </Badge>
       </div>
@@ -204,7 +256,7 @@ export default function Assignment({ courseId }: AssignmentProps) {
           <Skeleton className="h-8 w-8 rounded-full" />
           <Skeleton className="h-8 w-72" />
         </div>
-        
+
         {[1, 2, 3].map((i) => (
           <Skeleton key={i} className="h-40 w-full rounded-lg" />
         ))}
@@ -245,7 +297,7 @@ export default function Assignment({ courseId }: AssignmentProps) {
   }
 
   return (
-    <motion.div 
+    <motion.div
       className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto space-y-6"
       variants={container}
       initial="hidden"
@@ -258,10 +310,44 @@ export default function Assignment({ courseId }: AssignmentProps) {
           </div>
           <h2 className="text-2xl font-bold">Assignments</h2>
         </div>
-        <Badge className="px-3 py-1 flex items-center gap-1">
-          <Calendar size={12} />
-          <span>{data.assignments.filter(a => !a.isOver).length} Active</span>
-        </Badge>
+        <div className="flex gap-2">
+          {data.assignments.filter(a => {
+            const deadlineDate = new Date(a.deadline);
+            const now = new Date();
+            return !a.isOver && deadlineDate >= now;
+          }).length > 0 && (
+              <Badge className="px-3 py-1 flex items-center gap-1">
+                <Calendar size={12} />
+                <span>{data.assignments.filter(a => {
+                  const deadlineDate = new Date(a.deadline);
+                  const now = new Date();
+                  return !a.isOver && deadlineDate >= now;
+                }).length} Active</span>
+              </Badge>
+            )}
+
+          {data.assignments.filter(a => {
+            const deadlineDate = new Date(a.deadline);
+            const now = new Date();
+            return !a.isOver && deadlineDate < now;
+          }).length > 0 && (
+              <Badge variant="destructive" className="px-3 py-1 flex items-center gap-1">
+                <XCircle size={12} />
+                <span>{data.assignments.filter(a => {
+                  const deadlineDate = new Date(a.deadline);
+                  const now = new Date();
+                  return !a.isOver && deadlineDate < now;
+                }).length} Missed</span>
+              </Badge>
+            )}
+
+          {data.assignments.filter(a => a.isOver).length > 0 && (
+            <Badge variant="outline" className="px-3 py-1 flex items-center gap-1">
+              <CheckCircle size={12} />
+              <span>{data.assignments.filter(a => a.isOver).length} Completed</span>
+            </Badge>
+          )}
+        </div>
       </div>
 
       <div className="h-[calc(100vh-250px)] overflow-hidden">
@@ -269,7 +355,10 @@ export default function Assignment({ courseId }: AssignmentProps) {
           <AnimatePresence>
             {sortedAssignments.map((assignment, index) => {
               const isActive = !assignment.isOver;
-              
+              const deadlineDate = new Date(assignment.deadline);
+              const now = new Date();
+              const isMissed = isActive && deadlineDate < now;
+
               return (
                 <motion.div
                   key={assignment.assignment_id}
@@ -279,11 +368,13 @@ export default function Assignment({ courseId }: AssignmentProps) {
                   className="p-1.5" // Padding to contain the hover scale effect
                   transition={{ duration: 0.15 }}
                 >
-                  <Card className={`overflow-hidden border shadow-sm hover:shadow-md transition-all duration-200 ${
-                    isActive ? 'hover:border-primary/50' : 'opacity-80'
-                  } relative`}>
-                    {isActive && (
+                  <Card className={`overflow-hidden border shadow-sm hover:shadow-md transition-all duration-200 ${isActive ? 'hover:border-primary/50' : 'opacity-80'
+                    } relative`}>
+                    {isActive && !isMissed && (
                       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/60 to-primary/20"></div>
+                    )}
+                    {isMissed && (
+                      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500/60 to-red-500/20"></div>
                     )}
                     {!isActive && (
                       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-muted-foreground/30 to-muted-foreground/10"></div>
@@ -297,6 +388,11 @@ export default function Assignment({ courseId }: AssignmentProps) {
                             Completed
                           </Badge>
                         )}
+                        {isMissed && (
+                          <Badge variant="destructive" className="ml-2 text-xs">
+                            Missed
+                          </Badge>
+                        )}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="pb-4">
@@ -308,10 +404,10 @@ export default function Assignment({ courseId }: AssignmentProps) {
                         <span>Assignment {index + 1}</span>
                       </div>
                       {isActive ? (
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="sm"
-                          onClick={() => handleStartAssignment(assignment.assignment_id)}
+                          onClick={() => handleStartAssignment(assignment.assignment_id, assignment.name)}
                           className="flex items-center gap-1 hover:gap-2 transition-all hover:text-primary"
                         >
                           <span>Start Assignment</span>
@@ -321,7 +417,7 @@ export default function Assignment({ courseId }: AssignmentProps) {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleStartAssignment(assignment.assignment_id)}
+                          onClick={() => handleStartAssignment(assignment.assignment_id, assignment.name)}
                           className="text-muted-foreground"
                         >
                           <span>View Details</span>

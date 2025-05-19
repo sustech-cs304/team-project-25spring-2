@@ -1,0 +1,37 @@
+/* 基本远程选择样式 */
+.yRemoteSelection {
+    background-color: var(--user-color, rgb(250, 129, 0, 0.5));
+}
+
+.yRemoteSelectionHead {
+    position: absolute;
+    border-left: var(--user-color, orange) solid 2px;
+    border-top: var(--user-color, orange) solid 2px;
+    border-bottom: var(--user-color, orange) solid 2px;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.yRemoteSelectionHead::after {
+    position: absolute;
+    content: ' ';
+    border: 3px solid var(--user-color, orange);
+    border-radius: 4px;
+    left: -4px;
+    top: -5px;
+}
+
+/* 用户特定样式将由JavaScript动态添加 */
+/* 格式示例:
+.yRemoteSelection-[clientID] {
+    background-color: [color]50 !important;
+}
+.yRemoteSelectionHead-[clientID] {
+    border-left: [color] solid 2px !important;
+    border-top: [color] solid 2px !important;
+    border-bottom: [color] solid 2px !important;
+}
+.yRemoteSelectionHead-[clientID]::after {
+    border: 3px solid [color] !important;
+}
+*/ 

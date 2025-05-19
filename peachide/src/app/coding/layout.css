@@ -384,7 +384,7 @@
   color: var(--color-tab-selected);
   width: 100%;
   padding: 3px 0em;
-  text-wrap: nowrap;
+  white-space: nowrap;
   display: flex;
   gap: 0.3em;
   align-items: center;
@@ -415,7 +415,7 @@
 }
 .flexlayout__tab_button_content {
   display: flex;
-  text-wrap: nowrap;
+  white-space: nowrap;
 }
 .flexlayout__tab_button_textbox {
   border: none;
