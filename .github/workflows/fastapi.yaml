@@ -29,11 +29,17 @@ jobs:
         username: chanbengz
         password: ${{ secrets.HUB_GITHUB_TOKEN }}
 
-    - name: Build and push Docker image
+    - name: [backend] Build and push Docker image
       working-directory: backend
       run: |
         docker build . --file Dockerfile --tag ghcr.io/chanbengz/peach-backend:latest
         docker push ghcr.io/chanbengz/peach-backend:latest
+
+    - name: [websocket] Build and push Docker image
+      working-directory: backend/websocket
+      run: |
+        docker build . --file Dockerfile --tag ghcr.io/chanbengz/peach-websocket:latest
+        docker push ghcr.io/chanbengz/peach-websocket:latest
 
     - name: Execute remote ssh commands
       uses: appleboy/ssh-action@v1
