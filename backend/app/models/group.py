@@ -1,14 +1,14 @@
 # app/models/section.py
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy import Column, String, ForeignKey
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from app.db import Base
 
 
 class Group(Base):
     __tablename__ = "groups"
 
-    group_id = Column(String, primary_key=True, index=True)
+    group_id = Column(UUID, primary_key=True, index=True)
     course_id = Column(
-        String, ForeignKey("courses.course_id"), nullable=False, index=True
+        UUID, ForeignKey("courses.course_id"), nullable=False, index=True
     )
     users = Column(ARRAY(String), index=True)

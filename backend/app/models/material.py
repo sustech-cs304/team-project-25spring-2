@@ -1,16 +1,16 @@
 # app/models/material.py
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from app.db import Base
 
 
 class Material(Base):
     __tablename__ = "materials"
 
-    material_id = Column(String, primary_key=True, index=True)
+    material_id = Column(UUID, primary_key=True, index=True)
     material_name = Column(String, nullable=False)
     section_id = Column(
-        String, ForeignKey("sections.section_id"), index=True, nullable=True
+        UUID, ForeignKey("sections.section_id"), index=True, nullable=True
     )
     data = Column(String, nullable=False)
     comments = Column(
