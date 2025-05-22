@@ -76,7 +76,8 @@ export default function Lecture({ courseId }: LectureProps) {
               materials: [
                 { material_id: "mat_001", material_name: "Course Overview Slides" },
                 { material_id: "mat_002", material_name: "Basic Concepts PDF" }
-              ]
+              ],
+              schedules: []
             },
             {
               section_id: "sec_002",
@@ -85,7 +86,8 @@ export default function Lecture({ courseId }: LectureProps) {
                 { material_id: "mat_003", material_name: "Core Principles Presentation" },
                 { material_id: "mat_004", material_name: "Practice Problems" },
                 { material_id: "mat_005", material_name: "Additional Reading Material" }
-              ]
+              ],
+              schedules: []
             },
             {
               section_id: "sec_003",
@@ -93,7 +95,8 @@ export default function Lecture({ courseId }: LectureProps) {
               materials: [
                 { material_id: "mat_006", material_name: "Advanced Concepts Slides" },
                 { material_id: "mat_007", material_name: "Case Study Documentation" }
-              ]
+              ],
+              schedules: []
             },
             {
               section_id: "sec_004",
@@ -101,7 +104,8 @@ export default function Lecture({ courseId }: LectureProps) {
               materials: [
                 { material_id: "mat_008", material_name: "Guest Lecture Slides" },
                 { material_id: "mat_009", material_name: "Supplemental Research Papers" }
-              ]
+              ],
+              schedules: []
             },
             {
               section_id: "sec_005",
@@ -109,7 +113,8 @@ export default function Lecture({ courseId }: LectureProps) {
               materials: [
                 { material_id: "mat_010", material_name: "Lab Instructions" },
                 { material_id: "mat_011", material_name: "Project Guidelines" }
-              ]
+              ],
+              schedules: []
             }
           ]
         });
