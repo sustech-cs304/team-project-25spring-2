@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Body, Form, HTTPException, status
+from fastapi import APIRouter, Depends, Body, File, Form, HTTPException, status
 from sqlalchemy.orm import Session
 from app.models.material import Material
 from app.models.comment import Comment
@@ -6,6 +6,7 @@ from app.auth.middleware import get_current_user
 from app.models.user import User
 from app.models.section import Section
 import uuid
+import base64
 from app.db import get_db
 
 router = APIRouter()
@@ -13,8 +14,7 @@ router = APIRouter()
 
 @router.get("/materials")
 async def get_materials(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     materials = db.query(Material).all()
     return {
@@ -69,7 +69,7 @@ async def create_material(
 async def get_material(
     material_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     material = db.query(Material).filter(Material.material_id == material_id).first()
     if not material:
@@ -107,8 +107,8 @@ async def update_material(
     db: Session = Depends(get_db),
     material_name: str = Form(None),
     section_id: str = Form(None),
-    data: str = Form(None),
-    current_user: User = Depends(get_current_user)
+    file=File(None),
+    current_user: User = Depends(get_current_user),
 ):
     material = db.query(Material).filter(Material.material_id == material_id).first()
     if material is None:
@@ -118,6 +118,8 @@ async def update_material(
         if material_id not in section.materials:
             section.materials = section.materials + [material_id]
         section.materials = list(set(section.materials))
+        data = await file.read()
+        data = base64.b64encode(data).decode("utf-8")
         db.add(
             Material(
                 material_id=material_id,
