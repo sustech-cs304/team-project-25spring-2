@@ -15,11 +15,13 @@ import {
   Clock,
   MapPin,
   FolderPlus,
-  FilePlus, EditIcon
+  FilePlus, EditIcon,
+  MousePointer
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Course } from "./page";
+import { useRouter } from 'next/navigation';
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUserContext } from "../UserEnvProvider";
 import { toast } from "sonner";
@@ -503,6 +505,7 @@ const SectionsTab = ({ courseId }: { courseId: string }) => {
   const [uploadMaterialDialogOpen, setUploadMaterialDialogOpen] = useState(false);
   const [selectedSectionId, setSelectedSectionId] = useState<string>('');
   const { token } = useUserContext();
+  const router = useRouter();
 
   interface Section {
     section_id: string;
@@ -598,6 +601,10 @@ const SectionsTab = ({ courseId }: { courseId: string }) => {
       console.error('Error deleting material:', error);
       toast.error('Failed to delete material');
     }
+  };
+
+  const goToMaterial = (materialId: string) => {
+    router.push(`/slides/${materialId}`);
   };
 
   // Format schedule for display
@@ -717,34 +724,9 @@ const SectionsTab = ({ courseId }: { courseId: string }) => {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={async () => {
-                              try {
-                                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/material/${material.material_id}`, {
-                                  method: 'GET',
-                                  headers: {
-                                    'Authorization': `Bearer ${token}`
-                                  }
-                                });
-
-                                if (!response.ok) {
-                                  throw new Error('Failed to fetch PDF data');
-                                }
-
-                                const data = await response.json();
-
-                                // 使用base64编码的PDF数据创建Blob对象
-                                const pdfBlob = new Blob([atob(data.data)], { type: 'application/pdf' });
-                                const pdfUrl = URL.createObjectURL(pdfBlob);
-
-                                // 在新窗口中打开PDF
-                                window.open(pdfUrl, '_blank');
-                              } catch (error) {
-                                console.error('Error fetching PDF:', error);
-                                toast.error('Failed to load PDF');
-                              }
-                            }}
+                            onClick={() => goToMaterial(material.material_id)}
                           >
-                            <Search className="h-4 w-4" />
+                            <MousePointer className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -954,6 +936,7 @@ const SectionDialog = ({
                 <div className="w-1/3">
                   <label className="text-xs font-medium mb-1 block">Hour (24h)</label>
                   <select
+                    title="Select hour"
                     className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
                     onChange={(e) => {
                       setSelectedHour(e.target.value);
@@ -1055,6 +1038,7 @@ const UploadMaterialDialog = ({
   const { token } = useUserContext();
   const [materialName, setMaterialName] = useState('');
   const [file, setFile] = useState<File | null>(null);
+  const [fileSize, setFileSize] = useState<number | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -1071,17 +1055,23 @@ const UploadMaterialDialog = ({
       const selectedFile = e.target.files[0];
       setFile(selectedFile);
 
-      // Auto-fill material name from file name if empty
-      if (!materialName) {
-        const fileName = selectedFile.name;
-        // Remove .pdf extension if present
-        setMaterialName(fileName.replace(/\.pdf$/i, ''));
-      }
+      const fileName = selectedFile.name;
+      console.log(fileName);
+      setMaterialName(fileName);
+
+      const fileSize = selectedFile.size;
+      setFileSize(fileSize);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!materialName || !file) {
+      toast.error('Please enter a material name and select a file to upload.');
+      return;
+    }
+
     setIsUploading(true);
 
     try {
@@ -1090,10 +1080,7 @@ const UploadMaterialDialog = ({
 
       formData.append('material_name', materialName);
       formData.append('section_id', sectionId);
-
-      if (file) {
-        formData.append('data', file);
-      }
+      formData.append('file', file);
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/material/${materialId}`, {
         method: 'POST',
@@ -1155,6 +1142,7 @@ const UploadMaterialDialog = ({
                 accept=".pdf"
                 className="hidden"
                 ref={fileInputRef}
+                title="Upload PDF file"
                 onChange={handleFileChange}
                 required
               />
@@ -1162,9 +1150,9 @@ const UploadMaterialDialog = ({
               {file ? (
                 <div className="space-y-2">
                   <BookOpen className="mx-auto h-8 w-8 text-primary" />
-                  <p className="text-sm font-medium">{file.name}</p>
+                  <p className="text-sm font-medium">{materialName}</p>
                   <p className="text-xs text-muted-foreground">
-                    {(file.size / 1024 / 1024).toFixed(2)} MB
+                    {fileSize ? (fileSize / 1024 / 1024).toFixed(2) : '0.00'} MB
                   </p>
                   <Button
                     type="button"
