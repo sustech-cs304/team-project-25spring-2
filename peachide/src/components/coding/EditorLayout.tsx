@@ -50,6 +50,7 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
   const [activeUsersByEditor, setActiveUsersByEditor] = useState<Record<string, UserInfo[]>>({});
   const layoutRef = useRef<Layout>(null);
   const [wsUrl, setWsUrl] = useState<string>('');
+  const { token } = useUserContext();
 
   const handleEditorUsersChange = useCallback((editorId: string, users: UserInfo[]) => {
     setActiveUsersByEditor(prev => {
@@ -169,7 +170,6 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
   useEffect(() => {
     const fetchWsUrl = async () => {
       try {
-        const { token } = useUserContext();
         const url = await getConnectionUrl(projectId, token);
         setWsUrl(url);
       } catch (error) {
