@@ -496,6 +496,15 @@ const StudentsTab = ({ courseId }: { courseId: string }) => {
   );
 };
 
+
+// Format schedule for display
+const formatSchedule = (schedule: string) => {
+  // 2024-05-06 14:10:00
+  const [year, month, day] = schedule.split(' ')[0].split('-');
+  const [hour, minute, second] = schedule.split(' ')[1].split(':');
+  return `${month}/${day}/${year} ${hour}:${minute}`;
+};
+
 // Sections Tab Content (placeholder)
 const SectionsTab = ({ courseId }: { courseId: string }) => {
   const [sections, setSections] = useState<Section[]>([]);
@@ -543,7 +552,7 @@ const SectionsTab = ({ courseId }: { courseId: string }) => {
         {
           section_id: 'section1',
           name: 'Monday Section',
-          schedules: ['2024-05-06-14', '2024-05-13-14', '2024-05-20-14'],
+          schedules: ['2024-05-06 14:10:00', '2024-05-13 14:10:00', '2024-05-20 14:10:00'],
           materials: [
             { material_id: 'mat1', material_name: 'Lecture 1.pdf' },
             { material_id: 'mat2', material_name: 'Exercise Sheet 1.pdf' }
@@ -552,7 +561,7 @@ const SectionsTab = ({ courseId }: { courseId: string }) => {
         {
           section_id: 'section2',
           name: 'Thursday Section',
-          schedules: ['2024-05-09-10', '2024-05-16-10', '2024-05-23-10'],
+          schedules: ['2024-05-09 10:10:00', '2024-05-16 10:10:00', '2024-05-23 10:10:00'],
           materials: [
             { material_id: 'mat3', material_name: 'Lecture 2.pdf' }
           ]
@@ -605,12 +614,6 @@ const SectionsTab = ({ courseId }: { courseId: string }) => {
 
   const goToMaterial = (materialId: string) => {
     router.push(`/slides/${materialId}`);
-  };
-
-  // Format schedule for display
-  const formatSchedule = (schedule: string) => {
-    const [year, month, day, hour] = schedule.split('-');
-    return `${month}/${day}/${year} ${hour}:00`;
   };
 
   if (loading) {
@@ -689,7 +692,7 @@ const SectionsTab = ({ courseId }: { courseId: string }) => {
                       <Clock size={16} className="text-primary" />
                       Schedule
                     </h4>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {section.schedules.map((schedule, index) => (
                         <Badge
                           key={index}
@@ -813,6 +816,7 @@ const SectionDialog = ({
   const [schedules, setSchedules] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedHour, setSelectedHour] = useState('');
+  const [selectedMinute, setSelectedMinute] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditMode = !!section;
 
@@ -830,6 +834,7 @@ const SectionDialog = ({
     if (open) {
       setSelectedDate('');
       setSelectedHour('');
+      setSelectedMinute('');
     }
   }, [open, section]);
 
@@ -872,16 +877,17 @@ const SectionDialog = ({
   };
 
   const handleAddSchedule = () => {
-    if (selectedDate && selectedHour) {
-      // 将选择的日期和小时组合成"年-月-日-小时"格式
+    if (selectedDate && selectedHour && selectedMinute) {
+      // 将选择的日期、小时和分钟组合成"年-月-日 小时:分钟:00"格式
       const [year, month, day] = selectedDate.split('-');
-      const formattedSchedule = `${year}-${month}-${day}-${selectedHour}`;
+      const formattedSchedule = `${year}-${month}-${day} ${selectedHour.padStart(2, '0')}:${selectedMinute.padStart(2, '0')}:00`;
 
       if (!schedules.includes(formattedSchedule)) {
         setSchedules([...schedules, formattedSchedule]);
         // 清空选择
         setSelectedDate('');
         setSelectedHour('');
+        setSelectedMinute('');
       }
     }
   };
@@ -945,8 +951,26 @@ const SectionDialog = ({
                   >
                     <option value="">Select</option>
                     {Array.from({ length: 24 }, (_, i) => i).map(hour => (
-                      <option key={hour} value={hour}>
-                        {hour.toString().padStart(2, '0')}:00
+                      <option key={hour} value={hour.toString().padStart(2, '0')}>
+                        {hour.toString().padStart(2, '0')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="w-1/3">
+                  <label className="text-xs font-medium mb-1 block">Minute</label>
+                  <select
+                    title="Select minute"
+                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                    onChange={(e) => {
+                      setSelectedMinute(e.target.value);
+                    }}
+                    value={selectedMinute}
+                  >
+                    <option value="">Select</option>
+                    {Array.from({ length: 60 }, (_, i) => i).map(minute => (
+                      <option key={minute} value={minute.toString().padStart(2, '0')}>
+                        {minute.toString().padStart(2, '0')}
                       </option>
                     ))}
                   </select>
@@ -955,7 +979,7 @@ const SectionDialog = ({
               <Button
                 type="button"
                 onClick={handleAddSchedule}
-                disabled={!selectedDate || !selectedHour}
+                disabled={!selectedDate || !selectedHour || !selectedMinute}
                 className="self-end"
               >
                 Add Schedule
@@ -970,14 +994,13 @@ const SectionDialog = ({
                 <p className="text-sm font-medium">Scheduled Meetings:</p>
                 <div className="flex flex-wrap gap-2">
                   {schedules.map((schedule, index) => {
-                    const [year, month, day, hour] = schedule.split('-');
                     return (
                       <Badge
                         key={index}
                         variant="secondary"
                         className="pl-2 pr-1 py-1.5 flex items-center gap-1"
                       >
-                        {`${month}/${day}/${year} ${hour}:00`}
+                        {formatSchedule(schedule)}
                         <Button
                           type="button"
                           variant="ghost"

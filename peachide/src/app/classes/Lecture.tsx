@@ -10,6 +10,7 @@ import {
   Clock,
   ComponentIcon,
 } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -25,6 +26,7 @@ interface Material {
 interface Section {
   section_id: string;
   name: string;
+  schedules: string[];
   materials: Material[];
 }
 
@@ -155,6 +157,12 @@ export default function Lecture({ courseId }: LectureProps) {
     show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } }
   };
 
+  const formatSchedule = (schedule: string) => {
+    const [year, month, day] = schedule.split(' ')[0].split('-');
+    const [hour, minute, second] = schedule.split(' ')[1].split(':');
+    return `${month}/${day}/${year} ${hour}:${minute}`;
+  };
+
   // Get current date for comparison
   const currentDate = new Date();
   const formattedDate = currentDate.toLocaleDateString('en-US', {
@@ -245,13 +253,27 @@ export default function Lecture({ courseId }: LectureProps) {
                 >
                   <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/50 relative">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/60 to-primary/20"></div>
-                    <CardHeader className="pb-2">
+                    <CardHeader className="pb-0.5">
                       <CardTitle className="text-xl font-semibold flex items-center">
-                        <Presentation className="h-5 w-5 mr-2 text-primary" />
+                        <Presentation className="h-5 w-4 mr-2 text-primary" />
                         {section.name}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
+                      {section.schedules.length > 0 && (
+                        <div className="mb-4">
+                          <div className="flex flex-wrap gap-2">
+                            {section.schedules.map((schedule, index) => (
+                              <Badge
+                                key={index}
+                                className="px-2.5 py-1.5 rounded-md text-xs font-normal justify-start w-fit"
+                              >
+                                {formatSchedule(schedule)}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       <p className="text-sm text-muted-foreground">
                         This section contains {section.materials.length} {section.materials.length === 1 ? 'learning material' : 'learning materials'}.
                       </p>
