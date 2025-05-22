@@ -154,6 +154,7 @@ const AddUserDialog = ({
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [isNoTerm, setIsNoTerm] = useState(false);
   const { token } = useUserContext();
 
   // Debounced search function
@@ -162,19 +163,16 @@ const AddUserDialog = ({
       if (!term || term.length < 2) {
         setSearchResults([]);
         setIsSearching(false);
+        setIsNoTerm(true);
         return;
       }
 
       try {
-        const formData = new FormData();
-        formData.append('search_term', term);
-
-        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + '/searchByName', {
-          method: 'POST',
+        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/search_user/${term}`, {
+          method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`
           },
-          body: formData
         });
 
         if (!response.ok) {
@@ -182,7 +180,7 @@ const AddUserDialog = ({
         }
 
         const data = await response.json();
-        setSearchResults(data.searchResult || []);
+        setSearchResults(data.user || []);
       } catch (error) {
         console.error('Error searching users:', error);
         toast.error('Failed to search users');
@@ -300,7 +298,11 @@ const AddUserDialog = ({
             </div>
           )}
 
-          {searchTerm && !isSearching && searchResults.length === 0 && (
+          {isNoTerm ? (
+            <div className="text-center py-4 text-muted-foreground">
+              Please enter a search term (at least 2 characters).
+            </div>
+          ) : searchTerm && !isSearching && searchResults.length === 0 && (
             <div className="text-center py-4 text-muted-foreground">
               No users found. Try a different search term.
             </div>
