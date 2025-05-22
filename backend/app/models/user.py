@@ -36,6 +36,7 @@ class Sessions(Base):
 class TokenSchema(BaseModel):
     token: str
     user_id: str
+    is_teacher: str
 
 
 class TokenData(BaseModel):
