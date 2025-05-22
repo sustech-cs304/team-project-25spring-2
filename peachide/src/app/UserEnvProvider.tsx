@@ -2,14 +2,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserData } from './page';
 import { toast } from 'sonner';
-import { Home, Book, Settings } from "lucide-react";
+import { Home, Book, Settings, ComponentIcon, CodeXml } from "lucide-react";
 
 const IS_MOCK_AUTH = process.env.NEXT_PUBLIC_MOCK_AUTH === 'true';
 
 interface SidebarItem {
   title: string;
   url: string;
-  icon: any;
+  icon: string;
 }
 
 interface UserContextType {
@@ -31,7 +31,7 @@ const baseSidebarItems: SidebarItem[] = [
   {
     title: "Home",
     url: "/",
-    icon: Home,
+    icon: "Home",
   },
 ];
 
@@ -40,7 +40,7 @@ const studentSidebarItems: SidebarItem[] = [
   {
     title: "Classes",
     url: "/classes",
-    icon: Book,
+    icon: "Book",
   },
 ];
 
@@ -49,7 +49,7 @@ const teacherSidebarItems: SidebarItem[] = [
   {
     title: "Manage",
     url: "/manage",
-    icon: Settings,
+    icon: "Settings",
   },
 ];
 
@@ -79,25 +79,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [sidebarItems, setSidebarItems] = useState<SidebarItem[]>(defaultSidebarItems);
 
-  // Update sidebar items when user role changes
   useEffect(() => {
-    // Start with base items
-    let updatedItems = [...baseSidebarItems];
-    
-    // Add role-specific items
-    if (isTeacher) {
-      updatedItems = [...updatedItems, ...teacherSidebarItems];
-    } else {
-      updatedItems = [...updatedItems, ...studentSidebarItems];
+    if (sidebarItems !== defaultSidebarItems) {
+      localStorage.setItem('sidebarItems', JSON.stringify(sidebarItems));
     }
-    
-    // Filter out any other dynamic tabs that were added previously
-    const existingDynamicItems = sidebarItems.filter(item => 
-      item.title.startsWith('Slides') || item.title.startsWith('Coding')
-    );
-    
-    setSidebarItems([...updatedItems, ...existingDynamicItems]);
-  }, [isTeacher]);
+  }, [sidebarItems]);
 
   useEffect(() => {
     // Fetch user data when component mounts
@@ -142,11 +128,16 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     const storedToken = localStorage.getItem('token');
     const storedUserId = localStorage.getItem('userId');
     const storedIsTeacher = localStorage.getItem('isTeacher') === 'true';
+    const storedSidebarItems = localStorage.getItem('sidebarItems');
 
     if (storedToken && storedUserId) {
       setToken(storedToken);
       setUserId(storedUserId);
       setIsTeacher(storedIsTeacher);
+    }
+
+    if (storedSidebarItems) {
+      setSidebarItems(JSON.parse(storedSidebarItems));
     }
   }, []);
 
@@ -157,6 +148,13 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.setItem('token', newToken);
     localStorage.setItem('userId', newUserId);
     localStorage.setItem('isTeacher', newIsTeacher.toString());
+    if (newIsTeacher) {
+      setSidebarItems([...defaultSidebarItems, ...teacherSidebarItems]);
+      localStorage.setItem('sidebarItems', JSON.stringify([...defaultSidebarItems, ...teacherSidebarItems]));
+    } else {
+      setSidebarItems([...defaultSidebarItems, ...studentSidebarItems]);
+      localStorage.setItem('sidebarItems', JSON.stringify([...defaultSidebarItems, ...studentSidebarItems]));
+    }
   };
 
   const logout = () => {
@@ -168,6 +166,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.removeItem('isTeacher');
     // Reset sidebar items to default when logging out
     setSidebarItems(defaultSidebarItems);
+    localStorage.setItem('sidebarItems', JSON.stringify(defaultSidebarItems));
   };
 
   const isAuthenticated = IS_MOCK_AUTH || !!token;
@@ -191,4 +190,12 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       {children}
     </UserContext.Provider>
   );
+};
+
+export const iconMap: Record<string, any> = {
+  Home,
+  Book,
+  Settings,
+  ComponentIcon,
+  CodeXml,
 };

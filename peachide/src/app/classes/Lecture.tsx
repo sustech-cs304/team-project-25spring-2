@@ -141,7 +141,7 @@ export default function Lecture({ courseId }: LectureProps) {
       {
         title: "Slides " + materialName,
         url: `/slides/${materialId}`,
-        icon: ComponentIcon
+        icon: "ComponentIcon"
       }
     ]);
   };

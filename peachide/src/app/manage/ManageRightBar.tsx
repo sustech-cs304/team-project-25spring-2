@@ -16,7 +16,8 @@ import {
   MapPin,
   FolderPlus,
   FilePlus, EditIcon,
-  MousePointer
+  MousePointer,
+  ComponentIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -513,7 +514,7 @@ const SectionsTab = ({ courseId }: { courseId: string }) => {
   const [editSection, setEditSection] = useState<Section | null>(null);
   const [uploadMaterialDialogOpen, setUploadMaterialDialogOpen] = useState(false);
   const [selectedSectionId, setSelectedSectionId] = useState<string>('');
-  const { token } = useUserContext();
+  const { token, sidebarItems, setSidebarItems } = useUserContext();
   const router = useRouter();
 
   interface Section {
@@ -612,8 +613,16 @@ const SectionsTab = ({ courseId }: { courseId: string }) => {
     }
   };
 
-  const goToMaterial = (materialId: string) => {
+  const goToMaterial = (materialId: string, materialName: string) => {
     router.push(`/slides/${materialId}`);
+    setSidebarItems([
+      ...sidebarItems,
+      {
+        title: "Slides " + materialName,
+        url: `/slides/${materialId}`,
+        icon: "ComponentIcon"
+      }
+    ]);
   };
 
   if (loading) {
@@ -727,7 +736,7 @@ const SectionsTab = ({ courseId }: { courseId: string }) => {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => goToMaterial(material.material_id)}
+                            onClick={() => goToMaterial(material.material_id, material.material_name)}
                           >
                             <MousePointer className="h-4 w-4" />
                           </Button>

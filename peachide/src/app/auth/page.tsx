@@ -15,12 +15,11 @@ import { Switch } from "@/components/ui/switch";
 
 export default function AuthPage() {
   const router = useRouter();
-  const { login } = useUserContext();
+  const { login, isTeacher, setIsTeacher } = useUserContext();
 
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const [showPassword, setShowPassword] = useState(false);
-  const [isTeacher, setIsTeacher] = useState(false);
 
   // Shared form state for both login and register
   const [formData, setFormData] = useState({
@@ -58,8 +57,8 @@ export default function AuthPage() {
       }
 
       const data = await response.json();
-      // data: { token, user_id }
-      login(data.token, data.user_id, isTeacher);
+      // data: { token, user_id, is_teacher }
+      login(data.token, data.user_id, data.is_teacher);
       router.push('/');
       toast.success('Logged in successfully');
     } catch (error) {
