@@ -13,39 +13,58 @@ import { Textarea } from "@/components/ui/textarea";
 import { useUserContext } from "../UserEnvProvider";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from 'uuid';
-import { Course } from "./page";
+
+// Update Course type to include new fields
+export interface Course {
+  course_id: string;
+  name: string;
+  number: string;
+  description?: string;
+  teachers_name: string[];
+  require_group?: boolean;
+  group_num?: number;
+  people_per_group?: number;
+  group_deadline?: string;
+}
 
 // Add/Edit Course Dialog component
-const CourseFormDialog = ({ 
-  open, 
-  onOpenChange, 
-  courseToEdit, 
-  onCourseUpdated 
-}: { 
-  open: boolean, 
-  onOpenChange: (open: boolean) => void, 
-  courseToEdit?: Course, 
-  onCourseUpdated: () => void 
+const CourseFormDialog = ({
+  open,
+  onOpenChange,
+  courseToEdit,
+  onCourseUpdated
+}: {
+  open: boolean,
+  onOpenChange: (open: boolean) => void,
+  courseToEdit?: Course,
+  onCourseUpdated: () => void
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const { token, userId } = useUserContext();
-  
+
   const isNewCourse = !courseToEdit;
-  
+
+  // New state for group fields
+  const [requireGroup, setRequireGroup] = useState<boolean>(courseToEdit?.require_group ?? false);
+  const [groupNum, setGroupNum] = useState<number | ''>(courseToEdit?.group_num ?? '');
+  const [peoplePerGroup, setPeoplePerGroup] = useState<number | ''>(courseToEdit?.people_per_group ?? '');
+  const [groupDeadline, setGroupDeadline] = useState<string>(courseToEdit?.group_deadline ?? '');
+
+  useEffect(() => {
+    setRequireGroup(courseToEdit?.require_group ?? false);
+    setGroupNum(courseToEdit?.group_num ?? '');
+    setPeoplePerGroup(courseToEdit?.people_per_group ?? '');
+    setGroupDeadline(courseToEdit?.group_deadline ?? '');
+  }, [courseToEdit, open]);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     try {
       const formData = new FormData(e.currentTarget);
-      
-      // Add teacher_id array (including current user)
-      const teacherIds = courseToEdit?.teachers_name?.map(name => name) || [];
-      if (userId && !teacherIds.includes(userId)) {
-        formData.append('teacher_id', userId);
-      }
-      
+
       // For existing courses, ensure we have the course_id
       if (courseToEdit?.course_id) {
         formData.append('course_id', courseToEdit.course_id);
@@ -53,7 +72,19 @@ const CourseFormDialog = ({
         // Generate new UUID for new courses
         formData.append('course_id', uuidv4());
       }
-      
+
+      // Add group fields
+      formData.set('require_group', String(requireGroup));
+      if (requireGroup) {
+        formData.set('group_num', String(groupNum));
+        if (peoplePerGroup !== '') formData.set('people_per_group', String(peoplePerGroup));
+        if (groupDeadline) formData.set('group_deadline', groupDeadline);
+      } else {
+        formData.set('group_num', '0');
+        formData.set('people_per_group', '0');
+        formData.set('group_deadline', '');
+      }
+
       const response = await fetch(process.env.NEXT_PUBLIC_API_URL + '/course_info', {
         method: 'POST',
         headers: {
@@ -61,11 +92,11 @@ const CourseFormDialog = ({
         },
         body: formData
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to save course');
       }
-      
+
       toast.success(isNewCourse ? 'Course created successfully' : 'Course updated successfully');
       onOpenChange(false);
       onCourseUpdated();
@@ -76,64 +107,117 @@ const CourseFormDialog = ({
       setIsSubmitting(false);
     }
   };
-  
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{isNewCourse ? 'Add New Course' : 'Edit Course'}</DialogTitle>
           <DialogDescription>
-            {isNewCourse 
-              ? 'Fill out the form below to create a new course.' 
+            {isNewCourse
+              ? 'Fill out the form below to create a new course.'
               : 'Update the course information.'}
           </DialogDescription>
         </DialogHeader>
-        
+
         <form ref={formRef} onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">
             <Label htmlFor="name">Course Name</Label>
-            <Input 
-              id="name" 
-              name="name" 
-              defaultValue={courseToEdit?.name || ''} 
-              required 
+            <Input
+              id="name"
+              name="name"
+              defaultValue={courseToEdit?.name || ''}
+              required
               placeholder="e.g., Introduction to Computer Science"
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="number">Course Number</Label>
-            <Input 
-              id="number" 
-              name="number" 
-              defaultValue={courseToEdit?.number || ''} 
-              required 
+            <Input
+              id="number"
+              name="number"
+              defaultValue={courseToEdit?.number || ''}
+              required
               placeholder="e.g., CS101"
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
-            <Textarea 
-              id="description" 
-              name="description" 
-              defaultValue={courseToEdit?.description || ''} 
+            <Textarea
+              id="description"
+              name="description"
+              defaultValue={courseToEdit?.description || ''}
               placeholder="Enter course description"
               rows={4}
             />
           </div>
-          
+
+          {/* New group fields */}
+          <div className="space-y-2">
+            <Label htmlFor="require_group" className="flex items-center gap-2">
+              <Input
+                id="require_group"
+                name="require_group_checkbox"
+                type="checkbox"
+                checked={requireGroup}
+                onChange={e => setRequireGroup(e.target.checked)}
+                className="w-4 h-4"
+              />
+              Require Groups?
+            </Label>
+          </div>
+          {requireGroup && (
+            <div className="space-y-2 pl-4 border-l">
+              <div>
+                <Label htmlFor="group_num">Number of Groups</Label>
+                <Input
+                  id="group_num"
+                  name="group_num"
+                  type="number"
+                  min={1}
+                  required
+                  value={groupNum}
+                  onChange={e => setGroupNum(e.target.value === '' ? '' : Number(e.target.value))}
+                  placeholder="e.g., 5"
+                />
+              </div>
+              <div>
+                <Label htmlFor="people_per_group">People per Group</Label>
+                <Input
+                  id="people_per_group"
+                  name="people_per_group"
+                  type="number"
+                  min={1}
+                  value={peoplePerGroup}
+                  onChange={e => setPeoplePerGroup(e.target.value === '' ? '' : Number(e.target.value))}
+                  placeholder="e.g., 4"
+                />
+              </div>
+              <div>
+                <Label htmlFor="group_deadline">Group Deadline</Label>
+                <Input
+                  id="group_deadline"
+                  name="group_deadline"
+                  type="date"
+                  value={groupDeadline}
+                  onChange={e => setGroupDeadline(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
           <div className="flex justify-end pt-4">
-            <Button 
-              variant="outline" 
-              type="button" 
+            <Button
+              variant="outline"
+              type="button"
               className="mr-2"
               onClick={() => onOpenChange(false)}
             >
               Cancel
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={isSubmitting}
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -166,19 +250,18 @@ const CourseCard = ({
       animate={{ opacity: 1, y: 0 }}
       onClick={onClick}
     >
-      <Card 
-        className={`overflow-hidden border cursor-pointer transition-colors ${
-          isSelected ? 'border-primary border-2' : 'border-border hover:border-primary/50'
-        }`}
+      <Card
+        className={`overflow-hidden border cursor-pointer transition-colors ${isSelected ? 'border-primary border-2' : 'border-border hover:border-primary/50'
+          }`}
       >
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-semibold truncate">
               {course.name}
             </CardTitle>
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="h-8 w-8"
               onClick={(e) => {
                 e.stopPropagation();
@@ -244,18 +327,18 @@ export default function ManageLeftBar({ isVisible, onSelectCourse, selectedCours
 
   const fetchCourses = async () => {
     try {
-        console.log(token)
+      console.log(token)
       setLoading(true);
       const response = await fetch(process.env.NEXT_PUBLIC_API_URL + '/courses', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch courses');
       }
-      
+
       const data = await response.json();
       setCourses(data.courses);
     } catch (error) {
@@ -283,8 +366,8 @@ export default function ManageLeftBar({ isVisible, onSelectCourse, selectedCours
   };
 
   useEffect(() => {
-      if (!token) return;
-        fetchCourses();
+    if (!token) return;
+    fetchCourses();
   }, [token]);
 
   const handleAddCourse = () => {
@@ -356,17 +439,17 @@ export default function ManageLeftBar({ isVisible, onSelectCourse, selectedCours
       </div>
 
       {/* Add Course Dialog */}
-      <CourseFormDialog 
-        open={addDialogOpen} 
-        onOpenChange={setAddDialogOpen} 
+      <CourseFormDialog
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
         onCourseUpdated={fetchCourses}
       />
 
       {/* Edit Course Dialog */}
-      <CourseFormDialog 
-        open={editDialogOpen} 
-        onOpenChange={setEditDialogOpen} 
-        courseToEdit={courseToEdit} 
+      <CourseFormDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        courseToEdit={courseToEdit}
         onCourseUpdated={fetchCourses}
       />
     </div>

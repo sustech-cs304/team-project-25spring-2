@@ -258,7 +258,7 @@ function CodeSnippetEditor({ materialId }: { materialId: string }) {
             setExecutionResult({ result: 'Executing...', error: null });
 
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/execute/snippet/${currentSnippet.id}`, {
-                method: 'GET',
+                method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
