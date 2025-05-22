@@ -20,7 +20,7 @@ from app.slides.material import router as material_router
 from app.slides.note import router as note_router
 from app.slides.section import router as section_router
 from app.slides.user import router as user_router
-
+from app.slides.file import router as file_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -67,6 +67,7 @@ app.include_router(
     prefix="/api",
     responses={401: {"description": "Unauthorized"}},
 )
+app.include_router(file_router, tags=["files"], prefix="/api")
 
 
 @app.get("/api", tags=["health"])

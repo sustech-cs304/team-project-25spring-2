@@ -12,7 +12,7 @@ def create_pod(api_instance, env_id):
         'metadata': {
             'name': name,
             'labels': {
-                'app': 'practicum-ws',
+                'app': name,
             }
         },
         'spec': {
