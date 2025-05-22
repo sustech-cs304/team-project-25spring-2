@@ -14,6 +14,7 @@ if os.environ.get("ENVNAME") == "k3s":
 else:
     config.load_kube_config()
 
+
 @router.get("/environment/{env_id}/files")
 async def get_environment_files(
     env_id: str,
