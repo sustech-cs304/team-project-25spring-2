@@ -20,7 +20,7 @@ router = APIRouter()
 async def get_sections(
     course_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     sections = db.query(Section).filter(Section.course_id == course_id).all()
     return {
@@ -33,7 +33,7 @@ async def get_sections(
                 "materials": [
                     {
                         "material_id": material.material_id,
-                        "material_name": material.name,
+                        "material_name": material.material_name,
                     }
                     for material in db.query(Material)
                     .filter(Material.material_id.in_(section.materials))
@@ -52,7 +52,7 @@ async def create_section(
     course_id: str = Form(None),
     name: str = Form(None),
     schedules: list[str] = Form(None),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     section = db.query(Section).filter(Section.section_id == section_id).first()
     if section is None:
@@ -98,7 +98,7 @@ async def create_section(
 async def delete_section(
     section_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     section = db.query(Section).filter(Section.section_id == section_id).first()
     if section is None:

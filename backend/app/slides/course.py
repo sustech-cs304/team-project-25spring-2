@@ -111,6 +111,9 @@ async def create_course(
         db.add(course)
         db.commit()
         db.refresh(course)
+        current_user.courses = list(set(current_user.courses + [course_id]))
+        db.commit()
+        db.refresh(current_user)
         if require_group:
             for _ in range(group_num):
                 group = Group(group_id=str(uuid.uuid4()), course_id=course_id, users=[])
@@ -154,7 +157,7 @@ async def create_course(
 
 
 @router.post("/enroll")
-async def enroll_student_to_course(
+async def enroll_to_course(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     course_id: str = Form(None),
