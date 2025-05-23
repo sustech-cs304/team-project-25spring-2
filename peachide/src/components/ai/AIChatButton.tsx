@@ -15,6 +15,7 @@ import {
 import { chatPresets } from './presets';
 import { useUserContext } from '@/app/UserEnvProvider';
 import MarkdownRenderer from '@/components/ai/MarkdownRenderer';
+import Interactable, { dragMoveListener } from "@/components/ai/interactable";
 
 interface Message {
     role: 'user' | 'assistant' | 'system';
@@ -269,6 +270,17 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
         }
     };
 
+    const [data, setCurrentData] = React.useState({});
+
+    // function will be called when the card is moved an the state is updated
+    const handlePositionChange = (event: any) => {
+        const [x, y] = dragMoveListener(event);
+        const id = event.target.id;
+        setCurrentData((data: any) => {
+            return { ...data, [id]: { ...data[id], position: { x: x, y: y } } };
+        });
+    };
+
     return (
         <div className={`fixed bottom-8 right-8 z-[5000] ${className}`}>
             <AnimatePresence>
@@ -277,192 +289,196 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
-                        className="bg-background rounded-lg shadow-lg w-96 h-[600px] flex flex-col border"
                     >
-                        <div className="p-4 border-b flex justify-between items-center">
-                            <div className="flex items-center gap-2">
-                                <h3 className="font-semibold">AI Assistant</h3>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-6 text-xs"
-                                    onClick={() => setShowChatList(!showChatList)}
-                                >
-                                    {currentChatId ? 'Switch Chat' : 'Select Chat'}
-                                </Button>
-                            </div>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setIsOpen(false)}
-                            >
-                                <X className="h-4 w-4" />
-                            </Button>
-                        </div>
-
-                        {showChatList && (
-                            <div className="border-b p-2">
-                                <div className="space-y-1">
+                        <Interactable draggable={true} draggableOptions={{ onmove: handlePositionChange }}>
+                            <div
+                                className="bg-background rounded-lg shadow-lg w-96 h-[600px] flex flex-col border">
+                                <div className="p-4 border-b flex justify-between items-center">
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="font-semibold">AI Assistant</h3>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-6 text-xs"
+                                            onClick={() => setShowChatList(!showChatList)}
+                                        >
+                                            {currentChatId ? 'Switch Chat' : 'Select Chat'}
+                                        </Button>
+                                    </div>
                                     <Button
                                         variant="ghost"
-                                        className="w-full justify-start"
-                                        onClick={() => {
-                                            setShowPresetDialog(true);
-                                            setShowChatList(false);
-                                        }}
+                                        size="icon"
+                                        onClick={() => setIsOpen(false)}
                                     >
-                                        New Chat
+                                        <X className="h-4 w-4" />
                                     </Button>
-                                    {chats.map((chat) => (
-                                        <div key={chat.chat_id} className="flex items-center group">
-                                            {editingChatId === chat.chat_id ? (
-                                                <input
-                                                    className="flex-1 border rounded px-2 py-1 text-sm mr-1"
-                                                    value={editingTitle}
-                                                    autoFocus
-                                                    onChange={handleEditTitleChange}
-                                                    onBlur={() => handleEditTitleSave(chat)}
-                                                    onKeyDown={e => handleEditTitleKeyDown(e, chat)}
-                                                    placeholder="Edit chat name"
-                                                    aria-label="Edit chat name"
-                                                />
-                                            ) : (
+                                </div>
+
+                                {showChatList && (
+                                    <div className="border-b p-2">
+                                        <div className="space-y-1">
+                                            <Button
+                                                variant="ghost"
+                                                className="w-full justify-start"
+                                                onClick={() => {
+                                                    setShowPresetDialog(true);
+                                                    setShowChatList(false);
+                                                }}
+                                            >
+                                                New Chat
+                                            </Button>
+                                            {chats.map((chat) => (
+                                                <div key={chat.chat_id} className="flex items-center group">
+                                                    {editingChatId === chat.chat_id ? (
+                                                        <input
+                                                            className="flex-1 border rounded px-2 py-1 text-sm mr-1"
+                                                            value={editingTitle}
+                                                            autoFocus
+                                                            onChange={handleEditTitleChange}
+                                                            onBlur={() => handleEditTitleSave(chat)}
+                                                            onKeyDown={e => handleEditTitleKeyDown(e, chat)}
+                                                            placeholder="Edit chat name"
+                                                            aria-label="Edit chat name"
+                                                        />
+                                                    ) : (
+                                                        <Button
+                                                            variant="ghost"
+                                                            className="flex-1 justify-start"
+                                                            onClick={() => {
+                                                                setCurrentChatId(chat.chat_id);
+                                                                setShowChatList(false);
+                                                            }}
+                                                        >
+                                                            <span className="truncate max-w-[120px]">{chat.title}</span>
+                                                        </Button>
+                                                    )}
+                                                    <button
+                                                        className="ml-1 p-1 rounded hover:bg-muted text-muted-foreground hover:text-primary transition"
+                                                        title="Edit chat name"
+                                                        onClick={() => handleEditChatTitle(chat)}
+                                                    >
+                                                        <Pencil className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        className="ml-1 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition"
+                                                        title="Delete chat"
+                                                        onClick={() => handleDeleteChat(chat.chat_id)}
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <Dialog open={showPresetDialog} onOpenChange={setShowPresetDialog}>
+                                    <DialogTrigger asChild>{/* No trigger here, we open via state */}</DialogTrigger>
+                                    <DialogContent className="sm:max-w-[425px] z-[6000]">
+                                        <DialogHeader>
+                                            <DialogTitle>Start a New Chat</DialogTitle>
+                                        </DialogHeader>
+                                        <div className="grid gap-4 py-4">
+                                            <Button
+                                                variant="outline"
+                                                className="w-full justify-start"
+                                                onClick={() => {
+                                                    createNewChat();
+                                                    setShowPresetDialog(false);
+                                                }}
+                                            >
+                                                Empty Chat
+                                            </Button>
+                                            {chatPresets.map((preset, index) => (
                                                 <Button
-                                                    variant="ghost"
-                                                    className="flex-1 justify-start"
+                                                    key={index}
+                                                    variant="outline"
+                                                    className="w-full justify-start"
                                                     onClick={() => {
-                                                        setCurrentChatId(chat.chat_id);
-                                                        setShowChatList(false);
+                                                        createNewChat(true);
+                                                        handlePresetSelect(preset.prompt);
+                                                        setShowPresetDialog(false);
                                                     }}
                                                 >
-                                                    <span className="truncate max-w-[120px]">{chat.title}</span>
+                                                    {preset.title}
                                                 </Button>
-                                            )}
-                                            <button
-                                                className="ml-1 p-1 rounded hover:bg-muted text-muted-foreground hover:text-primary transition"
-                                                title="Edit chat name"
-                                                onClick={() => handleEditChatTitle(chat)}
-                                            >
-                                                <Pencil className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                className="ml-1 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition"
-                                                title="Delete chat"
-                                                onClick={() => handleDeleteChat(chat.chat_id)}
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
+                                            ))}
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                                    </DialogContent>
+                                </Dialog>
 
-                        <Dialog open={showPresetDialog} onOpenChange={setShowPresetDialog}>
-                            <DialogTrigger asChild>{/* No trigger here, we open via state */}</DialogTrigger>
-                            <DialogContent className="sm:max-w-[425px] z-[6000]">
-                                <DialogHeader>
-                                    <DialogTitle>Start a New Chat</DialogTitle>
-                                </DialogHeader>
-                                <div className="grid gap-4 py-4">
-                                    <Button
-                                        variant="outline"
-                                        className="w-full justify-start"
-                                        onClick={() => {
-                                            createNewChat();
-                                            setShowPresetDialog(false);
-                                        }}
-                                    >
-                                        Empty Chat
-                                    </Button>
-                                    {chatPresets.map((preset, index) => (
-                                        <Button
-                                            key={index}
-                                            variant="outline"
-                                            className="w-full justify-start"
-                                            onClick={() => {
-                                                createNewChat(true);
-                                                handlePresetSelect(preset.prompt);
-                                                setShowPresetDialog(false);
-                                            }}
-                                        >
-                                            {preset.title}
-                                        </Button>
-                                    ))}
-                                </div>
-                            </DialogContent>
-                        </Dialog>
-
-                        <div className="flex-1 p-4 w-full overflow-y-scroll">
-                            <div className="space-y-4 w-full">
-                                {!currentChatId && (
-                                    <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                                        <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
-                                        <h3 className="text-lg font-semibold mb-2">No Chat Selected</h3>
-                                        <p className="text-sm text-muted-foreground mb-4">
-                                            Start a new chat or select an existing one to continue.
-                                        </p>
-                                        <Button onClick={() => setShowPresetDialog(true)}>
-                                            Start New Chat
-                                        </Button>
-                                    </div>
-                                )}
-                                {currentChatId && showMaterialPrompt && materialId && (
-                                    <div className="border-muted border rounded-lg p-2 mb-3">
-                                        <div className="flex items-center gap-1.5">
-                                            <Checkbox
-                                                id="material-selection"
-                                                checked={isMaterialSelected}
-                                                onCheckedChange={handleMaterialSelection}
-                                                className="h-3 w-3"
-                                            />
-                                            <label htmlFor="material-selection" className="text-xs">
-                                                Include current material
-                                            </label>
-                                        </div>
-                                    </div>
-                                )}
-                                {currentChatId && Array.isArray(messages) && messages.map((message, index) => (
-                                    message.content.startsWith("fileid:/") ? ('') : (
-                                        <div
-                                            key={index}
-                                            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                                        >
-                                            <div
-                                                className={`max-w-[80%] text-sm rounded-lg p-2 ${message.role === 'user'
-                                                    ? 'bg-primary text-primary-foreground'
-                                                    : 'bg-muted'
-                                                    }`}
-                                            >
-                                                <MarkdownRenderer>
-                                                    {message.content}
-                                                </MarkdownRenderer>
+                                <div className="flex-1 p-4 w-full overflow-y-scroll">
+                                    <div className="space-y-4 w-full">
+                                        {!currentChatId && (
+                                            <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                                                <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
+                                                <h3 className="text-lg font-semibold mb-2">No Chat Selected</h3>
+                                                <p className="text-sm text-muted-foreground mb-4">
+                                                    Start a new chat or select an existing one to continue.
+                                                </p>
+                                                <Button onClick={() => setShowPresetDialog(true)}>
+                                                    Start New Chat
+                                                </Button>
                                             </div>
-                                        </div>
-                                    )))}
-                            </div>
-                        </div>
+                                        )}
+                                        {currentChatId && showMaterialPrompt && materialId && (
+                                            <div className="border-muted border rounded-lg p-2 mb-3">
+                                                <div className="flex items-center gap-1.5">
+                                                    <Checkbox
+                                                        id="material-selection"
+                                                        checked={isMaterialSelected}
+                                                        onCheckedChange={handleMaterialSelection}
+                                                        className="h-3 w-3"
+                                                    />
+                                                    <label htmlFor="material-selection" className="text-xs">
+                                                        Include current material
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {currentChatId && Array.isArray(messages) && messages.map((message, index) => (
+                                            message.content.startsWith("fileid:/") ? ('') : (
+                                                <div
+                                                    key={index}
+                                                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                                                >
+                                                    <div
+                                                        className={`max-w-[80%] text-sm rounded-lg p-2 ${message.role === 'user'
+                                                            ? 'bg-primary text-primary-foreground'
+                                                            : 'bg-muted'
+                                                            }`}
+                                                    >
+                                                        <MarkdownRenderer>
+                                                            {message.content}
+                                                        </MarkdownRenderer>
+                                                    </div>
+                                                </div>
+                                            )))}
+                                    </div>
+                                </div>
 
-                        <div className="p-4 border-t">
-                            <div className="flex gap-2">
-                                <Textarea
-                                    value={input}
-                                    onChange={(e) => setInput(e.target.value)}
-                                    placeholder={currentChatId ? "Type your message..." : "Select or create a chat to start messaging"}
-                                    className="flex-1"
-                                    disabled={!currentChatId}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                            e.preventDefault();
-                                            handleSendMessage();
-                                        }
-                                    }}
-                                />
-                                <Button onClick={handleSendMessage} disabled={isLoading || !currentChatId}>
-                                    Send
-                                </Button>
+                                <div className="p-4 border-t">
+                                    <div className="flex gap-2">
+                                        <Textarea
+                                            value={input}
+                                            onChange={(e) => setInput(e.target.value)}
+                                            placeholder={currentChatId ? "Type your message..." : "Select or create a chat to start messaging"}
+                                            className="flex-1"
+                                            disabled={!currentChatId}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && !e.shiftKey) {
+                                                    e.preventDefault();
+                                                    handleSendMessage();
+                                                }
+                                            }}
+                                        />
+                                        <Button onClick={handleSendMessage} disabled={isLoading || !currentChatId}>
+                                            Send
+                                        </Button>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        </Interactable>
                     </motion.div>
                 ) : (
                     <motion.div

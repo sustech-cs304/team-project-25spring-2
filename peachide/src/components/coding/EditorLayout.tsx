@@ -38,18 +38,17 @@ var defaultLayout = {
 };
 
 interface EditorLayoutProps {
-  projectId: string;
+  environmentId: string;
   onToggleFileSystemBar: () => void;
   selectedFile?: TreeNode | null;
 }
 
-const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: EditorLayoutProps) => {
+const EditorLayout = ({ environmentId, onToggleFileSystemBar, selectedFile }: EditorLayoutProps) => {
   const [model, setModel] = useState<Model>(() => Model.fromJson(defaultLayout));
   const [showTerminal, setShowTerminal] = useState<boolean>(false);
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [activeUsersByEditor, setActiveUsersByEditor] = useState<Record<string, UserInfo[]>>({});
   const layoutRef = useRef<Layout>(null);
-  const [wsUrl, setWsUrl] = useState<string>('');
 
   const handleEditorUsersChange = useCallback((editorId: string, users: UserInfo[]) => {
     setActiveUsersByEditor(prev => {
@@ -89,7 +88,7 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
     const config = node.getConfig() || {};
     const filePath = config.filePath || node.getName();
     const language = config.language || getLanguageFromFileName(filePath);
-
+    const wsUrl = process.env.NEXT_PUBLIC_API_URL + `/environment/${environmentId}/wsurl`;
     switch (component) {
       case 'editor':
         return <CollaboratedEditorComponent
@@ -99,13 +98,13 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
           onUsersChange={handleEditorUsersChange}
         />;
       case 'terminal':
-        return <TerminalComponent env_id={projectId} />;
+        return <TerminalComponent env_id={environmentId} />;
       case 'pdf':
-        return <PDFComponent props={{ url: config.filePath, pageNumber: config.pageNumber || 1 }} onFeedbackAction={() => { }} />;
+        return <PDFComponent env_id={environmentId} file_path={config.filePath} />;
       default:
-        return <div>Loading...</div>;
+        return <div className="flex-1 border-1 rounded-[var(--radius)] h-full flex flex-col">Loading...</div>;
     }
-  }, [wsUrl, handleEditorUsersChange]);
+  }, [handleEditorUsersChange]);
 
   const openFile = useCallback(async (treeNode: TreeNode) => {
     if (!treeNode || treeNode.type !== "file") return;
@@ -165,19 +164,6 @@ const EditorLayout = ({ projectId, onToggleFileSystemBar, selectedFile }: Editor
       console.error("Error opening file:", error, treeNode);
     }
   }, [model]);
-
-  useEffect(() => {
-    const fetchWsUrl = async () => {
-      try {
-        const { token } = useUserContext();
-        const url = await getConnectionUrl(projectId, token);
-        setWsUrl(url);
-      } catch (error) {
-        console.error("Error fetching WebSocket URL:", error);
-      }
-    };
-    fetchWsUrl();
-  }, [projectId]);
 
   useEffect(() => {
     if (selectedFile) {

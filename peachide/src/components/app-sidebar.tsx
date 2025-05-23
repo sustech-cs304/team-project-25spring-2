@@ -15,6 +15,7 @@ import { NavUser } from "@/components/sidebar/nav-user";
 import React, { useEffect } from "react";
 import { useUserContext } from "@/app/UserEnvProvider";
 import { useRouter } from 'next/navigation';
+import { iconMap } from "@/app/UserEnvProvider"; // adjust path as needed
 
 function PeachSidebarHeader() {
     return (
@@ -50,13 +51,14 @@ function FirstSidebar({ userInfo }: { userInfo: any }) {
                 <SidebarGroupContent>
                     <SidebarMenu>
                         {sidebarItems.map((item) => {
+                            const IconComponent = iconMap[item.icon] || null;
                             const isClosable = item.title.startsWith("Slides") || item.title.startsWith("Coding");
                             return (
                                 <SidebarMenuItem key={item.title}>
                                     <div className="relative flex items-center justify-center">
                                         <SidebarMenuButton asChild className="hover:bg-border mb-2">
                                             <a href={item.url} className="flex items-center justify-center">
-                                                <item.icon />
+                                                {IconComponent && <IconComponent />}
                                                 {isClosable && (
                                                     <span
                                                         className="absolute bottom-0 right-0 bg-primary text-white text-[7px] px-1 py-0.5 rounded shadow pointer-events-none"

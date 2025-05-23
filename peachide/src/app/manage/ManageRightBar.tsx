@@ -15,11 +15,14 @@ import {
   Clock,
   MapPin,
   FolderPlus,
-  FilePlus, EditIcon
+  FilePlus, EditIcon,
+  MousePointer,
+  ComponentIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Course } from "./page";
+import { useRouter } from 'next/navigation';
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUserContext } from "../UserEnvProvider";
 import { toast } from "sonner";
@@ -154,6 +157,7 @@ const AddUserDialog = ({
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [isNoTerm, setIsNoTerm] = useState(false);
   const { token } = useUserContext();
 
   // Debounced search function
@@ -162,19 +166,16 @@ const AddUserDialog = ({
       if (!term || term.length < 2) {
         setSearchResults([]);
         setIsSearching(false);
+        setIsNoTerm(true);
         return;
       }
 
       try {
-        const formData = new FormData();
-        formData.append('search_term', term);
-
-        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + '/searchByName', {
-          method: 'POST',
+        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/search_user/${term}`, {
+          method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`
           },
-          body: formData
         });
 
         if (!response.ok) {
@@ -182,7 +183,7 @@ const AddUserDialog = ({
         }
 
         const data = await response.json();
-        setSearchResults(data.searchResult || []);
+        setSearchResults(data.user || []);
       } catch (error) {
         console.error('Error searching users:', error);
         toast.error('Failed to search users');
@@ -300,7 +301,11 @@ const AddUserDialog = ({
             </div>
           )}
 
-          {searchTerm && !isSearching && searchResults.length === 0 && (
+          {isNoTerm ? (
+            <div className="text-center py-4 text-muted-foreground">
+              Please enter a search term (at least 2 characters).
+            </div>
+          ) : searchTerm && !isSearching && searchResults.length === 0 && (
             <div className="text-center py-4 text-muted-foreground">
               No users found. Try a different search term.
             </div>
@@ -492,6 +497,15 @@ const StudentsTab = ({ courseId }: { courseId: string }) => {
   );
 };
 
+
+// Format schedule for display
+const formatSchedule = (schedule: string) => {
+  // 2024-05-06 14:10:00
+  const [year, month, day] = schedule.split(' ')[0].split('-');
+  const [hour, minute, second] = schedule.split(' ')[1].split(':');
+  return `${month}/${day}/${year} ${hour}:${minute}`;
+};
+
 // Sections Tab Content (placeholder)
 const SectionsTab = ({ courseId }: { courseId: string }) => {
   const [sections, setSections] = useState<Section[]>([]);
@@ -500,7 +514,8 @@ const SectionsTab = ({ courseId }: { courseId: string }) => {
   const [editSection, setEditSection] = useState<Section | null>(null);
   const [uploadMaterialDialogOpen, setUploadMaterialDialogOpen] = useState(false);
   const [selectedSectionId, setSelectedSectionId] = useState<string>('');
-  const { token } = useUserContext();
+  const { token, sidebarItems, setSidebarItems } = useUserContext();
+  const router = useRouter();
 
   interface Section {
     section_id: string;
@@ -538,7 +553,7 @@ const SectionsTab = ({ courseId }: { courseId: string }) => {
         {
           section_id: 'section1',
           name: 'Monday Section',
-          schedules: ['2024-05-06-14', '2024-05-13-14', '2024-05-20-14'],
+          schedules: ['2024-05-06 14:10:00', '2024-05-13 14:10:00', '2024-05-20 14:10:00'],
           materials: [
             { material_id: 'mat1', material_name: 'Lecture 1.pdf' },
             { material_id: 'mat2', material_name: 'Exercise Sheet 1.pdf' }
@@ -547,7 +562,7 @@ const SectionsTab = ({ courseId }: { courseId: string }) => {
         {
           section_id: 'section2',
           name: 'Thursday Section',
-          schedules: ['2024-05-09-10', '2024-05-16-10', '2024-05-23-10'],
+          schedules: ['2024-05-09 10:10:00', '2024-05-16 10:10:00', '2024-05-23 10:10:00'],
           materials: [
             { material_id: 'mat3', material_name: 'Lecture 2.pdf' }
           ]
@@ -598,10 +613,16 @@ const SectionsTab = ({ courseId }: { courseId: string }) => {
     }
   };
 
-  // Format schedule for display
-  const formatSchedule = (schedule: string) => {
-    const [year, month, day, hour] = schedule.split('-');
-    return `${month}/${day}/${year} ${hour}:00`;
+  const goToMaterial = (materialId: string, materialName: string) => {
+    router.push(`/slides/${materialId}`);
+    setSidebarItems([
+      ...sidebarItems,
+      {
+        title: "Slides " + materialName,
+        url: `/slides/${materialId}`,
+        icon: "ComponentIcon"
+      }
+    ]);
   };
 
   if (loading) {
@@ -680,7 +701,7 @@ const SectionsTab = ({ courseId }: { courseId: string }) => {
                       <Clock size={16} className="text-primary" />
                       Schedule
                     </h4>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {section.schedules.map((schedule, index) => (
                         <Badge
                           key={index}
@@ -715,34 +736,9 @@ const SectionsTab = ({ courseId }: { courseId: string }) => {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={async () => {
-                              try {
-                                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/material/${material.material_id}`, {
-                                  method: 'GET',
-                                  headers: {
-                                    'Authorization': `Bearer ${token}`
-                                  }
-                                });
-
-                                if (!response.ok) {
-                                  throw new Error('Failed to fetch PDF data');
-                                }
-
-                                const data = await response.json();
-
-                                // 使用base64编码的PDF数据创建Blob对象
-                                const pdfBlob = new Blob([atob(data.data)], { type: 'application/pdf' });
-                                const pdfUrl = URL.createObjectURL(pdfBlob);
-
-                                // 在新窗口中打开PDF
-                                window.open(pdfUrl, '_blank');
-                              } catch (error) {
-                                console.error('Error fetching PDF:', error);
-                                toast.error('Failed to load PDF');
-                              }
-                            }}
+                            onClick={() => goToMaterial(material.material_id, material.material_name)}
                           >
-                            <Search className="h-4 w-4" />
+                            <MousePointer className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -829,6 +825,7 @@ const SectionDialog = ({
   const [schedules, setSchedules] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedHour, setSelectedHour] = useState('');
+  const [selectedMinute, setSelectedMinute] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditMode = !!section;
 
@@ -846,6 +843,7 @@ const SectionDialog = ({
     if (open) {
       setSelectedDate('');
       setSelectedHour('');
+      setSelectedMinute('');
     }
   }, [open, section]);
 
@@ -888,16 +886,17 @@ const SectionDialog = ({
   };
 
   const handleAddSchedule = () => {
-    if (selectedDate && selectedHour) {
-      // 将选择的日期和小时组合成"年-月-日-小时"格式
+    if (selectedDate && selectedHour && selectedMinute) {
+      // 将选择的日期、小时和分钟组合成"年-月-日 小时:分钟:00"格式
       const [year, month, day] = selectedDate.split('-');
-      const formattedSchedule = `${year}-${month}-${day}-${selectedHour}`;
+      const formattedSchedule = `${year}-${month}-${day} ${selectedHour.padStart(2, '0')}:${selectedMinute.padStart(2, '0')}:00`;
 
       if (!schedules.includes(formattedSchedule)) {
         setSchedules([...schedules, formattedSchedule]);
         // 清空选择
         setSelectedDate('');
         setSelectedHour('');
+        setSelectedMinute('');
       }
     }
   };
@@ -952,6 +951,7 @@ const SectionDialog = ({
                 <div className="w-1/3">
                   <label className="text-xs font-medium mb-1 block">Hour (24h)</label>
                   <select
+                    title="Select hour"
                     className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
                     onChange={(e) => {
                       setSelectedHour(e.target.value);
@@ -960,8 +960,26 @@ const SectionDialog = ({
                   >
                     <option value="">Select</option>
                     {Array.from({ length: 24 }, (_, i) => i).map(hour => (
-                      <option key={hour} value={hour}>
-                        {hour.toString().padStart(2, '0')}:00
+                      <option key={hour} value={hour.toString().padStart(2, '0')}>
+                        {hour.toString().padStart(2, '0')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="w-1/3">
+                  <label className="text-xs font-medium mb-1 block">Minute</label>
+                  <select
+                    title="Select minute"
+                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                    onChange={(e) => {
+                      setSelectedMinute(e.target.value);
+                    }}
+                    value={selectedMinute}
+                  >
+                    <option value="">Select</option>
+                    {Array.from({ length: 60 }, (_, i) => i).map(minute => (
+                      <option key={minute} value={minute.toString().padStart(2, '0')}>
+                        {minute.toString().padStart(2, '0')}
                       </option>
                     ))}
                   </select>
@@ -970,7 +988,7 @@ const SectionDialog = ({
               <Button
                 type="button"
                 onClick={handleAddSchedule}
-                disabled={!selectedDate || !selectedHour}
+                disabled={!selectedDate || !selectedHour || !selectedMinute}
                 className="self-end"
               >
                 Add Schedule
@@ -985,14 +1003,13 @@ const SectionDialog = ({
                 <p className="text-sm font-medium">Scheduled Meetings:</p>
                 <div className="flex flex-wrap gap-2">
                   {schedules.map((schedule, index) => {
-                    const [year, month, day, hour] = schedule.split('-');
                     return (
                       <Badge
                         key={index}
                         variant="secondary"
                         className="pl-2 pr-1 py-1.5 flex items-center gap-1"
                       >
-                        {`${month}/${day}/${year} ${hour}:00`}
+                        {formatSchedule(schedule)}
                         <Button
                           type="button"
                           variant="ghost"
@@ -1053,6 +1070,7 @@ const UploadMaterialDialog = ({
   const { token } = useUserContext();
   const [materialName, setMaterialName] = useState('');
   const [file, setFile] = useState<File | null>(null);
+  const [fileSize, setFileSize] = useState<number | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -1069,17 +1087,23 @@ const UploadMaterialDialog = ({
       const selectedFile = e.target.files[0];
       setFile(selectedFile);
 
-      // Auto-fill material name from file name if empty
-      if (!materialName) {
-        const fileName = selectedFile.name;
-        // Remove .pdf extension if present
-        setMaterialName(fileName.replace(/\.pdf$/i, ''));
-      }
+      const fileName = selectedFile.name;
+      console.log(fileName);
+      setMaterialName(fileName);
+
+      const fileSize = selectedFile.size;
+      setFileSize(fileSize);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!materialName || !file) {
+      toast.error('Please enter a material name and select a file to upload.');
+      return;
+    }
+
     setIsUploading(true);
 
     try {
@@ -1088,10 +1112,7 @@ const UploadMaterialDialog = ({
 
       formData.append('material_name', materialName);
       formData.append('section_id', sectionId);
-
-      if (file) {
-        formData.append('data', file);
-      }
+      formData.append('file', file);
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/material/${materialId}`, {
         method: 'POST',
@@ -1153,6 +1174,7 @@ const UploadMaterialDialog = ({
                 accept=".pdf"
                 className="hidden"
                 ref={fileInputRef}
+                title="Upload PDF file"
                 onChange={handleFileChange}
                 required
               />
@@ -1160,9 +1182,9 @@ const UploadMaterialDialog = ({
               {file ? (
                 <div className="space-y-2">
                   <BookOpen className="mx-auto h-8 w-8 text-primary" />
-                  <p className="text-sm font-medium">{file.name}</p>
+                  <p className="text-sm font-medium">{materialName}</p>
                   <p className="text-xs text-muted-foreground">
-                    {(file.size / 1024 / 1024).toFixed(2)} MB
+                    {fileSize ? (fileSize / 1024 / 1024).toFixed(2) : '0.00'} MB
                   </p>
                   <Button
                     type="button"

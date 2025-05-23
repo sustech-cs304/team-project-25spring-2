@@ -12,14 +12,23 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
     import.meta.url,
 ).toString();
 
-export const PDFComponent: React.FC<PDFPartProps> = ({ props, onFeedbackAction }) => {
+interface PDFComponentProps {
+    env_id: string;
+    file_path: string;
+}
+
+export const PDFComponent: React.FC<PDFComponentProps> = ({ env_id, file_path }) => {
     const [numPages, setNumPages] = useState<number>();
     const [scale, setScale] = useState(1);
+    const [pdfFile, setPdfFile] = useState<Blob | null>(null);
     const pdfContainerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        getPDFFile().then(blob => setPdfFile(blob));
+    }, [env_id, file_path]);
 
     function onDocumentLoadSuccess({ numPages }: { numPages: number }): void {
         setNumPages(numPages);
-        onFeedbackAction({ ...props, numPages });
     }
 
     const onPageLoadSuccess = (page: any) => {
@@ -33,29 +42,30 @@ export const PDFComponent: React.FC<PDFPartProps> = ({ props, onFeedbackAction }
         cMapUrl: '/dist/cmaps/',
     }), []);
 
-    useEffect(() => {
-        const container = pdfContainerRef.current;
-        if (!container) return;
-
-        const handleScroll = () => {
-            const scrollTop = container.scrollTop;
-            const pageHeight = (container.scrollHeight - 50) / numPages!;
-            const currentPage = Math.floor(scrollTop / pageHeight) + 1;
-
-            if (currentPage !== props.pageNumber) {
-                onFeedbackAction({ ...props, pageNumber: currentPage });
+    const getPDFFile = () => {
+        // Get pdf file from `/file/{env_id}/pdf` with params `file_path` it will return a FileResponse
+        return fetch(`/file/${env_id}/pdf`, {
+            method: 'GET',
+            headers: {
+                'file_path': file_path,
             }
-        };
-
-        container.addEventListener('scroll', handleScroll);
-        return () => container.removeEventListener('scroll', handleScroll);
-    }, [numPages, props, onFeedbackAction]);
+        }).then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch PDF');
+                }
+                return response.blob();
+            })
+            .catch(error => {
+                console.error('Error fetching PDF:', error);
+                return null;
+            });
+    }
 
     return (
         <div ref={pdfContainerRef}
             className={`rounded-[var(--radius)] border-1 grow-0 h-full overflow-scroll`}
-            style={{ "width": props.width }}>
-            <PDFDocument options={options} file={props.url}
+            style={{ "width": "100%" }}>
+            <PDFDocument options={options} file={pdfFile}
                 onLoadSuccess={onDocumentLoadSuccess}>
                 {Array.from(new Array(numPages), (el, index) => (
                     <Page key={`page_${index + 1}`} pageNumber={index + 1} scale={scale} onLoadSuccess={onPageLoadSuccess}>

@@ -172,9 +172,7 @@ export const PDFPart: React.FC<PDFPartProps> = ({ props, onFeedbackAction }) => 
     const getPDFFile = () => {
         if (!props.url) return undefined;
         if (typeof props.url === 'string' && !props.url.startsWith('data:application/pdf;base64,')) {
-            if (/^[A-Za-z0-9+/=]+$/.test(props.url) && props.url.length > 100) {
-                return `data:application/pdf;base64,${props.url}`;
-            }
+            return `data:application/pdf;base64,${props.url}`;
         }
         return props.url;
     };

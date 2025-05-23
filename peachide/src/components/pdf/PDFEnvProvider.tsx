@@ -73,7 +73,11 @@ export const PDFProvider = ({ children }: { children: React.ReactNode }) => {
         if (!materialId) return;
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/marklist/${materialId}`);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/marklist/${materialId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
             if (response.ok) {
                 const data = await response.json();
                 setBookmarks(data.marklists);
