@@ -76,11 +76,11 @@ def generate_random_section(course_id):
         "第七章 总结与展望",
     ]
     schedules = [
-        "2025-01-01",
-        "2025-01-02",
-        "2025-01-03",
-        "2025-01-04",
-        "2025-01-05",
+        "2025-01-01 10:00:00",
+        "2025-01-02 10:00:00",
+        "2025-01-03 10:00:00",
+        "2025-01-04 10:00:00",
+        "2025-01-05 10:00:00",
     ]
     # select 3 random schedules
     selected_schedules = random.sample(schedules, 3)
@@ -165,17 +165,8 @@ def generate_random_material(section_id=None, path=None):
         "项目案例",
         "视频讲解",
     ]
-
-    # Process a pdf as base64
-    with open(path, "rb") as pdf_file:
-        content = base64.b64encode(pdf_file.read()).decode("utf-8")
-
-    return material_id, {
-        "material_name": random.choice(material_names),
-        "section_id": section_id,
-        "data": content,
-        "comments": [],
-    }
+    material_name = random.choice(material_names)
+    return material_id, material_name, section_id, path
 
 
 def generate_random_bookmarklist(material_id, user_id):
@@ -313,15 +304,21 @@ def test_create_materials():
         os.path.join(os.path.dirname(__file__), "./2503.21708v2.pdf"),
     ]
     for _ in range(2):
-        material_id, material_data = generate_random_material(
+        material_id, material_name, section_id, file_path = generate_random_material(
             Section_id_list[0], path=path[_]
         )
         Material_id_list.append(material_id)
-        response = client.post(
-            "/api/material/" + material_id, data=material_data, headers=headers
-        )
+        with open(file_path, "rb") as f:
+            files = {"file": (os.path.basename(file_path), f, "application/pdf")}
+            data = {
+                "material_name": material_name,
+                "section_id": section_id,
+            }
+            response = client.post(
+                "/api/material/" + material_id, data=data, files=files, headers=headers
+            )
         assert response.status_code == 200 or response.status_code == 201
-        print(f"Successfully created material: {material_data['material_name']}")
+        print(f"Successfully created material: {material_name}")
 
 
 def test_create_notes():

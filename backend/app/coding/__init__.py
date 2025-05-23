@@ -82,6 +82,7 @@ def build_file_structure(path: str, base_uri: str = "/") -> Dict[str, Any]:
         "children": children
     }
 
+
 @router.get("/environment/{env_id}/files")
 async def get_environment_files(
     env_id: str,
