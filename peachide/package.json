@@ -31,6 +31,7 @@
     "flexlayout-react": "^0.8.4",
     "form-data": "^4.0.2",
     "framer-motion": "^12.6.2",
+    "interact.js": "^1.2.8",
     "katex": "^0.16.22",
     "lodash": "^4.17.21",
     "lucide-react": "^0.475.0",
@@ -65,6 +66,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.8",
+    "@types/interact.js": "^1.0.22",
     "@types/lodash": "^4.17.16",
     "@types/node": "^20",
     "@types/object-hash": "^3.0.6",

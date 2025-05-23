@@ -117,7 +117,7 @@ export default function Assignment({ courseId }: AssignmentProps) {
       {
         title: "Coding " + assignmentName,
         url: `/coding/${assignmentId}`,
-        icon: CodeXml
+        icon: "CodeXml"
       }
     ]);
   };

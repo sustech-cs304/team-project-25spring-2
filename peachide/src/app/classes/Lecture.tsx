@@ -10,6 +10,7 @@ import {
   Clock,
   ComponentIcon,
 } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -25,6 +26,7 @@ interface Material {
 interface Section {
   section_id: string;
   name: string;
+  schedules: string[];
   materials: Material[];
 }
 
@@ -74,7 +76,8 @@ export default function Lecture({ courseId }: LectureProps) {
               materials: [
                 { material_id: "mat_001", material_name: "Course Overview Slides" },
                 { material_id: "mat_002", material_name: "Basic Concepts PDF" }
-              ]
+              ],
+              schedules: []
             },
             {
               section_id: "sec_002",
@@ -83,7 +86,8 @@ export default function Lecture({ courseId }: LectureProps) {
                 { material_id: "mat_003", material_name: "Core Principles Presentation" },
                 { material_id: "mat_004", material_name: "Practice Problems" },
                 { material_id: "mat_005", material_name: "Additional Reading Material" }
-              ]
+              ],
+              schedules: []
             },
             {
               section_id: "sec_003",
@@ -91,7 +95,8 @@ export default function Lecture({ courseId }: LectureProps) {
               materials: [
                 { material_id: "mat_006", material_name: "Advanced Concepts Slides" },
                 { material_id: "mat_007", material_name: "Case Study Documentation" }
-              ]
+              ],
+              schedules: []
             },
             {
               section_id: "sec_004",
@@ -99,7 +104,8 @@ export default function Lecture({ courseId }: LectureProps) {
               materials: [
                 { material_id: "mat_008", material_name: "Guest Lecture Slides" },
                 { material_id: "mat_009", material_name: "Supplemental Research Papers" }
-              ]
+              ],
+              schedules: []
             },
             {
               section_id: "sec_005",
@@ -107,7 +113,8 @@ export default function Lecture({ courseId }: LectureProps) {
               materials: [
                 { material_id: "mat_010", material_name: "Lab Instructions" },
                 { material_id: "mat_011", material_name: "Project Guidelines" }
-              ]
+              ],
+              schedules: []
             }
           ]
         });
@@ -134,7 +141,7 @@ export default function Lecture({ courseId }: LectureProps) {
       {
         title: "Slides " + materialName,
         url: `/slides/${materialId}`,
-        icon: ComponentIcon
+        icon: "ComponentIcon"
       }
     ]);
   };
@@ -153,6 +160,12 @@ export default function Lecture({ courseId }: LectureProps) {
   const item = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } }
+  };
+
+  const formatSchedule = (schedule: string) => {
+    const [year, month, day] = schedule.split(' ')[0].split('-');
+    const [hour, minute, second] = schedule.split(' ')[1].split(':');
+    return `${month}/${day}/${year} ${hour}:${minute}`;
   };
 
   // Get current date for comparison
@@ -245,13 +258,27 @@ export default function Lecture({ courseId }: LectureProps) {
                 >
                   <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/50 relative">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/60 to-primary/20"></div>
-                    <CardHeader className="pb-2">
+                    <CardHeader className="pb-0.5">
                       <CardTitle className="text-xl font-semibold flex items-center">
-                        <Presentation className="h-5 w-5 mr-2 text-primary" />
+                        <Presentation className="h-5 w-4 mr-2 text-primary" />
                         {section.name}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
+                      {section.schedules.length > 0 && (
+                        <div className="mb-4">
+                          <div className="flex flex-wrap gap-2">
+                            {section.schedules.map((schedule, index) => (
+                              <Badge
+                                key={index}
+                                className="px-2.5 py-1.5 rounded-md text-xs font-normal justify-start w-fit"
+                              >
+                                {formatSchedule(schedule)}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       <p className="text-sm text-muted-foreground">
                         This section contains {section.materials.length} {section.materials.length === 1 ? 'learning material' : 'learning materials'}.
                       </p>
