@@ -279,7 +279,7 @@ async def terminal_exec(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    exec_pod(env_id, command)
+    return exec_pod(env_id, command)
 
 @router.post("/environment")
 async def get_environment(
