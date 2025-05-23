@@ -45,6 +45,8 @@ spec:
           env:
             - name: ENVNAME
               value: "k3s"
+            - name: DASHSCOPE_API_KEY
+              value: "REDACTED"
           envFrom:
             - configMapRef:
                 name: postgres-config

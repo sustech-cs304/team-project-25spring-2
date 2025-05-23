@@ -1,10 +1,11 @@
 import time
 from kubernetes.stream import stream
-
+import os
 
 def create_pod(api_instance, env_id):
-    # copy raw files to `id`
-
+    # copy raw files to `id` directory
+    # create id directory:
+    os.makedirs(f"/app/data/{env_id}", exist_ok=True)
     name = "practicum-ws-" + env_id
     pod_manifest = {
         'apiVersion': 'v1',
@@ -12,7 +13,7 @@ def create_pod(api_instance, env_id):
         'metadata': {
             'name': name,
             'labels': {
-                'app': 'practicum-ws',
+                'app': name,
             }
         },
         'spec': {

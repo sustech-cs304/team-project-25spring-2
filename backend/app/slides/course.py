@@ -1,19 +1,12 @@
-from fastapi import APIRouter, Depends, Body, Form
+from fastapi import APIRouter, Depends, Form, status, HTTPException
 from sqlalchemy.orm import Session
-from app.models.material import Material
-from app.models.comment import Comment
-from app.models.note import Note
-from app.models.code_snippet import CodeSnippet
-from app.models.assignment import Assignment
 from app.models.user import User
 from app.models.course import Course
-from app.models.section import Section
-from app.models.bookmarklist import BookmarkList
 from app.models.group import Group
-import uuid
-import json
 from app.auth.middleware import get_current_user
 from app.db import get_db
+import uuid
+
 
 router = APIRouter()
 
@@ -93,6 +86,12 @@ async def create_course(
     group_deadline: str = Form(None),
     current_user: User = Depends(get_current_user),
 ):
+    if not current_user.is_teacher:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to create a course",
+        )
+
     course = db.query(Course).filter(Course.course_id == course_id).first()
     if course is None:
         course = Course(
@@ -111,6 +110,9 @@ async def create_course(
         db.add(course)
         db.commit()
         db.refresh(course)
+        current_user.courses = list(set(current_user.courses + [course_id]))
+        db.commit()
+        db.refresh(current_user)
         if require_group:
             for _ in range(group_num):
                 group = Group(group_id=str(uuid.uuid4()), course_id=course_id, users=[])
@@ -154,12 +156,18 @@ async def create_course(
 
 
 @router.post("/enroll")
-async def enroll_student_to_course(
+async def enroll_to_course(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     course_id: str = Form(None),
     user_id: str = Form(None),
 ):
+    if not current_user.is_teacher:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to enroll students",
+        )
+
     course = db.query(Course).filter(Course.course_id == course_id).first()
     if current_user.is_teacher == False:
         return {"message": "You are not a teacher"}

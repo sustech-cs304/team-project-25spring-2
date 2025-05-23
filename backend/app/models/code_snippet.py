@@ -3,20 +3,20 @@ from sqlalchemy import (
     Column,
     Integer,
     String,
-    Boolean,
     ForeignKey,
     PrimaryKeyConstraint,
 )
 from app.db import Base
+from sqlalchemy.dialects.postgresql import UUID
 
 
 class CodeSnippet(Base):
     __tablename__ = "code_snippets"
 
-    snippet_id = Column(String, index=True)
+    snippet_id = Column(UUID, index=True)
     user_id = Column(String, ForeignKey("users.user_id"), nullable=False)
     material_id = Column(
-        String, ForeignKey("materials.material_id"), index=True, nullable=False
+        UUID, ForeignKey("materials.material_id"), index=True, nullable=False
     )
     lang = Column(String, nullable=False)
     page = Column(Integer, nullable=False)
