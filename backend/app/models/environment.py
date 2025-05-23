@@ -16,5 +16,5 @@ class Environment(Base):
     wsUrl = Column(String, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(BJT))
     updated_at = Column(DateTime, default=lambda: datetime.now(BJT), onupdate=lambda: datetime.now(BJT)) 
-    layout = Column(String, nullable=True)
+    layout = Column(String, nullable=True, default='{"global":{"splitterEnableHandle":true,"tabSetEnableActiveIcon":true,"tabSetMinWidth":130,"tabSetMinHeight":100,"tabSetEnableTabScrollbar":true,"borderMinSize":100,"borderEnableTabScrollbar":true},"borders":[],"layout":{"type":"row","weight":100,"children":[{"type":"tabset","weight":100,"id":"main","children":[]}]}}')
     is_running = Column(Boolean, default=False)

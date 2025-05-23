@@ -13,7 +13,7 @@ from .api import *
 import os
 import websockets
 import asyncio
-
+import shutil
 router = APIRouter()
 if os.environ.get("ENVNAME") == "k3s":
     config.load_incluster_config()
@@ -108,22 +108,45 @@ async def get_environment_files(
 async def create_environment_file(
     env_id: str,
     file_path: str,
-    content: str,
+    file_name: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    pass
+    env = db.query(Environment).filter(Environment.id == env_id).first()
+    if not env:
+        raise HTTPException(status_code=404, detail="Environment not found")
+    env_path = f"/app/data/{env_id}/{file_path}"
+    os.makedirs(os.path.dirname(env_path), exist_ok=True)
+    with open(env_path + "/" + file_name, "w") as f:
+        f.write("")
 
 @router.put("/environment/{env_id}/file")
 async def update_environment_file(
     env_id: str,
-    file_path: str,
-    content: str,
+    origin: str,
+    destination: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    pass
-
+    env = db.query(Environment).filter(Environment.id == env_id).first()
+    if not env:
+        raise HTTPException(status_code=404, detail="Environment not found")
+    
+    env_path = f"/app/data/{env_id}"
+    origin_path = os.path.join(env_path, origin.lstrip('/'))
+    destination_path = os.path.join(env_path, destination.lstrip('/'))
+    
+    if not os.path.exists(origin_path):
+        raise HTTPException(status_code=404, detail="Source file not found")
+    
+    os.makedirs(os.path.dirname(destination_path), exist_ok=True)
+    
+    try:
+        os.rename(origin_path, destination_path)
+        return {"message": "File moved successfully"}
+    except OSError as e:
+        raise HTTPException(status_code=500, detail=f"Failed to move file: {str(e)}")
+    
 @router.delete("/environment/{env_id}/file")
 async def delete_environment_file(
     env_id: str,
@@ -131,9 +154,22 @@ async def delete_environment_file(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    pass
-
-
+    env = db.query(Environment).filter(Environment.id == env_id).first()
+    if not env:
+        raise HTTPException(status_code=404, detail="Environment not found")
+    
+    env_path = f"/app/data/{env_id}"
+    file_path = os.path.join(env_path, file_path.lstrip('/'))
+    
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    try:
+        os.remove(file_path)
+        return {"message": "File deleted successfully"}
+    except OSError as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete file: {str(e)}")
+    
 @router.post("/environment/{env_id}/directory")
 async def create_environment_directory(
     env_id: str,
@@ -141,16 +177,50 @@ async def create_environment_directory(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    pass
+    env = db.query(Environment).filter(Environment.id == env_id).first()
+    if not env:
+        raise HTTPException(status_code=404, detail="Environment not found")
+    
+    env_path = f"/app/data/{env_id}"
+    directory_path = os.path.join(env_path, directory_path.lstrip('/'))
+    
+    if not os.path.exists(directory_path):
+        os.makedirs(directory_path)
+        return {"message": "Directory created successfully"}
+    else:
+        raise HTTPException(status_code=400, detail="Directory already exists")
 
 @router.put("/environment/{env_id}/directory")
 async def update_environment_directory(
     env_id: str,
-    directory_path: str,
+    origin: str,
+    destination: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    pass
+    env = db.query(Environment).filter(Environment.id == env_id).first()
+    if not env:
+        raise HTTPException(status_code=404, detail="Environment not found")
+    
+    env_path = f"/app/data/{env_id}"
+    origin_path = os.path.join(env_path, origin.lstrip('/'))
+    destination_path = os.path.join(env_path, destination.lstrip('/'))
+    
+    if not os.path.exists(origin_path):
+        raise HTTPException(status_code=404, detail="Source directory not found")
+    
+    os.makedirs(destination_path, exist_ok=True)
+    
+    try:
+        for item in os.listdir(origin_path):
+            item_path = os.path.join(origin_path, item)
+            if os.path.isfile(item_path):
+                shutil.move(item_path, os.path.join(destination_path, item))
+            else:
+                shutil.move(item_path, os.path.join(destination_path, item))
+        return {"message": "Directory moved successfully"}
+    except OSError as e:
+        raise HTTPException(status_code=500, detail=f"Failed to move directory: {str(e)}")
 
 @router.delete("/environment/{env_id}/directory")
 async def delete_environment_directory(
@@ -159,7 +229,21 @@ async def delete_environment_directory(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    pass
+    env = db.query(Environment).filter(Environment.id == env_id).first()
+    if not env:
+        raise HTTPException(status_code=404, detail="Environment not found")
+    
+    env_path = f"/app/data/{env_id}"
+    directory_path = os.path.join(env_path, directory_path.lstrip('/'))
+    
+    if not os.path.exists(directory_path):
+        raise HTTPException(status_code=404, detail="Directory not found")
+    
+    try:
+        shutil.rmtree(directory_path)
+        return {"message": "Directory deleted successfully"}
+    except OSError as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete directory: {str(e)}")
 
 @router.post("/environment/{env_id}/layout")
 async def save_environment_layout(
@@ -168,7 +252,13 @@ async def save_environment_layout(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    pass
+    env = db.query(Environment).filter(Environment.id == env_id).first()
+    if not env:
+        raise HTTPException(status_code=404, detail="Environment not found")
+    
+    env.layout = layout
+    db.commit()
+    return {"message": "Layout saved successfully"}
 
 @router.get("/environment/{env_id}/layout")
 async def get_environment_layout(
@@ -176,7 +266,11 @@ async def get_environment_layout(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    pass
+    env = db.query(Environment).filter(Environment.id == env_id).first()
+    if not env:
+        raise HTTPException(status_code=404, detail="Environment not found")
+    
+    return env.layout
 
 @router.post("/terminal/{env_id}")
 async def terminal_exec(
