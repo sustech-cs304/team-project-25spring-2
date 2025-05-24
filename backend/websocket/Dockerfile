@@ -6,7 +6,7 @@ COPY *.js package* entrypoint.sh ./
 ENV DATA_DIR=/root/data
 ENV PORT=1234
 
-RUN apk add --no-cache python3 && \
+RUN apk add --no-cache python3 build-base && \
     apk update && \
     npm install
 

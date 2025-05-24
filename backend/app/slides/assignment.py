@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Body
+from fastapi import APIRouter, Depends, Form
 from sqlalchemy.orm import Session
 from app.models.material import Material
 from app.models.comment import Comment
@@ -51,12 +51,12 @@ async def get_assignments(
 
 @router.post("/assignment")
 async def create_assignment(
-    name: str = Body(None),
-    description: str = Body(None),
-    is_group_assign: bool = Body(None),
-    course_id: str = Body(None),
-    deadline: str = Body(None),
-    files: List[str] = Body(None),
+    name: str = Form(None),
+    description: str = Form(None),
+    is_group_assign: bool = Form(None),
+    course_id: str = Form(None),
+    deadline: str = Form(None),
+    files: List[str] = Form(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
