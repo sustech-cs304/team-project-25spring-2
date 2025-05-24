@@ -7,6 +7,7 @@ from app.models.section import Section
 from app.models.assignment import Assignment
 from app.auth.middleware import get_current_user
 from app.db import get_db
+from app.models.section import Section
 import uuid
 
 
@@ -63,6 +64,15 @@ async def get_course_info(
     current_user: User = Depends(get_current_user),
 ):
     course = db.query(Course).filter(Course.course_id == course_id).first()
+    schedules = [
+        {
+            "date": schedule,
+            "section_name": section.name,
+        }
+        for section_id in course.sections
+        for section in db.query(Section).filter(Section.section_id == section_id)
+        for schedule in section.schedules
+    ]
     if course is None:
         return {"message": "Course not found"}
     return {
@@ -71,7 +81,7 @@ async def get_course_info(
         "name": course.name,
         "number": course.number,
         "description": course.description,
-        "schedules": course.schedules,
+        "schedules": schedules,
     }
 
 
