@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, FileResponse
+from fastapi import APIRouter, Depends, HTTPException, status, WebSocket
 from sqlalchemy.orm import Session
 from app.db import get_db
 from app.models.user import User
