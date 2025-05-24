@@ -17,7 +17,8 @@ import {
   FolderPlus,
   FilePlus, EditIcon,
   MousePointer,
-  ComponentIcon
+  ComponentIcon,
+  Calendar
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1268,16 +1269,21 @@ const AssignmentCard = ({ assignment }: { assignment: Assignment }) => {
   const formatDeadline = (deadline: string) => {
     try {
       const date = new Date(deadline);
-      return date.toLocaleDateString('en-US', {
-        weekday: 'short',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+      return {
+        date: date.toLocaleDateString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
+        }),
+        time: date.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        })
+      };
     } catch {
-      return deadline;
+      return { date: deadline, time: '' };
     }
   };
 
@@ -1289,51 +1295,100 @@ const AssignmentCard = ({ assignment }: { assignment: Assignment }) => {
     }
   };
 
+  const getTimeRemaining = () => {
+    try {
+      const now = new Date();
+      const deadline = new Date(assignment.deadline);
+      const diff = deadline.getTime() - now.getTime();
+
+      if (diff < 0) return null; // Past deadline
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+      if (days > 0) return `${days} day${days > 1 ? 's' : ''} remaining`;
+      if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} remaining`;
+      return 'Due soon';
+    } catch {
+      return null;
+    }
+  };
+
+  const deadlineInfo = formatDeadline(assignment.deadline);
+  const timeRemaining = getTimeRemaining();
+  const overdue = isOverdue();
+  const statusColor = assignment.is_over ? 'outline' : overdue ? 'destructive' : 'default';
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
+      whileHover={{ scale: 1.02 }}
+      transition={{ duration: 0.2 }}
     >
-      <Card className="overflow-hidden hover:shadow-md transition-all">
-        <CardHeader className="pb-3">
+      <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20">
+        <CardHeader className="pb-4 bg-gradient-to-r from-background to-muted/20">
           <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <CardTitle className="text-lg font-semibold line-clamp-2">
+            <div className="space-y-2 flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <div className="bg-primary/15 p-2 rounded-lg">
+                  <ClipboardList size={20} className="text-primary" />
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge
+                    variant={assignment.is_group_assign ? "default" : "secondary"}
+                    className="text-xs font-medium"
+                  >
+                    {assignment.is_group_assign ? "Group Assignment" : "Individual"}
+                  </Badge>
+                  <Badge variant={statusColor} className="text-xs font-medium">
+                    {assignment.is_over ? "Closed" : overdue ? "Overdue" : "Active"}
+                  </Badge>
+                </div>
+              </div>
+              <CardTitle className="text-xl font-bold line-clamp-2 leading-tight">
                 {assignment.name}
               </CardTitle>
-              <div className="flex items-center gap-2">
-                <Badge
-                  variant={assignment.is_group_assign ? "default" : "secondary"}
-                  className="text-xs"
-                >
-                  {assignment.is_group_assign ? "Group" : "Individual"}
-                </Badge>
-                <Badge
-                  variant={isOverdue() ? "destructive" : assignment.is_over ? "outline" : "default"}
-                  className="text-xs"
-                >
-                  {assignment.is_over ? "Closed" : isOverdue() ? "Overdue" : "Active"}
-                </Badge>
-              </div>
-            </div>
-            <div className="bg-primary/10 p-2 rounded-full shrink-0">
-              <ClipboardList size={16} className="text-primary" />
             </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-0">
+
+        <CardContent className="space-y-4">
+          {/* Deadline Section */}
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Clock size={14} />
-              <span>Due: {formatDeadline(assignment.deadline)}</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock size={16} className={overdue ? "text-destructive" : "text-primary"} />
+                <span className="text-sm font-medium">Deadline</span>
+              </div>
+              {timeRemaining && (
+                <Badge variant="outline" className="text-xs">
+                  {timeRemaining}
+                </Badge>
+              )}
             </div>
-            {assignment.description && (
-              <p className="text-sm text-muted-foreground line-clamp-3">
+            <div className="ml-6">
+              <p className={`text-sm font-medium ${overdue ? 'text-destructive' : 'text-foreground'}`}>
+                {deadlineInfo.date}
+              </p>
+              {deadlineInfo.time && (
+                <p className="text-xs text-muted-foreground">
+                  {deadlineInfo.time}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Description */}
+          {assignment.description && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Description</p>
+              <p className="text-sm text-muted-foreground line-clamp-4 leading-relaxed">
                 {assignment.description}
               </p>
-            )}
-          </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </motion.div>
@@ -1382,8 +1437,11 @@ const CreateAssignmentDialog = ({
   const handleFileUpload = async (file: File, filePath: string) => {
     setIsUploading(true);
     try {
+      // Ensure the path starts with "/" for display purposes
+      const displayPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+
       const formData = new FormData();
-      formData.append('file_path', filePath);
+      formData.append('file_path', displayPath);
       formData.append('file_name', file.name);
       formData.append('file', file);
 
@@ -1403,7 +1461,7 @@ const CreateAssignmentDialog = ({
       const newFile: UploadedFile = {
         file_id: data.file_id,
         file_name: file.name,
-        file_path: filePath,
+        file_path: displayPath,
         original_file: file
       };
 
@@ -1489,6 +1547,7 @@ const CreateAssignmentDialog = ({
     const [filePath, setFilePath] = useState('');
     const [showPathInput, setShowPathInput] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [pathError, setPathError] = useState('');
 
     return (
       <div className="space-y-4">
@@ -1525,20 +1584,36 @@ const CreateAssignmentDialog = ({
                   </div>
                 </div>
 
-                <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">File Path *</label>
-                    <Input
-                      value={filePath}
-                      onChange={(e) => setFilePath(e.target.value)}
-                      placeholder="e.g., /assignments/homework1/"
-                      className="max-w-md mx-auto"
-                      onClick={(e) => e.stopPropagation()}
-                      onFocus={(e) => e.stopPropagation()}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Specify where this file should be stored
-                    </p>
+                <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium">File Path</label>
+                    <div className="flex items-center max-w-md mx-auto">
+                      <div className="flex items-center justify-center w-8 h-11 bg-muted border border-r-0 rounded-l-md">
+                        <span className="text-sm font-medium text-muted-foreground">/</span>
+                      </div>
+                      <Input
+                        value={filePath}
+                        onChange={(e) => {
+                          setFilePath(e.target.value);
+                          setPathError('');
+                        }}
+                        placeholder="assignments/homework1"
+                        className="rounded-l-none flex-1"
+                        onClick={(e) => e.stopPropagation()}
+                        onFocus={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                    <div className="text-center max-w-md mx-auto space-y-1">
+                      <p className="text-xs text-muted-foreground">
+                        📁 Enter the directory path where this file should be stored
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        💡 Leave empty to upload to root directory (<code className="bg-muted px-1 rounded">/</code>)
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        ✨ Examples: <code className="bg-muted px-1 rounded">assignments/hw1</code>, <code className="bg-muted px-1 rounded">materials/lectures</code>
+                      </p>
+                    </div>
                   </div>
 
                   <div className="flex gap-2 justify-center">
@@ -1546,19 +1621,21 @@ const CreateAssignmentDialog = ({
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (filePath.trim() && selectedFile) {
-                          handleFileUpload(selectedFile, filePath.trim());
+                        if (selectedFile) {
+                          const finalPath = filePath.trim() || '/';
+                          handleFileUpload(selectedFile, finalPath);
                           setSelectedFile(null);
                           setFilePath('');
                           setShowPathInput(false);
+                          setPathError('');
                           if (fileInputRef.current) {
                             fileInputRef.current.value = '';
                           }
                         } else {
-                          toast.error('Please enter a file path');
+                          toast.error('Please select a file first');
                         }
                       }}
-                      disabled={isUploading || !filePath.trim()}
+                      disabled={isUploading}
                     >
                       {isUploading ? (
                         <>
@@ -1577,6 +1654,7 @@ const CreateAssignmentDialog = ({
                         setSelectedFile(null);
                         setFilePath('');
                         setShowPathInput(false);
+                        setPathError('');
                         if (fileInputRef.current) {
                           fileInputRef.current.value = '';
                         }
@@ -1715,62 +1793,130 @@ const CreateAssignmentDialog = ({
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label className="text-sm font-medium">Assignment Type</label>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="group-assign"
-                  checked={isGroupAssign}
-                  onCheckedChange={(checked) => setIsGroupAssign(checked as boolean)}
-                />
-                <label htmlFor="group-assign" className="text-sm">
-                  Group Assignment
-                </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Individual Assignment */}
+                <div
+                  className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all hover:shadow-md ${!isGroupAssign
+                    ? 'border-primary bg-primary/5 shadow-sm'
+                    : 'border-border hover:border-primary/50'
+                    }`}
+                  onClick={() => setIsGroupAssign(false)}
+                >
+                  <div className="flex items-start space-x-3">
+                    <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center ${!isGroupAssign ? 'border-primary bg-primary' : 'border-muted-foreground'
+                      }`}>
+                      {!isGroupAssign && <div className="w-2 h-2 bg-white rounded-full" />}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <h4 className="font-medium text-sm">Individual Assignment</h4>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Each student submits their own work
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Group Assignment */}
+                <div
+                  className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all hover:shadow-md ${isGroupAssign
+                    ? 'border-primary bg-primary/5 shadow-sm'
+                    : 'border-border hover:border-primary/50'
+                    }`}
+                  onClick={() => setIsGroupAssign(true)}
+                >
+                  <div className="flex items-start space-x-3">
+                    <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center ${isGroupAssign ? 'border-primary bg-primary' : 'border-muted-foreground'
+                      }`}>
+                      {isGroupAssign && <div className="w-2 h-2 bg-white rounded-full" />}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <h4 className="font-medium text-sm">Group Assignment</h4>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Students collaborate in teams
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label className="text-sm font-medium">Deadline *</label>
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <Input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    required
-                  />
+              <div className="grid grid-cols-3 gap-3">
+                {/* Date Picker */}
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">Date</label>
+                  <div className="relative">
+                    <Input
+                      type="date"
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      required
+                      className="h-11 pr-10 focus:ring-2 focus:ring-primary/20 transition-all"
+                    />
+                    <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  </div>
                 </div>
-                <div className="w-24">
+
+                {/* Hour Picker */}
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">Hour</label>
                   <select
                     title="Select hour"
-                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                    className="w-full h-11 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all hover:border-primary/50"
                     value={selectedHour}
                     onChange={(e) => setSelectedHour(e.target.value)}
                   >
-                    <option value="">Hour</option>
+                    <option value="" disabled>Hour</option>
                     {Array.from({ length: 24 }, (_, i) => i).map(hour => (
                       <option key={hour} value={hour.toString().padStart(2, '0')}>
-                        {hour.toString().padStart(2, '0')}
+                        {hour.toString().padStart(2, '0')}:00
                       </option>
                     ))}
                   </select>
                 </div>
-                <div className="w-24">
+
+                {/* Minute Picker */}
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">Minute</label>
                   <select
                     title="Select minute"
-                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                    className="w-full h-11 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all hover:border-primary/50"
                     value={selectedMinute}
                     onChange={(e) => setSelectedMinute(e.target.value)}
                   >
-                    <option value="">Min</option>
-                    {Array.from({ length: 60 }, (_, i) => i).map(minute => (
+                    <option value="" disabled>Min</option>
+                    {[0, 15, 30, 45].map(minute => (
                       <option key={minute} value={minute.toString().padStart(2, '0')}>
-                        {minute.toString().padStart(2, '0')}
+                        :{minute.toString().padStart(2, '0')}
                       </option>
                     ))}
                   </select>
                 </div>
               </div>
+
+              {/* Preview of selected datetime */}
+              {selectedDate && selectedHour && selectedMinute && (
+                <div className="mt-2 p-2 bg-primary/5 border border-primary/20 rounded-md">
+                  <p className="text-xs text-muted-foreground">Selected deadline:</p>
+                  <p className="text-sm font-medium text-primary">
+                    {new Date(`${selectedDate} ${selectedHour}:${selectedMinute}`).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })} at {selectedHour}:{selectedMinute}
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -1908,43 +2054,115 @@ const AssignmentsTab = ({ courseId }: { courseId: string }) => {
     );
   }
 
+  const isAssignmentExpired = (assignment: Assignment) => {
+    try {
+      return new Date(assignment.deadline) < new Date() || assignment.is_over;
+    } catch {
+      return false;
+    }
+  };
+
+  const activeAssignments = assignments.filter(a => !isAssignmentExpired(a));
+  const expiredAssignments = assignments.filter(a => isAssignmentExpired(a));
+
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-6 space-y-8">
+      <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-xl font-semibold">Course Assignments</h2>
+          <h2 className="text-2xl font-bold">Course Assignments</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            {assignments.length} Assignment{assignments.length !== 1 ? 's' : ''}
+            {activeAssignments.length} Active, {expiredAssignments.length} Completed
           </p>
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)}>
+        <Button onClick={() => setCreateDialogOpen(true)} size="lg">
           <FilePlus className="mr-2 h-4 w-4" />
           Create Assignment
         </Button>
       </div>
 
-      {assignments.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          <AnimatePresence>
-            {assignments.map(assignment => (
-              <AssignmentCard
-                key={assignment.assignment_id}
-                assignment={assignment}
-              />
-            ))}
-          </AnimatePresence>
+      {assignments.length === 0 ? (
+        <div className="text-center py-16 border-2 border-dashed rounded-lg bg-muted/10">
+          <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+            <ClipboardList className="h-8 w-8 text-primary" />
+          </div>
+          <h3 className="text-lg font-medium">No assignments created yet</h3>
+          <p className="mt-1 text-sm text-muted-foreground max-w-sm mx-auto">
+            Create your first assignment to start managing coursework and deadlines for your students.
+          </p>
+          <Button className="mt-6" onClick={() => setCreateDialogOpen(true)} size="lg">
+            <FilePlus className="mr-2 h-4 w-4" />
+            Create Your First Assignment
+          </Button>
         </div>
       ) : (
-        <div className="text-center py-12 border rounded-md bg-muted/10">
-          <ClipboardList className="mx-auto h-8 w-8 text-muted-foreground opacity-50" />
-          <h3 className="mt-2 text-sm font-medium">No assignments created</h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Create your first assignment using the "Create Assignment" button.
-          </p>
-          <Button className="mt-4" onClick={() => setCreateDialogOpen(true)}>
-            <FilePlus className="mr-2 h-4 w-4" />
-            Create Assignment
-          </Button>
+        <div className="space-y-8">
+          {/* Active Assignments Section */}
+          {activeAssignments.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <h3 className="text-lg font-semibold">Active Assignments</h3>
+                </div>
+                <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                  {activeAssignments.length} {activeAssignments.length === 1 ? 'assignment' : 'assignments'}
+                </Badge>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <AnimatePresence>
+                  {activeAssignments.map(assignment => (
+                    <AssignmentCard
+                      key={assignment.assignment_id}
+                      assignment={assignment}
+                    />
+                  ))}
+                </AnimatePresence>
+              </div>
+            </div>
+          )}
+
+          {/* Expired/Completed Assignments Section */}
+          {expiredAssignments.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                  <h3 className="text-lg font-semibold">Completed Assignments</h3>
+                </div>
+                <Badge variant="outline" className="bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                  {expiredAssignments.length} {expiredAssignments.length === 1 ? 'assignment' : 'assignments'}
+                </Badge>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 opacity-75">
+                <AnimatePresence>
+                  {expiredAssignments.map(assignment => (
+                    <AssignmentCard
+                      key={assignment.assignment_id}
+                      assignment={assignment}
+                    />
+                  ))}
+                </AnimatePresence>
+              </div>
+            </div>
+          )}
+
+          {/* Quick Action Section - Only show when no assignments exist */}
+          {assignments.length === 0 && (
+            <div className="mt-8 p-4 border rounded-lg bg-muted/20">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-medium">Need to create a new assignment?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Set deadlines, upload materials, and track student progress.
+                  </p>
+                </div>
+                <Button onClick={() => setCreateDialogOpen(true)} variant="outline">
+                  <FilePlus className="mr-2 h-4 w-4" />
+                  New Assignment
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
