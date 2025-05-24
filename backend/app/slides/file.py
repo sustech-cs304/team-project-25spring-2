@@ -13,7 +13,6 @@ async def create_file(
     file_name: str = Form(None),
     file_path: str = Form(None),
     file = File(None),
-    assignment_id: str = Form(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -26,8 +25,7 @@ async def create_file(
         file_type="pdf" if file_name.endswith(".pdf") else "code",
         file_size=len(data),
         content=data,
-        uploader_id=current_user.user_id,
-        assignment_id=assignment_id,
+        uploader_id=current_user.user_id
     )
     
     db.add(db_file)
@@ -45,10 +43,10 @@ async def delete_file(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    db_file = db.query(File).filter(File.file_id == file_id).first()
+    db_file = db.query(FileDB).filter(FileDB.file_id == file_id).first()
     if not db_file:
         raise HTTPException(status_code=404, detail="File not found")
-    if current_user.user_id != db_file.creator_id:
+    if current_user.user_id != db_file.uploader_id:
         raise HTTPException(
             status_code=404, detail="No privilege for modifying the file."
         )
@@ -63,14 +61,13 @@ async def update_file(
     file_id: str,
     file_name: str = Form(None),
     file_path: str = Form(None),
-    file = File(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    db_file = db.query(File).filter(File.file_id == file_id).first()
+    db_file = db.query(FileDB).filter(FileDB.file_id == file_id).first()
     if not db_file:
         raise HTTPException(status_code=404, detail="File not found")
-    if current_user.user_id != db_file.creator_id:
+    if current_user.user_id != db_file.uploader_id:
         raise HTTPException(
             status_code=404, detail="No privilege for modifying the file."
         )
@@ -79,11 +76,6 @@ async def update_file(
         db_file.file_type = "pdf" if file_name.endswith(".pdf") else "code"
     if file_path:
         db_file.file_path = file_path
-    if file:
-        data = await file.read()
-        data = base64.b64encode(data).decode("utf-8")
-        db_file.content = data
-        db_file.file_size = len(data)
     db.commit()
     db.refresh(db_file)
     return db_file

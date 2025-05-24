@@ -191,7 +191,9 @@ Material_id_list = []
 Note_id_list = []
 Code_snippet_id_list = []
 Bookmarklist_id_list = []
-
+File_id_list = []
+Assignment_id_list = []
+Envrionment_id_list = []
 
 def get_token(user_id):
     return Student_id_list[user_id]
@@ -435,25 +437,92 @@ def test_add_people_to_group():
     groups = response.json().get("groups", [])
     for group in groups:
         if group.get("group_id") == group_id:
-            # print("*" * 200)
-            # print(group)
-            # print("*" * 200)
             assert len(group.get("users")) == 1
 
     response = client.delete(
         "/api/group/" + group_id + "/user/" + Student_id_list[0]["user_id"],
         headers=headers,
     )
-    # print("*" * 200)
-    # print(response.json())
-    # print("*" * 200)
-    # assert response.status_code == 200
-    # response = client.get("/api/group/" + Course_id_list[0], headers=headers)
-    # assert response.status_code == 200
-    # groups = response.json().get("groups", [])
-    # for group in groups:
-    #     if group.get("group_id") == group_id:
-    #         # print("*" * 200)
-    #         # print(group)
-    #         # print("*" * 200)
-    #         assert len(group.get("users")) == 0
+
+def test_create_file():
+    teacher_token = Teacher_id_list[0]["token"]
+    headers = {"Authorization": f"Bearer {teacher_token}"}
+    files_path = [
+        os.path.join(os.path.dirname(__file__), "./test_environment/test_files/lecture1-introduction.pdf"),
+        os.path.join(os.path.dirname(__file__), "./test_environment/test_files/lecture2-process.pdf"),
+        os.path.join(os.path.dirname(__file__), "./test_environment/test_files/lecture3-requirements.pdf"),
+        os.path.join(os.path.dirname(__file__), "./test_environment/hello_world.py"),
+    ]
+    for file_path in files_path:
+        assert os.path.exists(file_path), "Sample PDF file does not exist."
+        with open(file_path, "rb") as f:
+            files = {"file": (os.path.basename(file_path), f, "application/pdf")}
+            data = {
+                "file_name": os.path.basename(file_path),
+                "file_path": "/test_files" if file_path.endswith(".pdf") else "/",
+            }
+            response = client.post(
+                "/api/file",
+                headers=headers,
+                data=data,
+                files=files,
+            )
+            print(response.json())
+        assert response.status_code == 200 or response.status_code == 201
+        data = response.json()
+        assert "file_id" in data
+        File_id_list.append(data["file_id"])
+        assert data["message"] == "File created successfully"
+
+def test_update_file():
+    headers = {"Authorization": f"Bearer {Teacher_id_list[0]['token']}"}
+    update_resp = client.put(
+        f"/api/file/{File_id_list[3]}",
+        headers=headers,
+        data={
+            "file_name": "hello_world.py",
+            "file_path": "/test_code_files",
+        },
+    )
+    updated_file = update_resp.json()
+    assert update_resp.status_code == 200
+    assert updated_file["file_id"] == File_id_list[3]
+    assert updated_file["file_name"] == "hello_world.py"
+    assert updated_file["file_path"] == "/test_code_files"
+
+def test_delete_file():
+    headers = {"Authorization": f"Bearer {Teacher_id_list[0]['token']}"}
+    delete_resp = client.delete(
+        f"/api/file/{File_id_list[2]}",
+        headers=headers,
+    )
+    assert delete_resp.status_code == 200
+    deleted = delete_resp.json()
+    assert deleted["is_deleted"] is True
+    
+def test_create_assignment():
+    teacher_token = Teacher_id_list[0]["token"]
+    headers = {"Authorization": f"Bearer {teacher_token}"}
+    assignment_data = {
+        "course_id": Course_id_list[0],
+        "name": "第一次作业",
+        "description": "请完成以下任务：\n1. 阅读课本第1章\n2. 完成课后习题",
+        "deadline": "2025-01-01 23:59:59",
+        "is_group_assign": False,
+        "files": File_id_list,  # Attach the first two files
+    }
+    response = client.post("/api/assignment", json=assignment_data, headers=headers)
+    assert response.status_code == 200 or response.status_code == 201
+    data = response.json()
+    assert "assignment_id" in data
+    Assignment_id_list.append(data["assignment_id"])
+    assert data["message"] == "Assignment created successfully."
+    
+def test_get_assignments():
+    student_token = Student_id_list[0]["token"]
+    headers = {"Authorization": f"Bearer {student_token}"}
+    response = client.get(f"/api/assignments/{Course_id_list[0]}", headers=headers)
+    assert response.status_code == 200
+    assignments = response.json().get("assignments", [])
+    assert len(assignments) > 0
+    assert assignments[0].get("assignment_id") == Assignment_id_list[0]

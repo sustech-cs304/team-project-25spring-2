@@ -52,6 +52,7 @@ async def get_assignments(
 @router.post("/assignment")
 async def create_assignment(
     name: str = Body(None),
+    description: str = Body(None),
     is_group_assign: bool = Body(None),
     course_id: str = Body(None),
     deadline: str = Body(None),
@@ -69,21 +70,23 @@ async def create_assignment(
         course_id=course_id,
         teacher_id=current_user.user_id,
         deadline=deadline,
+        description=description,
         is_over=False,
         is_group_assign=is_group_assign,
         files=files
     )
-    
-    # Add assignment to database
     db.add(new_assignment)
     db.commit()
     db.refresh(new_assignment)
-
+    
     # Update course's assignments list
-    course.assignments.append(new_assignment.assignment_id)
+    if new_assignment.assignment_id not in course.assignments:
+        course.assignments = course.assignments + [new_assignment.assignment_id]
+    course.assignments = list(set(course.assignments))
+    
     db.commit()
-
     return {
+        "message": "Assignment created successfully.",
         "assignment_id": new_assignment.assignment_id
     }
     
