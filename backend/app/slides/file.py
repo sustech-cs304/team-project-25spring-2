@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Body, HTTPException
+from fastapi import APIRouter, Depends, Body, HTTPException, File, Form
 from sqlalchemy.orm import Session
 from app.models.user import User
 from app.models.file import File
@@ -8,20 +8,22 @@ from app.db import get_db
 
 router = APIRouter()
 
-
 @router.post("/file")
 async def create_file(
-    filename: str = Body(...),
-    filepath: str = Body(...),
-    base64: str = Body(...),
-    assignment_id: str = Body(...),
+    file_name: str = Form(None),
+    file_path: str = Form(None),
+    file = File(None),
+    assignment_id: str = Form(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    base64 = await file.read()
+    base64 = base64.decode("utf-8")
+    
     db_file = File(
-        file_name=filename,
-        file_path=filepath,
-        file_type="pdf" if filename.endswith(".pdf") else "code",
+        file_name=file_name,
+        file_path=file_path,
+        file_type="pdf" if file_name.endswith(".pdf") else "code",
         file_size=len(base64),
         content=base64,
         uploader_id=current_user.user_id,
@@ -57,7 +59,7 @@ async def update_file(
     file_id: str,
     filename: str = Body(...),
     filepath: str = Body(...),
-    base64: str = Body(...),
+    file: File = Body(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

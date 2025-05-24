@@ -30,41 +30,6 @@ async def get_materials(
         ],
     }
 
-
-@router.post("/materials")
-async def create_material(
-    current_user: User = Depends(get_current_user),
-    material_id: str = Form(None),
-    material_name: str = Form(None),
-    section_id: str = Form(None),
-    data: str = Form(None),
-    comments: list[str] = Form(None),
-    db: Session = Depends(get_db),
-):
-    material = Material(
-        material_id=material_id,
-        material_name=material_name,
-        section_id=section_id,
-        data=data,
-        comments=comments,
-    )
-    section = db.query(Section).filter(Section.section_id == section_id).first()
-    if section is None:
-        return {"message": "Section not found"}
-    if material_id not in section.materials:
-        section.materials = section.materials + [material_id]
-    db.add(material)
-    db.commit()
-    db.refresh(material)
-
-    return {
-        "message": "Material created successfully",
-        "material_id": material.material_id,
-        "material_name": material.material_name,
-        "data": material.data,
-    }
-
-
 @router.get("/material/{material_id}")
 async def get_material(
     material_id: str,
