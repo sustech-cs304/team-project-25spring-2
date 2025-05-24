@@ -14,6 +14,7 @@ from fastapi import Form
 from app.auth.middleware import get_current_user
 from app.db import get_db
 from typing import List
+from fastapi import HTTPException
 
 router = APIRouter()
 
@@ -25,14 +26,15 @@ async def get_assignments(
 ):
     course = db.query(Course).filter(Course.course_id == course_id).first()
     if not course:
-        return {"message": "Course not found."}
+        raise HTTPException(status_code=404, detail="Course not found.")
+    
     assignments = (
         db.query(Assignment)
         .filter(Assignment.assignment_id.in_(course.assignments))
         .all()
     )
     if not assignments:
-        return {"message": "No assignments found for this course."}
+        raise HTTPException(status_code=404, detail="No assignments found for this course.")
     return {
         "message": "Assignments found.",
         "assignments": [
@@ -62,7 +64,7 @@ async def create_assignment(
 ):
     course = db.query(Course).filter(Course.course_id == course_id).first()
     if not course:
-        return {"message": "Course not found"}
+        raise HTTPException(status_code=404, detail="Course not found.")
 
     # Create new assignment
     new_assignment = Assignment(

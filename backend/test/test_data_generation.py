@@ -509,9 +509,9 @@ def test_create_assignment():
         "description": "请完成以下任务：\n1. 阅读课本第1章\n2. 完成课后习题",
         "deadline": "2025-01-01 23:59:59",
         "is_group_assign": False,
-        "files": File_id_list,  # Attach the first two files
+        "files": File_id_list,
     }
-    response = client.post("/api/assignment", json=assignment_data, headers=headers)
+    response = client.post("/api/assignment", data=assignment_data, headers=headers)
     assert response.status_code == 200 or response.status_code == 201
     data = response.json()
     assert "assignment_id" in data
