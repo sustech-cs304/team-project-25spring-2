@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Course } from "./page";
 import { useRouter } from 'next/navigation';
 import { Skeleton } from "@/components/ui/skeleton";
@@ -1241,15 +1243,717 @@ const UploadMaterialDialog = ({
   );
 };
 
-// Assignments Tab Content (placeholder)
-const AssignmentsTab = () => {
+// Assignment interface
+interface Assignment {
+  assignment_id: string;
+  is_group_assign: boolean;
+  name: string;
+  course_id: string;
+  teacher_id: string;
+  deadline: string; // "2025-05-07 10:00:00"
+  is_over: boolean;
+  description?: string;
+}
+
+// Uploaded file interface for assignment creation
+interface UploadedFile {
+  file_id: string;
+  file_name: string;
+  file_path: string;
+  original_file: File;
+}
+
+// Assignment Card Component
+const AssignmentCard = ({ assignment }: { assignment: Assignment }) => {
+  const formatDeadline = (deadline: string) => {
+    try {
+      const date = new Date(deadline);
+      return date.toLocaleDateString('en-US', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return deadline;
+    }
+  };
+
+  const isOverdue = () => {
+    try {
+      return new Date(assignment.deadline) < new Date();
+    } catch {
+      return false;
+    }
+  };
+
   return (
-    <div className="flex flex-col items-center justify-center p-12 text-center">
-      <ClipboardList className="h-12 w-12 text-muted-foreground opacity-50" />
-      <h3 className="mt-4 text-lg font-medium">Assignments Management</h3>
-      <p className="mt-1 text-sm text-muted-foreground max-w-md">
-        This feature is coming soon. You'll be able to create and manage assignments here.
-      </p>
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+    >
+      <Card className="overflow-hidden hover:shadow-md transition-all">
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1">
+              <CardTitle className="text-lg font-semibold line-clamp-2">
+                {assignment.name}
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant={assignment.is_group_assign ? "default" : "secondary"}
+                  className="text-xs"
+                >
+                  {assignment.is_group_assign ? "Group" : "Individual"}
+                </Badge>
+                <Badge
+                  variant={isOverdue() ? "destructive" : assignment.is_over ? "outline" : "default"}
+                  className="text-xs"
+                >
+                  {assignment.is_over ? "Closed" : isOverdue() ? "Overdue" : "Active"}
+                </Badge>
+              </div>
+            </div>
+            <div className="bg-primary/10 p-2 rounded-full shrink-0">
+              <ClipboardList size={16} className="text-primary" />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Clock size={14} />
+              <span>Due: {formatDeadline(assignment.deadline)}</span>
+            </div>
+            {assignment.description && (
+              <p className="text-sm text-muted-foreground line-clamp-3">
+                {assignment.description}
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+};
+
+// Create Assignment Dialog
+const CreateAssignmentDialog = ({
+  open,
+  onOpenChange,
+  courseId,
+  onAssignmentCreated
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  courseId: string;
+  onAssignmentCreated: () => void;
+}) => {
+  const { token, userData } = useUserContext();
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [isGroupAssign, setIsGroupAssign] = useState(false);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedHour, setSelectedHour] = useState('');
+  const [selectedMinute, setSelectedMinute] = useState('');
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Reset form when dialog opens/closes
+  useEffect(() => {
+    if (!open) {
+      setName('');
+      setDescription('');
+      setIsGroupAssign(false);
+      setSelectedDate('');
+      setSelectedHour('');
+      setSelectedMinute('');
+      setUploadedFiles([]);
+      setShowConfirmDialog(false);
+    }
+  }, [open]);
+
+  const handleFileUpload = async (file: File, filePath: string) => {
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file_path', filePath);
+      formData.append('file_name', file.name);
+      formData.append('file', file);
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/file`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload file');
+      }
+
+      const data = await response.json();
+      const newFile: UploadedFile = {
+        file_id: data.file_id,
+        file_name: file.name,
+        file_path: filePath,
+        original_file: file
+      };
+
+      setUploadedFiles(prev => [...prev, newFile]);
+      toast.success(`File "${file.name}" uploaded successfully`);
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast.error(`Failed to upload file "${file.name}"`);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDeleteFile = async (fileId: string) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/file/${fileId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete file');
+      }
+
+      setUploadedFiles(prev => prev.filter(f => f.file_id !== fileId));
+      toast.success('File deleted successfully');
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      toast.error('Failed to delete file');
+    }
+  };
+
+  const handleCreateAssignment = async () => {
+    if (!name || !selectedDate || !selectedHour || !selectedMinute) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      const deadline = `${selectedDate} ${selectedHour.padStart(2, '0')}:${selectedMinute.padStart(2, '0')}:00`;
+
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('deadline', deadline);
+      formData.append('description', description);
+      formData.append('is_group_assign', isGroupAssign.toString());
+      formData.append('course_id', courseId);
+      formData.append('teacher_id', userData?.user_id || '');
+
+      // Add file IDs
+      uploadedFiles.forEach(file => {
+        formData.append('files', file.file_id);
+      });
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/assignment`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create assignment');
+      }
+
+      toast.success('Assignment created successfully');
+      onOpenChange(false);
+      onAssignmentCreated();
+    } catch (error) {
+      console.error('Error creating assignment:', error);
+      toast.error('Failed to create assignment');
+    } finally {
+      setIsCreating(false);
+      setShowConfirmDialog(false);
+    }
+  };
+
+  const FileUploadArea = () => {
+    const [filePath, setFilePath] = useState('');
+    const [showPathInput, setShowPathInput] = useState(false);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+    return (
+      <div className="space-y-4">
+        {/* File Upload Section */}
+        <div className="space-y-3">
+          <div
+            className={`border-2 border-dashed rounded-md p-6 text-center transition-colors ${selectedFile && showPathInput
+              ? 'border-primary/50 bg-primary/5'
+              : 'cursor-pointer hover:bg-muted/50'
+              }`}
+            onClick={selectedFile && showPathInput ? undefined : () => fileInputRef.current?.click()}
+          >
+            <input
+              type="file"
+              className="hidden"
+              ref={fileInputRef}
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  setSelectedFile(e.target.files[0]);
+                  setShowPathInput(true);
+                }
+              }}
+            />
+
+            {selectedFile && showPathInput ? (
+              <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center justify-center gap-2">
+                  <FilePlus className="h-8 w-8 text-primary" />
+                  <div className="text-left">
+                    <p className="text-sm font-medium">Selected: {selectedFile.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">File Path *</label>
+                    <Input
+                      value={filePath}
+                      onChange={(e) => setFilePath(e.target.value)}
+                      placeholder="e.g., /assignments/homework1/"
+                      className="max-w-md mx-auto"
+                      onClick={(e) => e.stopPropagation()}
+                      onFocus={(e) => e.stopPropagation()}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Specify where this file should be stored
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2 justify-center">
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (filePath.trim() && selectedFile) {
+                          handleFileUpload(selectedFile, filePath.trim());
+                          setSelectedFile(null);
+                          setFilePath('');
+                          setShowPathInput(false);
+                          if (fileInputRef.current) {
+                            fileInputRef.current.value = '';
+                          }
+                        } else {
+                          toast.error('Please enter a file path');
+                        }
+                      }}
+                      disabled={isUploading || !filePath.trim()}
+                    >
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        'Upload File'
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedFile(null);
+                        setFilePath('');
+                        setShowPathInput(false);
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = '';
+                        }
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        fileInputRef.current?.click();
+                      }}
+                    >
+                      Choose Different File
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <FilePlus className="mx-auto h-8 w-8 text-muted-foreground" />
+                <p className="text-sm font-medium">Click to upload files</p>
+                <p className="text-xs text-muted-foreground">
+                  Upload assignment files, templates, or resources
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Uploaded Files Section */}
+        {uploadedFiles.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium">Uploaded Files ({uploadedFiles.length})</h4>
+              <Badge variant="secondary" className="text-xs">
+                Ready for assignment
+              </Badge>
+            </div>
+
+            <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md p-3 bg-muted/10">
+              {uploadedFiles.map((file, index) => (
+                <motion.div
+                  key={file.file_id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="flex items-center justify-between p-3 border rounded-md bg-background hover:shadow-sm transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <FilePlus className="h-4 w-4 text-primary" />
+                      </div>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">{file.file_name}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="outline" className="text-xs px-1 py-0">
+                          Path: {file.file_path}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          File #{index + 1}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="flex-shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => handleDeleteFile(file.file_id)}
+                    title="Remove file"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </motion.div>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-between text-xs text-muted-foreground p-2 bg-muted/20 rounded">
+              <span>These files will be attached to the assignment</span>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => fileInputRef.current?.click()}
+                className="h-6 text-xs"
+              >
+                + Add More Files
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create New Assignment</DialogTitle>
+            <DialogDescription>
+              Create a new assignment for your course. Upload files and set deadlines.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <label htmlFor="assignment-name" className="text-sm font-medium">
+                Assignment Name *
+              </label>
+              <Input
+                id="assignment-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g., Homework 1: Basic Algorithms"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="description" className="text-sm font-medium">
+                Description
+              </label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Describe the assignment objectives and requirements..."
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Assignment Type</label>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="group-assign"
+                  checked={isGroupAssign}
+                  onCheckedChange={(checked) => setIsGroupAssign(checked as boolean)}
+                />
+                <label htmlFor="group-assign" className="text-sm">
+                  Group Assignment
+                </label>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Deadline *</label>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="w-24">
+                  <select
+                    title="Select hour"
+                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                    value={selectedHour}
+                    onChange={(e) => setSelectedHour(e.target.value)}
+                  >
+                    <option value="">Hour</option>
+                    {Array.from({ length: 24 }, (_, i) => i).map(hour => (
+                      <option key={hour} value={hour.toString().padStart(2, '0')}>
+                        {hour.toString().padStart(2, '0')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="w-24">
+                  <select
+                    title="Select minute"
+                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                    value={selectedMinute}
+                    onChange={(e) => setSelectedMinute(e.target.value)}
+                  >
+                    <option value="">Min</option>
+                    {Array.from({ length: 60 }, (_, i) => i).map(minute => (
+                      <option key={minute} value={minute.toString().padStart(2, '0')}>
+                        {minute.toString().padStart(2, '0')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Assignment Files</label>
+              <FileUploadArea />
+            </div>
+
+            <div className="pt-4 flex justify-end space-x-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={() => setShowConfirmDialog(true)}
+                disabled={!name || !selectedDate || !selectedHour || !selectedMinute}
+              >
+                Create Assignment
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Assignment Creation</DialogTitle>
+            <DialogDescription>
+              Once created, uploaded files cannot be modified. Are you sure you want to create this assignment?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="pt-4 flex justify-end space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowConfirmDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateAssignment}
+              disabled={isCreating}
+            >
+              {isCreating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Confirm Create'
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
+// Assignments Tab Content
+const AssignmentsTab = ({ courseId }: { courseId: string }) => {
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const { token } = useUserContext();
+
+  const fetchAssignments = async () => {
+    if (!courseId) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/assignments/${courseId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch assignments');
+      }
+
+      const data = await response.json();
+      setAssignments(data.assignments || []);
+    } catch (error) {
+      console.error('Error fetching assignments:', error);
+      // Mock data for development
+      setAssignments([
+        {
+          assignment_id: 'assign1',
+          name: 'Homework 1: Basic Data Structures',
+          course_id: courseId,
+          teacher_id: 'teacher1',
+          deadline: '2025-05-15 23:59:00',
+          is_over: false,
+          is_group_assign: false,
+          description: 'Implement basic data structures including arrays, linked lists, and stacks.'
+        },
+        {
+          assignment_id: 'assign2',
+          name: 'Group Project: Web Application',
+          course_id: courseId,
+          teacher_id: 'teacher1',
+          deadline: '2025-06-01 23:59:00',
+          is_over: false,
+          is_group_assign: true,
+          description: 'Build a full-stack web application using React and Node.js.'
+        }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAssignments();
+  }, [courseId, token]);
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-4">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold">Course Assignments</h2>
+          <Skeleton className="h-9 w-32" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {[1, 2, 3].map(i => (
+            <Skeleton key={i} className="h-40 w-full" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-xl font-semibold">Course Assignments</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            {assignments.length} Assignment{assignments.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <Button onClick={() => setCreateDialogOpen(true)}>
+          <FilePlus className="mr-2 h-4 w-4" />
+          Create Assignment
+        </Button>
+      </div>
+
+      {assignments.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <AnimatePresence>
+            {assignments.map(assignment => (
+              <AssignmentCard
+                key={assignment.assignment_id}
+                assignment={assignment}
+              />
+            ))}
+          </AnimatePresence>
+        </div>
+      ) : (
+        <div className="text-center py-12 border rounded-md bg-muted/10">
+          <ClipboardList className="mx-auto h-8 w-8 text-muted-foreground opacity-50" />
+          <h3 className="mt-2 text-sm font-medium">No assignments created</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Create your first assignment using the "Create Assignment" button.
+          </p>
+          <Button className="mt-4" onClick={() => setCreateDialogOpen(true)}>
+            <FilePlus className="mr-2 h-4 w-4" />
+            Create Assignment
+          </Button>
+        </div>
+      )}
+
+      <CreateAssignmentDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        courseId={courseId}
+        onAssignmentCreated={fetchAssignments}
+      />
     </div>
   );
 };
@@ -1303,7 +2007,7 @@ export default function ManageRightBar({ isVisible, selectedCourse }: ManageRigh
       case 'sections':
         return <SectionsTab courseId={selectedCourse.course_id} />;
       case 'assignments':
-        return <AssignmentsTab />;
+        return <AssignmentsTab courseId={selectedCourse.course_id} />;
       default:
         return null;
     }
