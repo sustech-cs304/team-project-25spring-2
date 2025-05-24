@@ -1,11 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status, WebSocket
+from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, File, Body
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from app.db import get_db
 from app.models.user import User
 from app.models.group import Group
 from app.models.environment import Environment
 from app.models.assignment import Assignment
-from app.models.file import File
+from app.models.file import FileDB
 from typing import Annotated, List, Dict, Any
 from kubernetes import config, client
 from app.auth.middleware import get_current_user
@@ -14,6 +15,8 @@ import os
 import websockets
 import asyncio
 import shutil
+import json
+
 router = APIRouter()
 if os.environ.get("ENVNAME") == "k3s":
     config.load_incluster_config()
@@ -81,7 +84,6 @@ def build_file_structure(path: str, base_uri: str = "/") -> Dict[str, Any]:
         "uri": base_uri,
         "children": children
     }
-
 
 @router.get("/environment/{env_id}/files")
 async def get_environment_files(
@@ -248,7 +250,7 @@ async def delete_environment_directory(
 @router.post("/environment/{env_id}/layout")
 async def save_environment_layout(
     env_id: str,
-    layout: str,
+    body: Dict[str, Any] = Body(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -256,9 +258,21 @@ async def save_environment_layout(
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     
+    layout = body.get("layout")
+    if layout is None:
+        raise HTTPException(status_code=400, detail="Missing 'layout' in request body")
+    
+    if isinstance(layout, str):
+        try:
+            layout = json.loads(layout)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid layout JSON string")
+    
     env.layout = layout
     db.commit()
-    return {"message": "Layout saved successfully"}
+    return {
+        "message": "Layout saved successfully"
+    }
 
 @router.get("/environment/{env_id}/layout")
 async def get_environment_layout(
@@ -270,14 +284,15 @@ async def get_environment_layout(
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     
-    return env.layout
+    return {
+        "message": "Layout fetched successfully",
+        "layout": env.layout,
+    }
 
 @router.post("/terminal/{env_id}")
 async def terminal_exec(
     env_id: str,
     command: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
 ):
     return exec_pod(env_id, command)
 
@@ -285,18 +300,17 @@ async def terminal_exec(
 async def get_pdf_file(
     env_id: str,
     file_path: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
 ):
     env_path = f"/app/data/{env_id}"
     file_path = os.path.join(env_path, file_path.lstrip('/'))
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found")
     
-    return send_file(file_path, mimetype='application/pdf')
-
-def send_file(file_path: str, mimetype: str):
-    return FileResponse(file_path, media_type=mimetype)
+    return FileResponse(
+        path=file_path,
+        media_type='application/pdf',
+        filename=os.path.basename(file_path)
+    )
 
 @router.post("/environment")
 async def get_environment(
