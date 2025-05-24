@@ -7,4 +7,4 @@ COPY app/ test/ .
 RUN uv sync --frozen && chmod +x entrypoint.sh
 ENV PATH="/app/.venv/bin:$PATH"
 
-ENTRYPOINT ["/bin/sh"]
+ENTRYPOINT ["./entrypoint.sh"]
