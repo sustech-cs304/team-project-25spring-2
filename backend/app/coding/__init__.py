@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, WebSocket
+from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, FileResponse
 from sqlalchemy.orm import Session
 from app.db import get_db
 from app.models.user import User
@@ -280,6 +280,23 @@ async def terminal_exec(
     current_user: User = Depends(get_current_user)
 ):
     return exec_pod(env_id, command)
+
+@router.get("/file/{env_id}/pdf")
+async def get_pdf_file(
+    env_id: str,
+    file_path: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    env_path = f"/app/data/{env_id}"
+    file_path = os.path.join(env_path, file_path.lstrip('/'))
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    return send_file(file_path, mimetype='application/pdf')
+
+def send_file(file_path: str, mimetype: str):
+    return FileResponse(file_path, media_type=mimetype)
 
 @router.post("/environment")
 async def get_environment(
