@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { motion } from "framer-motion";
-import {useUserContext} from "@/app/UserEnvProvider";
+import { useUserContext } from "@/app/UserEnvProvider";
 
 // 定义API响应的类型
 interface CalendarData {
@@ -23,11 +23,7 @@ interface Course {
 
 interface Section {
   name: string;
-  schedules: Schedule[];
-}
-
-interface Schedule {
-  date: string;
+  schedules: string[];
 }
 
 interface Assignment {
@@ -57,7 +53,7 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
   const { token } = useUserContext();
 
 
-    // 每当弹窗打开时获取数据
+  // 每当弹窗打开时获取数据
   useEffect(() => {
     if (open) {
       fetchCalendarData();
@@ -81,7 +77,7 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
     try {
       setLoading(true);
       setError(null);
-        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + '/courses/calendar', {
+      const response = await fetch(process.env.NEXT_PUBLIC_API_URL + '/courses/calendar', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -105,9 +101,7 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
               {
                 "name": "动器都院入实制育极。",
                 "schedules": [
-                  {
-                    "date": "2025-05-07"
-                  }
+                  "2025-05-07 10:00:00"
                 ]
               }
             ],
@@ -115,11 +109,11 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
             "assignments": [
               {
                 "name": "沐万佳",
-                "deadline": "2024-09-01"
+                "deadline": "2024-09-01 23:59:59"
               },
               {
                 "name": "禾敏",
-                "deadline": "2025-12-27"
+                "deadline": "2025-12-27 23:59:59"
               }
             ]
           },
@@ -128,31 +122,21 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
               {
                 "name": "油明细难备广。",
                 "schedules": [
-                  {
-                    "date": "2024-05-10"
-                  },
-                  {
-                    "date": "2024-06-13"
-                  },
-                  {
-                    "date": "2025-08-14"
-                  }
+                  "2024-05-10 14:00:00",
+                  "2024-06-13 09:00:00",
+                  "2025-08-14 16:00:00"
                 ]
               },
               {
                 "name": "九响小水明石去。",
                 "schedules": [
-                  {
-                    "date": "2024-08-27"
-                  }
+                  "2024-08-27 11:00:00"
                 ]
               },
               {
                 "name": "劳广包整资布。",
                 "schedules": [
-                  {
-                    "date": "2025-04-13"
-                  }
+                  "2025-04-13 13:30:00"
                 ]
               }
             ],
@@ -160,7 +144,7 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
             "assignments": [
               {
                 "name": "鄂国秀",
-                "deadline": "2025-07-10"
+                "deadline": "2025-07-10 23:59:59"
               }
             ]
           }
@@ -212,8 +196,9 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
       // 处理课程安排
       course.sections.forEach(section => {
         section.schedules.forEach(schedule => {
-          // 直接使用后端提供的日期字符串，不做任何转换
-          const dateKey = schedule.date;
+          // schedule现在是字符串，格式为"2025-05-24 10:00:00"
+          // 提取日期部分 YYYY-MM-DD
+          const dateKey = schedule.split(' ')[0];
 
           const event: DayEvent = {
             type: 'section',
@@ -231,8 +216,9 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
 
       // 处理作业截止日期
       course.assignments.forEach(assignment => {
-        // 直接使用后端提供的日期字符串，不做任何转换
-        const dateKey = assignment.deadline;
+        // assignment.deadline现在是字符串，格式为"2025-05-24 10:00:00"
+        // 提取日期部分 YYYY-MM-DD
+        const dateKey = assignment.deadline.split(' ')[0];
 
         const event: DayEvent = {
           type: 'assignment',
