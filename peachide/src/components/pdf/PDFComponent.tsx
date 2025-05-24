@@ -20,11 +20,17 @@ interface PDFComponentProps {
 export const PDFComponent: React.FC<PDFComponentProps> = ({ env_id, file_path }) => {
     const [numPages, setNumPages] = useState<number>();
     const [scale, setScale] = useState(1);
-    const [pdfFile, setPdfFile] = useState<Blob | null>(null);
+    const [pdfFile, setPdfFile] = useState<string | null>(null);
     const pdfContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        getPDFFile().then(blob => setPdfFile(blob));
+        getPDFFile().then((blob: Blob | null) => {
+            if (blob) {
+                const url = URL.createObjectURL(blob);
+                setPdfFile(url);
+                return () => URL.revokeObjectURL(url);
+            }
+        });
     }, [env_id, file_path]);
 
     function onDocumentLoadSuccess({ numPages }: { numPages: number }): void {
@@ -43,35 +49,39 @@ export const PDFComponent: React.FC<PDFComponentProps> = ({ env_id, file_path })
     }), []);
 
     const getPDFFile = () => {
-        // Get pdf file from `/file/{env_id}/pdf` with params `file_path` it will return a FileResponse
-        return fetch(`/file/${env_id}/pdf`, {
-            method: 'GET',
+        const url = new URL(`/file/${env_id}/pdf`, window.location.origin);
+        url.searchParams.append('file_path', file_path);
+        
+        return fetch(url.toString(), {
             headers: {
-                'file_path': file_path,
+                'Accept': 'application/pdf'
             }
-        }).then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to fetch PDF');
-                }
-                return response.blob();
-            })
-            .catch(error => {
-                console.error('Error fetching PDF:', error);
-                return null;
-            });
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to fetch PDF');
+            }
+            return response.blob();
+        })
+        .catch(error => {
+            console.error('Error fetching PDF:', error);
+            return null;
+        });
     }
 
     return (
         <div ref={pdfContainerRef}
             className={`rounded-[var(--radius)] border-1 grow-0 h-full overflow-scroll`}
             style={{ "width": "100%" }}>
-            <PDFDocument options={options} file={pdfFile}
-                onLoadSuccess={onDocumentLoadSuccess}>
-                {Array.from(new Array(numPages), (el, index) => (
-                    <Page key={`page_${index + 1}`} pageNumber={index + 1} scale={scale} onLoadSuccess={onPageLoadSuccess}>
-                    </Page>
-                ))}
-            </PDFDocument>
+            {pdfFile && (
+                <PDFDocument options={options} file={pdfFile}
+                    onLoadSuccess={onDocumentLoadSuccess}>
+                    {Array.from(new Array(numPages), (el, index) => (
+                        <Page key={`page_${index + 1}`} pageNumber={index + 1} scale={scale} onLoadSuccess={onPageLoadSuccess}>
+                        </Page>
+                    ))}
+                </PDFDocument>
+            )}
             <div className="sticky bottom-0 left-0 z-[1000]">
                 <Button variant="outline" size="icon" className="size-6 ml-2 mb-2"
                     onClick={() => setScale(scale + 0.1)}>

@@ -17,9 +17,11 @@ interface UserContextType {
   userId: string | null;
   isAuthenticated: boolean;
   isTeacher: boolean;
+  myGroups: JSON;
   userData: UserData | null;
   setUserData: (userData: UserData) => void;
   setIsTeacher: (isTeacher: boolean) => void;
+  setMyGroups: (groups: JSON) => void;
   login: (token: string, userId: string, isTeacher: boolean) => void;
   logout: () => void;
   sidebarItems: SidebarItem[];
@@ -61,6 +63,7 @@ const UserContext = createContext<UserContextType>({
   userId: null,
   isAuthenticated: false,
   isTeacher: false,
+  myGroups: {} as JSON,
   userData: null,
   setIsTeacher: () => { },
   login: () => { },
@@ -68,6 +71,7 @@ const UserContext = createContext<UserContextType>({
   setUserData: () => { },
   sidebarItems: defaultSidebarItems,
   setSidebarItems: () => { },
+  setMyGroups: () => { },
 });
 
 export const useUserContext = () => useContext(UserContext);
@@ -78,6 +82,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [isTeacher, setIsTeacher] = useState<boolean>(false);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [sidebarItems, setSidebarItems] = useState<SidebarItem[]>(defaultSidebarItems);
+  const [myGroups, setMyGroups] = useState<JSON>({} as JSON);
 
   useEffect(() => {
     if (sidebarItems !== defaultSidebarItems) {
@@ -104,6 +109,14 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         const data = await response.json();
         setUserData(data);
         setIsTeacher(data ? data.is_teacher : false);
+        let groups = {} as JSON;
+        console.log(data.groups);
+        for (const group of data.groups) {
+          // Array of string "course_id:group_id"
+          const [courseId, groupId] = group.split(':');
+          (groups as any)[courseId as string] = groupId as string;
+        }
+        setMyGroups(groups as JSON);
       } catch (error) {
         console.error('Error fetching user data:', error);
         toast.error('Failed to load user information');
@@ -138,6 +151,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
     if (storedSidebarItems) {
       setSidebarItems(JSON.parse(storedSidebarItems));
+      console.log("storedSidebarItems", JSON.parse(storedSidebarItems));
     }
   }, []);
 
@@ -151,9 +165,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     if (newIsTeacher) {
       setSidebarItems([...defaultSidebarItems, ...teacherSidebarItems]);
       localStorage.setItem('sidebarItems', JSON.stringify([...defaultSidebarItems, ...teacherSidebarItems]));
+      console.log("teacherSidebarItems", [...defaultSidebarItems, ...teacherSidebarItems]);
     } else {
       setSidebarItems([...defaultSidebarItems, ...studentSidebarItems]);
       localStorage.setItem('sidebarItems', JSON.stringify([...defaultSidebarItems, ...studentSidebarItems]));
+      console.log("studentSidebarItems", [...defaultSidebarItems, ...studentSidebarItems]);
     }
   };
 
@@ -176,12 +192,14 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       value={{
         token,
         userId,
+        myGroups,
         isAuthenticated,
         isTeacher,
         setIsTeacher,
         login,
         logout,
         userData,
+        setMyGroups,
         setUserData,
         sidebarItems,
         setSidebarItems,

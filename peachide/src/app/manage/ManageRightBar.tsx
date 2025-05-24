@@ -17,10 +17,13 @@ import {
   FolderPlus,
   FilePlus, EditIcon,
   MousePointer,
-  ComponentIcon
+  ComponentIcon,
+  Calendar
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Course } from "./page";
 import { useRouter } from 'next/navigation';
 import { Skeleton } from "@/components/ui/skeleton";
@@ -1241,15 +1244,934 @@ const UploadMaterialDialog = ({
   );
 };
 
-// Assignments Tab Content (placeholder)
-const AssignmentsTab = () => {
+// Assignment interface
+interface Assignment {
+  assignment_id: string;
+  is_group_assign: boolean;
+  name: string;
+  course_id: string;
+  teacher_id: string;
+  deadline: string; // "2025-05-07 10:00:00"
+  is_over: boolean;
+  description?: string;
+}
+
+// Uploaded file interface for assignment creation
+interface UploadedFile {
+  file_id: string;
+  file_name: string;
+  file_path: string;
+  original_file: File;
+}
+
+// Assignment Card Component
+const AssignmentCard = ({ assignment }: { assignment: Assignment }) => {
+  const formatDeadline = (deadline: string) => {
+    try {
+      const date = new Date(deadline);
+      return {
+        date: date.toLocaleDateString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
+        }),
+        time: date.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        })
+      };
+    } catch {
+      return { date: deadline, time: '' };
+    }
+  };
+
+  const isOverdue = () => {
+    try {
+      return new Date(assignment.deadline) < new Date();
+    } catch {
+      return false;
+    }
+  };
+
+  const getTimeRemaining = () => {
+    try {
+      const now = new Date();
+      const deadline = new Date(assignment.deadline);
+      const diff = deadline.getTime() - now.getTime();
+
+      if (diff < 0) return null; // Past deadline
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+      if (days > 0) return `${days} day${days > 1 ? 's' : ''} remaining`;
+      if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} remaining`;
+      return 'Due soon';
+    } catch {
+      return null;
+    }
+  };
+
+  const deadlineInfo = formatDeadline(assignment.deadline);
+  const timeRemaining = getTimeRemaining();
+  const overdue = isOverdue();
+  const statusColor = assignment.is_over ? 'outline' : overdue ? 'destructive' : 'default';
+
   return (
-    <div className="flex flex-col items-center justify-center p-12 text-center">
-      <ClipboardList className="h-12 w-12 text-muted-foreground opacity-50" />
-      <h3 className="mt-4 text-lg font-medium">Assignments Management</h3>
-      <p className="mt-1 text-sm text-muted-foreground max-w-md">
-        This feature is coming soon. You'll be able to create and manage assignments here.
-      </p>
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      whileHover={{ scale: 1.02 }}
+      transition={{ duration: 0.2 }}
+    >
+      <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20">
+        <CardHeader className="pb-4 bg-gradient-to-r from-background to-muted/20">
+          <div className="flex items-start justify-between">
+            <div className="space-y-2 flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <div className="bg-primary/15 p-2 rounded-lg">
+                  <ClipboardList size={20} className="text-primary" />
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge
+                    variant={assignment.is_group_assign ? "default" : "secondary"}
+                    className="text-xs font-medium"
+                  >
+                    {assignment.is_group_assign ? "Group Assignment" : "Individual"}
+                  </Badge>
+                  <Badge variant={statusColor} className="text-xs font-medium">
+                    {assignment.is_over ? "Closed" : overdue ? "Overdue" : "Active"}
+                  </Badge>
+                </div>
+              </div>
+              <CardTitle className="text-xl font-bold line-clamp-2 leading-tight">
+                {assignment.name}
+              </CardTitle>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          {/* Deadline Section */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock size={16} className={overdue ? "text-destructive" : "text-primary"} />
+                <span className="text-sm font-medium">Deadline</span>
+              </div>
+              {timeRemaining && (
+                <Badge variant="outline" className="text-xs">
+                  {timeRemaining}
+                </Badge>
+              )}
+            </div>
+            <div className="ml-6">
+              <p className={`text-sm font-medium ${overdue ? 'text-destructive' : 'text-foreground'}`}>
+                {deadlineInfo.date}
+              </p>
+              {deadlineInfo.time && (
+                <p className="text-xs text-muted-foreground">
+                  {deadlineInfo.time}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Description */}
+          {assignment.description && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Description</p>
+              <p className="text-sm text-muted-foreground line-clamp-4 leading-relaxed">
+                {assignment.description}
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+};
+
+// Create Assignment Dialog
+const CreateAssignmentDialog = ({
+  open,
+  onOpenChange,
+  courseId,
+  onAssignmentCreated
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  courseId: string;
+  onAssignmentCreated: () => void;
+}) => {
+  const { token, userData } = useUserContext();
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [isGroupAssign, setIsGroupAssign] = useState(false);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedHour, setSelectedHour] = useState('');
+  const [selectedMinute, setSelectedMinute] = useState('');
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Reset form when dialog opens/closes
+  useEffect(() => {
+    if (!open) {
+      setName('');
+      setDescription('');
+      setIsGroupAssign(false);
+      setSelectedDate('');
+      setSelectedHour('');
+      setSelectedMinute('');
+      setUploadedFiles([]);
+      setShowConfirmDialog(false);
+    }
+  }, [open]);
+
+  const handleFileUpload = async (file: File, filePath: string) => {
+    setIsUploading(true);
+    try {
+      // Ensure the path starts with "/" for display purposes
+      const displayPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+
+      const formData = new FormData();
+      formData.append('file_path', displayPath);
+      formData.append('file_name', file.name);
+      formData.append('file', file);
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/file`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload file');
+      }
+
+      const data = await response.json();
+      const newFile: UploadedFile = {
+        file_id: data.file_id,
+        file_name: file.name,
+        file_path: displayPath,
+        original_file: file
+      };
+
+      setUploadedFiles(prev => [...prev, newFile]);
+      toast.success(`File "${file.name}" uploaded successfully`);
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast.error(`Failed to upload file "${file.name}"`);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDeleteFile = async (fileId: string) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/file/${fileId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete file');
+      }
+
+      setUploadedFiles(prev => prev.filter(f => f.file_id !== fileId));
+      toast.success('File deleted successfully');
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      toast.error('Failed to delete file');
+    }
+  };
+
+  const handleCreateAssignment = async () => {
+    if (!name || !selectedDate || !selectedHour || !selectedMinute) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      const deadline = `${selectedDate} ${selectedHour.padStart(2, '0')}:${selectedMinute.padStart(2, '0')}:00`;
+
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('deadline', deadline);
+      formData.append('description', description);
+      formData.append('is_group_assign', isGroupAssign.toString());
+      formData.append('course_id', courseId);
+      formData.append('teacher_id', userData?.user_id || '');
+
+      // Add file IDs
+      uploadedFiles.forEach(file => {
+        formData.append('files', file.file_id);
+      });
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/assignment`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create assignment');
+      }
+
+      toast.success('Assignment created successfully');
+      onOpenChange(false);
+      onAssignmentCreated();
+    } catch (error) {
+      console.error('Error creating assignment:', error);
+      toast.error('Failed to create assignment');
+    } finally {
+      setIsCreating(false);
+      setShowConfirmDialog(false);
+    }
+  };
+
+  const FileUploadArea = () => {
+    const [filePath, setFilePath] = useState('');
+    const [showPathInput, setShowPathInput] = useState(false);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [pathError, setPathError] = useState('');
+
+    return (
+      <div className="space-y-4">
+        {/* File Upload Section */}
+        <div className="space-y-3">
+          <div
+            className={`border-2 border-dashed rounded-md p-6 text-center transition-colors ${selectedFile && showPathInput
+              ? 'border-primary/50 bg-primary/5'
+              : 'cursor-pointer hover:bg-muted/50'
+              }`}
+            onClick={selectedFile && showPathInput ? undefined : () => fileInputRef.current?.click()}
+          >
+            <input
+              type="file"
+              className="hidden"
+              ref={fileInputRef}
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  setSelectedFile(e.target.files[0]);
+                  setShowPathInput(true);
+                }
+              }}
+            />
+
+            {selectedFile && showPathInput ? (
+              <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center justify-center gap-2">
+                  <FilePlus className="h-8 w-8 text-primary" />
+                  <div className="text-left">
+                    <p className="text-sm font-medium">Selected: {selectedFile.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium">File Path</label>
+                    <div className="flex items-center max-w-md mx-auto">
+                      <div className="flex items-center justify-center w-8 h-11 bg-muted border border-r-0 rounded-l-md">
+                        <span className="text-sm font-medium text-muted-foreground">/</span>
+                      </div>
+                      <Input
+                        value={filePath}
+                        onChange={(e) => {
+                          setFilePath(e.target.value);
+                          setPathError('');
+                        }}
+                        placeholder="assignments/homework1"
+                        className="rounded-l-none flex-1"
+                        onClick={(e) => e.stopPropagation()}
+                        onFocus={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                    <div className="text-center max-w-md mx-auto space-y-1">
+                      <p className="text-xs text-muted-foreground">
+                        📁 Enter the directory path where this file should be stored
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        💡 Leave empty to upload to root directory (<code className="bg-muted px-1 rounded">/</code>)
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        ✨ Examples: <code className="bg-muted px-1 rounded">assignments/hw1</code>, <code className="bg-muted px-1 rounded">materials/lectures</code>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 justify-center">
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (selectedFile) {
+                          const finalPath = filePath.trim() || '/';
+                          handleFileUpload(selectedFile, finalPath);
+                          setSelectedFile(null);
+                          setFilePath('');
+                          setShowPathInput(false);
+                          setPathError('');
+                          if (fileInputRef.current) {
+                            fileInputRef.current.value = '';
+                          }
+                        } else {
+                          toast.error('Please select a file first');
+                        }
+                      }}
+                      disabled={isUploading}
+                    >
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        'Upload File'
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedFile(null);
+                        setFilePath('');
+                        setShowPathInput(false);
+                        setPathError('');
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = '';
+                        }
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        fileInputRef.current?.click();
+                      }}
+                    >
+                      Choose Different File
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <FilePlus className="mx-auto h-8 w-8 text-muted-foreground" />
+                <p className="text-sm font-medium">Click to upload files</p>
+                <p className="text-xs text-muted-foreground">
+                  Upload assignment files, templates, or resources
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Uploaded Files Section */}
+        {uploadedFiles.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium">Uploaded Files ({uploadedFiles.length})</h4>
+              <Badge variant="secondary" className="text-xs">
+                Ready for assignment
+              </Badge>
+            </div>
+
+            <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md p-3 bg-muted/10">
+              {uploadedFiles.map((file, index) => (
+                <motion.div
+                  key={file.file_id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="flex items-center justify-between p-3 border rounded-md bg-background hover:shadow-sm transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <FilePlus className="h-4 w-4 text-primary" />
+                      </div>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">{file.file_name}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="outline" className="text-xs px-1 py-0">
+                          Path: {file.file_path}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          File #{index + 1}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="flex-shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => handleDeleteFile(file.file_id)}
+                    title="Remove file"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </motion.div>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-between text-xs text-muted-foreground p-2 bg-muted/20 rounded">
+              <span>These files will be attached to the assignment</span>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => fileInputRef.current?.click()}
+                className="h-6 text-xs"
+              >
+                + Add More Files
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create New Assignment</DialogTitle>
+            <DialogDescription>
+              Create a new assignment for your course. Upload files and set deadlines.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <label htmlFor="assignment-name" className="text-sm font-medium">
+                Assignment Name *
+              </label>
+              <Input
+                id="assignment-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g., Homework 1: Basic Algorithms"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="description" className="text-sm font-medium">
+                Description
+              </label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Describe the assignment objectives and requirements..."
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-sm font-medium">Assignment Type</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Individual Assignment */}
+                <div
+                  className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all hover:shadow-md ${!isGroupAssign
+                    ? 'border-primary bg-primary/5 shadow-sm'
+                    : 'border-border hover:border-primary/50'
+                    }`}
+                  onClick={() => setIsGroupAssign(false)}
+                >
+                  <div className="flex items-start space-x-3">
+                    <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center ${!isGroupAssign ? 'border-primary bg-primary' : 'border-muted-foreground'
+                      }`}>
+                      {!isGroupAssign && <div className="w-2 h-2 bg-white rounded-full" />}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <h4 className="font-medium text-sm">Individual Assignment</h4>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Each student submits their own work
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Group Assignment */}
+                <div
+                  className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all hover:shadow-md ${isGroupAssign
+                    ? 'border-primary bg-primary/5 shadow-sm'
+                    : 'border-border hover:border-primary/50'
+                    }`}
+                  onClick={() => setIsGroupAssign(true)}
+                >
+                  <div className="flex items-start space-x-3">
+                    <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center ${isGroupAssign ? 'border-primary bg-primary' : 'border-muted-foreground'
+                      }`}>
+                      {isGroupAssign && <div className="w-2 h-2 bg-white rounded-full" />}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <h4 className="font-medium text-sm">Group Assignment</h4>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Students collaborate in teams
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-sm font-medium">Deadline *</label>
+              <div className="grid grid-cols-3 gap-3">
+                {/* Date Picker */}
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">Date</label>
+                  <div className="relative">
+                    <Input
+                      type="date"
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      required
+                      className="h-11 pr-10 focus:ring-2 focus:ring-primary/20 transition-all"
+                    />
+                    <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* Hour Picker */}
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">Hour</label>
+                  <select
+                    title="Select hour"
+                    className="w-full h-11 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all hover:border-primary/50"
+                    value={selectedHour}
+                    onChange={(e) => setSelectedHour(e.target.value)}
+                  >
+                    <option value="" disabled>Hour</option>
+                    {Array.from({ length: 24 }, (_, i) => i).map(hour => (
+                      <option key={hour} value={hour.toString().padStart(2, '0')}>
+                        {hour.toString().padStart(2, '0')}:00
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Minute Picker */}
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">Minute</label>
+                  <select
+                    title="Select minute"
+                    className="w-full h-11 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all hover:border-primary/50"
+                    value={selectedMinute}
+                    onChange={(e) => setSelectedMinute(e.target.value)}
+                  >
+                    <option value="" disabled>Min</option>
+                    {[0, 15, 30, 45].map(minute => (
+                      <option key={minute} value={minute.toString().padStart(2, '0')}>
+                        :{minute.toString().padStart(2, '0')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Preview of selected datetime */}
+              {selectedDate && selectedHour && selectedMinute && (
+                <div className="mt-2 p-2 bg-primary/5 border border-primary/20 rounded-md">
+                  <p className="text-xs text-muted-foreground">Selected deadline:</p>
+                  <p className="text-sm font-medium text-primary">
+                    {new Date(`${selectedDate} ${selectedHour}:${selectedMinute}`).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })} at {selectedHour}:{selectedMinute}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Assignment Files</label>
+              <FileUploadArea />
+            </div>
+
+            <div className="pt-4 flex justify-end space-x-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={() => setShowConfirmDialog(true)}
+                disabled={!name || !selectedDate || !selectedHour || !selectedMinute}
+              >
+                Create Assignment
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Assignment Creation</DialogTitle>
+            <DialogDescription>
+              Once created, uploaded files cannot be modified. Are you sure you want to create this assignment?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="pt-4 flex justify-end space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowConfirmDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateAssignment}
+              disabled={isCreating}
+            >
+              {isCreating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Confirm Create'
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
+// Assignments Tab Content
+const AssignmentsTab = ({ courseId }: { courseId: string }) => {
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const { token } = useUserContext();
+
+  const fetchAssignments = async () => {
+    if (!courseId) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/assignments/${courseId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch assignments');
+      }
+
+      const data = await response.json();
+      setAssignments(data.assignments || []);
+    } catch (error) {
+      console.error('Error fetching assignments:', error);
+      // Mock data for development
+      setAssignments([
+        {
+          assignment_id: 'assign1',
+          name: 'Homework 1: Basic Data Structures',
+          course_id: courseId,
+          teacher_id: 'teacher1',
+          deadline: '2025-05-15 23:59:00',
+          is_over: false,
+          is_group_assign: false,
+          description: 'Implement basic data structures including arrays, linked lists, and stacks.'
+        },
+        {
+          assignment_id: 'assign2',
+          name: 'Group Project: Web Application',
+          course_id: courseId,
+          teacher_id: 'teacher1',
+          deadline: '2025-06-01 23:59:00',
+          is_over: false,
+          is_group_assign: true,
+          description: 'Build a full-stack web application using React and Node.js.'
+        }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAssignments();
+  }, [courseId, token]);
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-4">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold">Course Assignments</h2>
+          <Skeleton className="h-9 w-32" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {[1, 2, 3].map(i => (
+            <Skeleton key={i} className="h-40 w-full" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const isAssignmentExpired = (assignment: Assignment) => {
+    try {
+      return new Date(assignment.deadline) < new Date() || assignment.is_over;
+    } catch {
+      return false;
+    }
+  };
+
+  const activeAssignments = assignments.filter(a => !isAssignmentExpired(a));
+  const expiredAssignments = assignments.filter(a => isAssignmentExpired(a));
+
+  return (
+    <div className="p-6 space-y-8">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold">Course Assignments</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            {activeAssignments.length} Active, {expiredAssignments.length} Completed
+          </p>
+        </div>
+        <Button onClick={() => setCreateDialogOpen(true)} size="lg">
+          <FilePlus className="mr-2 h-4 w-4" />
+          Create Assignment
+        </Button>
+      </div>
+
+      {assignments.length === 0 ? (
+        <div className="text-center py-16 border-2 border-dashed rounded-lg bg-muted/10">
+          <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+            <ClipboardList className="h-8 w-8 text-primary" />
+          </div>
+          <h3 className="text-lg font-medium">No assignments created yet</h3>
+          <p className="mt-1 text-sm text-muted-foreground max-w-sm mx-auto">
+            Create your first assignment to start managing coursework and deadlines for your students.
+          </p>
+          <Button className="mt-6" onClick={() => setCreateDialogOpen(true)} size="lg">
+            <FilePlus className="mr-2 h-4 w-4" />
+            Create Your First Assignment
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {/* Active Assignments Section */}
+          {activeAssignments.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <h3 className="text-lg font-semibold">Active Assignments</h3>
+                </div>
+                <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                  {activeAssignments.length} {activeAssignments.length === 1 ? 'assignment' : 'assignments'}
+                </Badge>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <AnimatePresence>
+                  {activeAssignments.map(assignment => (
+                    <AssignmentCard
+                      key={assignment.assignment_id}
+                      assignment={assignment}
+                    />
+                  ))}
+                </AnimatePresence>
+              </div>
+            </div>
+          )}
+
+          {/* Expired/Completed Assignments Section */}
+          {expiredAssignments.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                  <h3 className="text-lg font-semibold">Completed Assignments</h3>
+                </div>
+                <Badge variant="outline" className="bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                  {expiredAssignments.length} {expiredAssignments.length === 1 ? 'assignment' : 'assignments'}
+                </Badge>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 opacity-75">
+                <AnimatePresence>
+                  {expiredAssignments.map(assignment => (
+                    <AssignmentCard
+                      key={assignment.assignment_id}
+                      assignment={assignment}
+                    />
+                  ))}
+                </AnimatePresence>
+              </div>
+            </div>
+          )}
+
+          {/* Quick Action Section - Only show when no assignments exist */}
+          {assignments.length === 0 && (
+            <div className="mt-8 p-4 border rounded-lg bg-muted/20">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-medium">Need to create a new assignment?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Set deadlines, upload materials, and track student progress.
+                  </p>
+                </div>
+                <Button onClick={() => setCreateDialogOpen(true)} variant="outline">
+                  <FilePlus className="mr-2 h-4 w-4" />
+                  New Assignment
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      <CreateAssignmentDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        courseId={courseId}
+        onAssignmentCreated={fetchAssignments}
+      />
     </div>
   );
 };
@@ -1303,7 +2225,7 @@ export default function ManageRightBar({ isVisible, selectedCourse }: ManageRigh
       case 'sections':
         return <SectionsTab courseId={selectedCourse.course_id} />;
       case 'assignments':
-        return <AssignmentsTab />;
+        return <AssignmentsTab courseId={selectedCourse.course_id} />;
       default:
         return null;
     }

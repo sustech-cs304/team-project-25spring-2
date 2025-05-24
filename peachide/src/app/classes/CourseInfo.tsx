@@ -60,23 +60,23 @@ export default function CourseInfo({ courseId }: CourseInfoProps) {
           description: "This course explores various programming paradigms including functional, object-oriented, and concurrent programming. Students will gain hands-on experience with multiple programming languages and develop a deep understanding of different approaches to software design.",
           schedules: [
             {
-              date: "2025-01-16",
+              date: "2025-01-16 10:00:00",
               section_name: "Morning Lecture"
             },
             {
-              date: "2025-01-20",
+              date: "2025-01-20 10:00:00",
               section_name: "Lab Session A"
             },
             {
-              date: "2025-01-24",
+              date: "2025-01-24 10:00:00",
               section_name: "Afternoon Discussion"
             },
             {
-              date: "2025-02-03",
+              date: "2025-02-03 10:00:00",
               section_name: "Guest Lecture"
             },
             {
-              date: "2025-02-10",
+              date: "2025-02-10 10:00:00",
               section_name: "Project Workshop"
             },
           ]
@@ -156,14 +156,19 @@ export default function CourseInfo({ courseId }: CourseInfoProps) {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col space-y-2">
-            {courseData.schedules?.map((schedule) => (
-              <div key={schedule.date} className="flex justify-between items-center py-2 border-b last:border-0">
-                <span className="text-sm text-muted-foreground">
-                  {new Date(schedule.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
-                </span>
-                <Badge variant="outline">{schedule.section_name}</Badge>
-              </div>
-            ))}
+            {courseData.schedules.length > 0 ?
+              courseData.schedules.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map((schedule, index) => (
+                <div key={schedule.date + index} className="flex justify-between items-center py-2 border-b last:border-0">
+                  <span className="text-sm text-muted-foreground">
+                    {schedule.date}
+                  </span>
+                  <Badge variant="outline">{schedule.section_name}</Badge>
+                </div>
+              )) : (
+                <div className="flex justify-center items-center py-2">
+                  <span className="text-sm text-muted-foreground">No schedule found</span>
+                </div>
+              )}
           </div>
         </CardContent>
       </Card>
