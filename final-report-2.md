@@ -12,7 +12,9 @@
 ### Documentation for end users
 #TODO
 ### Documentation for developers
-
+1. Backend README: https://github.com/sustech-cs304/team-project-25spring-2/blob/backend/backend/README.md
+2. Frontend README: https://github.com/sustech-cs304/team-project-25spring-2/blob/frontend/peachide/README.md
+3. API Documentation: https://peach.benx.dev/docs
 ## Tests
 
 ### 1. Technology/Tools/Frameworks/Approaches Used for Automatic Testing
