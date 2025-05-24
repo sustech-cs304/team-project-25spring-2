@@ -16,7 +16,7 @@ class CodeSnippet(Base):
     snippet_id = Column(UUID, index=True)
     user_id = Column(String, ForeignKey("users.user_id"), nullable=False)
     material_id = Column(
-        UUID, ForeignKey("materials.material_id"), index=True, nullable=False
+        UUID, ForeignKey("materials.material_id", ondelete="CASCADE"), index=True, nullable=False
     )
     lang = Column(String, nullable=False)
     page = Column(Integer, nullable=False)

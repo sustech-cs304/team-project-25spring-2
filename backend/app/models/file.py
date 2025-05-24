@@ -15,5 +15,5 @@ class File(Base):
     file_size = Column(String, nullable=False)
     content = Column(String, nullable=False)
     uploader_id = Column(String, ForeignKey("users.user_id"), nullable=False) # Teacher's id
-    assignment_id = Column(UUID, ForeignKey("assignments.assignment_id"), nullable=False) # Assignment's id
+    assignment_id = Column(UUID, ForeignKey("assignments.assignment_id", ondelete="CASCADE"), nullable=False) # Assignment's id
     is_deleted = Column(Boolean, default=False) # Soft delete
