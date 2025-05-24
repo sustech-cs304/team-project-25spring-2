@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { SmartAvatar } from "@/components/ui/smart-avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -92,14 +93,21 @@ export default function Home() {
         return;
       }
 
-      setEditData(prev => ({ ...prev, photo: file }));
+      console.log('Selected file:', file.name, file.type, 'Size:', (file.size / 1024).toFixed(2) + 'KB');
 
-      // Create preview URL
+      // Create preview URL for display
       const reader = new FileReader();
       reader.onload = (event) => {
-        setPreviewPhoto(event.target?.result as string);
+        const result = event.target?.result as string;
+        setPreviewPhoto(result);
       };
       reader.readAsDataURL(file);
+
+      // Store the file for upload
+      setEditData(prev => ({
+        ...prev,
+        photo: file
+      }));
     }
   };
 
@@ -116,11 +124,18 @@ export default function Home() {
         formData.append('office_place', editData.office_place);
       }
 
-      // Add photo if changed
+      // Add photo file if changed
       if (editData.photo) {
+        console.log('Uploading photo file:', editData.photo.name, editData.photo.type);
+        console.log('File size:', (editData.photo.size / 1024).toFixed(2) + 'KB');
+
+        // Send the file directly
         formData.append('photo', editData.photo);
+
+        console.log('FormData photo field set with file object');
       }
 
+      console.log('Sending request to update profile...');
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/${userId}`, {
         method: 'POST',
         headers: {
@@ -129,27 +144,62 @@ export default function Home() {
         body: formData
       });
 
+      console.log('Response status:', response.status);
+
       if (!response.ok) {
-        throw new Error('Failed to update profile');
+        const errorText = await response.text();
+        console.error('Server response:', errorText);
+        throw new Error(`Server error: ${response.status} - ${errorText}`);
       }
 
-      const updatedData = await response.json();
-
-      // Update local userData
-      if (userData) {
-        setUserData({
-          ...userData,
-          office_hour: isTeacher ? editData.office_hour : userData.office_hour,
-          office_place: isTeacher ? editData.office_place : userData.office_place,
-          photo: editData.photo ? previewPhoto : userData.photo
+      // Refetch user data to get the correct photo format from backend
+      try {
+        const userResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         });
+
+        if (userResponse.ok) {
+          const updatedUserData = await userResponse.json();
+
+          // Convert photo base64 to data URL if needed
+          if (updatedUserData.photo && !updatedUserData.photo.startsWith('data:')) {
+            const isPNG = updatedUserData.photo.startsWith('iVBORw0KGgo');
+            const mimeType = isPNG ? 'image/png' : 'image/jpeg';
+            updatedUserData.photo = `data:${mimeType};base64,${updatedUserData.photo}`;
+          }
+
+          setUserData(updatedUserData);
+        } else {
+          // Fallback to manual update if refetch fails
+          if (userData) {
+            setUserData({
+              ...userData,
+              office_hour: isTeacher ? editData.office_hour : userData.office_hour,
+              office_place: isTeacher ? editData.office_place : userData.office_place,
+              photo: editData.photo ? previewPhoto : userData.photo
+            });
+          }
+        }
+      } catch (fetchError) {
+        console.warn('Failed to refetch user data, using manual update:', fetchError);
+        // Fallback to manual update
+        if (userData) {
+          setUserData({
+            ...userData,
+            office_hour: isTeacher ? editData.office_hour : userData.office_hour,
+            office_place: isTeacher ? editData.office_place : userData.office_place,
+            photo: editData.photo ? previewPhoto : userData.photo
+          });
+        }
       }
 
       toast.success('Profile updated successfully');
       setIsEditing(false);
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error('Failed to update profile');
+      toast.error(`Failed to update profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
@@ -193,20 +243,36 @@ export default function Home() {
               {userData != null ? (
                 <>
                   {/* Avatar Section */}
-                  <div className="relative">
-                    <Avatar className="h-24 w-24 border-2 border-primary">
-                      <AvatarImage src={previewPhoto || userData.photo} alt={userData.name} />
-                      <AvatarFallback>{getInitials(userData.name)}</AvatarFallback>
-                    </Avatar>
-                    {isEditing && (
-                      <Button
-                        size="icon"
-                        variant="secondary"
-                        className="absolute -bottom-2 -right-2 rounded-full h-8 w-8"
-                        onClick={() => fileInputRef.current?.click()}
-                      >
-                        <Camera className="h-4 w-4" />
-                      </Button>
+                  <div className="relative group">
+                    {isEditing ? (
+                      <>
+                        <Avatar className="h-24 w-24 border-2 border-primary">
+                          <AvatarImage src={previewPhoto || userData.photo} alt={userData.name} />
+                          <AvatarFallback>{getInitials(userData.name)}</AvatarFallback>
+                        </Avatar>
+                        {/* Overlay */}
+                        <div
+                          className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center cursor-pointer hover:bg-black/60 transition-colors"
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          <Camera className="h-6 w-6 text-white" />
+                        </div>
+                        {/* Change photo text */}
+                        <div
+                          className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 cursor-pointer"
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          {/*<span className="text-xs text-primary hover:text-primary/80 font-medium">*/}
+                          {/*  Change Photo*/}
+                          {/*</span>*/}
+                        </div>
+                      </>
+                    ) : (
+                      <SmartAvatar
+                        name={userData.name}
+                        photo={userData.photo}
+                        className="h-24 w-24 border-2 border-primary"
+                      />
                     )}
                     <input
                       type="file"

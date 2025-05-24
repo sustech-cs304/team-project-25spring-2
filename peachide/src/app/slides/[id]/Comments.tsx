@@ -1,6 +1,7 @@
 import { usePDFContext } from "@/components/pdf/PDFEnvProvider";
 import { Avatar } from "@radix-ui/react-avatar";
 import { AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { SmartAvatar } from "@/components/ui/smart-avatar";
 import { Button } from "@/components/ui/button";
 import { MessageSquareQuote, Reply } from "lucide-react";
 import React, { useEffect, useState } from "react";
@@ -51,10 +52,12 @@ function ReplyBox({ id, title, avatar, content, forPage, showPageNumber, childre
     return (
         <div className="flex flex-col m-2">
             <div className="flex flex-row">
-                <Avatar className="w-[40px] h-[40px] grow-0">
-                    <AvatarImage src={avatar} alt={title} />
-                    <AvatarFallback className="w-[40px]">U</AvatarFallback>
-                </Avatar>
+                <SmartAvatar
+                    name={title || 'User'}
+                    photo={avatar}
+                    className="w-[40px] h-[40px] grow-0"
+                    fallbackClassName="w-[40px]"
+                />
                 <div className="grow pl-3">
                     <div>
                         {title}

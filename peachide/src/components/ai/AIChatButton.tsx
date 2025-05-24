@@ -281,6 +281,10 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
         });
     };
 
+    const isNotQuiz = (chat: Chat) => {
+        return chat.title !== 'Self-Assessment Quiz';
+    };
+
     return (
         <div className={`fixed bottom-8 right-8 z-[5000] ${className}`}>
             <AnimatePresence>
@@ -328,46 +332,47 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
                                                 New Chat
                                             </Button>
                                             {chats.map((chat) => (
-                                                <div key={chat.chat_id} className="flex items-center group">
-                                                    {editingChatId === chat.chat_id ? (
-                                                        <input
-                                                            className="flex-1 border rounded px-2 py-1 text-sm mr-1"
-                                                            value={editingTitle}
-                                                            autoFocus
-                                                            onChange={handleEditTitleChange}
-                                                            onBlur={() => handleEditTitleSave(chat)}
-                                                            onKeyDown={e => handleEditTitleKeyDown(e, chat)}
-                                                            placeholder="Edit chat name"
-                                                            aria-label="Edit chat name"
-                                                        />
-                                                    ) : (
-                                                        <Button
-                                                            variant="ghost"
-                                                            className="flex-1 justify-start"
-                                                            onClick={() => {
-                                                                setCurrentChatId(chat.chat_id);
-                                                                setShowChatList(false);
-                                                            }}
+                                                isNotQuiz(chat) && (
+                                                    <div key={chat.chat_id} className="flex items-center group">
+                                                        {editingChatId === chat.chat_id ? (
+                                                            <input
+                                                                className="flex-1 border rounded px-2 py-1 text-sm mr-1"
+                                                                value={editingTitle}
+                                                                autoFocus
+                                                                onChange={handleEditTitleChange}
+                                                                onBlur={() => handleEditTitleSave(chat)}
+                                                                onKeyDown={e => handleEditTitleKeyDown(e, chat)}
+                                                                placeholder="Edit chat name"
+                                                                aria-label="Edit chat name"
+                                                            />
+                                                        ) : (
+                                                            <Button
+                                                                variant="ghost"
+                                                                className="flex-1 justify-start"
+                                                                onClick={() => {
+                                                                    setCurrentChatId(chat.chat_id);
+                                                                    setShowChatList(false);
+                                                                }}
+                                                            >
+                                                                <span className="truncate max-w-[120px]">{chat.title}</span>
+                                                            </Button>
+                                                        )}
+                                                        <button
+                                                            className="ml-1 p-1 rounded hover:bg-muted text-muted-foreground hover:text-primary transition"
+                                                            title="Edit chat name"
+                                                            onClick={() => handleEditChatTitle(chat)}
                                                         >
-                                                            <span className="truncate max-w-[120px]">{chat.title}</span>
-                                                        </Button>
-                                                    )}
-                                                    <button
-                                                        className="ml-1 p-1 rounded hover:bg-muted text-muted-foreground hover:text-primary transition"
-                                                        title="Edit chat name"
-                                                        onClick={() => handleEditChatTitle(chat)}
-                                                    >
-                                                        <Pencil className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        className="ml-1 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition"
-                                                        title="Delete chat"
-                                                        onClick={() => handleDeleteChat(chat.chat_id)}
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            ))}
+                                                            <Pencil className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            className="ml-1 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition"
+                                                            title="Delete chat"
+                                                            onClick={() => handleDeleteChat(chat.chat_id)}
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                )))}
                                         </div>
                                     </div>
                                 )}
