@@ -12,16 +12,20 @@ interface SidebarItem {
   icon: string;
 }
 
+interface GroupsMap {
+  [courseId: string]: string | null;
+}
+
 interface UserContextType {
   token: string | null;
   userId: string | null;
   isAuthenticated: boolean;
   isTeacher: boolean;
-  myGroups: JSON;
+  myGroups: GroupsMap;
   userData: UserData | null;
   setUserData: (userData: UserData) => void;
   setIsTeacher: (isTeacher: boolean) => void;
-  setMyGroups: (groups: JSON) => void;
+  setMyGroups: (groups: GroupsMap) => void;
   login: (token: string, userId: string, isTeacher: boolean) => void;
   logout: () => void;
   sidebarItems: SidebarItem[];
@@ -63,7 +67,7 @@ const UserContext = createContext<UserContextType>({
   userId: null,
   isAuthenticated: false,
   isTeacher: false,
-  myGroups: {} as JSON,
+  myGroups: {} as GroupsMap,
   userData: null,
   setIsTeacher: () => { },
   login: () => { },
@@ -82,7 +86,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [isTeacher, setIsTeacher] = useState<boolean>(false);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [sidebarItems, setSidebarItems] = useState<SidebarItem[]>(defaultSidebarItems);
-  const [myGroups, setMyGroups] = useState<JSON>({} as JSON);
+  const [myGroups, setMyGroups] = useState<GroupsMap>({} as GroupsMap);
 
   useEffect(() => {
     if (sidebarItems !== defaultSidebarItems) {
@@ -109,14 +113,14 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         const data = await response.json();
         setUserData(data);
         setIsTeacher(data ? data.is_teacher : false);
-        let groups = {} as JSON;
+        let groups = {} as GroupsMap;
         console.log(data.groups);
         for (const group of data.groups) {
           // Array of string "course_id:group_id"
           const [courseId, groupId] = group.split(':');
           (groups as any)[courseId as string] = groupId as string;
         }
-        setMyGroups(groups as JSON);
+        setMyGroups(groups as GroupsMap);
       } catch (error) {
         console.error('Error fetching user data:', error);
         toast.error('Failed to load user information');

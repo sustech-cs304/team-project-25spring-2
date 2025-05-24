@@ -39,7 +39,7 @@ export default function Assignment({ courseId }: AssignmentProps) {
   const [error, setError] = useState<string | null>(null);
   const { setSidebarItems, sidebarItems } = useUserContext();
   const router = useRouter();
-  const { token } = useUserContext();
+  const { token, myGroups } = useUserContext();
 
   useEffect(() => {
     const fetchAssignments = async () => {
@@ -110,13 +110,38 @@ export default function Assignment({ courseId }: AssignmentProps) {
     }
   }, [courseId]);
 
-  const handleStartAssignment = (assignmentId: string, assignmentName: string) => {
-    router.push(`/coding/${assignmentId}`);
+  const handleStartAssignment = async (assignmentId: string) => {
+    var result: any;
+    try {
+      const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/environment`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          course_id: courseId,
+          assignment_id: assignmentId,
+          group_id: myGroups[courseId] || null
+        })
+      });
+      if (!response.ok) {
+        throw new Error('Failed to start assignment environment');
+      }
+      result = await response.json();
+      console.log('Environment started successfully:', result);
+    }catch (error) {
+      console.error('Error starting assignment environment:', error);
+      setError('Failed to start assignment environment. Please try again later.');
+      return;
+    }
+    const environmentId = result.environment_id;  
+    router.push(`/coding/${environmentId}`);
     setSidebarItems([
       ...sidebarItems,
       {
-        title: "Coding " + assignmentName,
-        url: `/coding/${assignmentId}`,
+        title: "Coding " + environmentId,
+        url: `/coding/${environmentId}`,
         icon: "CodeXml"
       }
     ]);
@@ -407,7 +432,7 @@ export default function Assignment({ courseId }: AssignmentProps) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleStartAssignment(assignment.assignment_id, assignment.name)}
+                          onClick={() => handleStartAssignment(assignment.assignment_id)}
                           className="flex items-center gap-1 hover:gap-2 transition-all hover:text-primary"
                         >
                           <span>Start Assignment</span>
@@ -417,7 +442,7 @@ export default function Assignment({ courseId }: AssignmentProps) {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleStartAssignment(assignment.assignment_id, assignment.name)}
+                          onClick={() => handleStartAssignment(assignment.assignment_id)}
                           className="text-muted-foreground"
                         >
                           <span>View Details</span>
