@@ -71,5 +71,5 @@ To generate the test coverage report.
 run
 
 ```
-cd backend && pytest --cov=app test/
+cd backend && python -m pytest --cov=app test/
 ```
