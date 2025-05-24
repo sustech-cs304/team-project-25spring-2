@@ -4,7 +4,7 @@ WORKDIR /app
 COPY uv.lock pyproject.toml entrypoint.sh .
 COPY app/ test/ .
 
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen && chmod +x entrypoint.sh
 ENV PATH="/app/.venv/bin:$PATH"
 
-CMD ["./entrypoint.sh"]
+ENTRYPOINT ["/bin/sh"]

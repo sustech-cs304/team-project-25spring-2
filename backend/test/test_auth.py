@@ -2,9 +2,20 @@ import uuid
 import random
 import string
 from fastapi.testclient import TestClient
+import pytest
 from app.main import app
 
 client = TestClient(app)
+
+from app.db import Base, engine
+
+@pytest.fixture(autouse=True)
+def run_around_tests():
+    # Startup: setup database
+    Base.metadata.reflect(bind=engine)
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+    yield
 
 
 def generate_random_string(length=8):

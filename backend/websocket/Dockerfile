@@ -8,9 +8,9 @@ ENV PORT=1234
 
 RUN apk add --no-cache python3 build-base && \
     apk update && \
-    npm install
+    npm install && chmod +x entrypoint.sh
 
 EXPOSE 1234
 EXPOSE 4000
 
-CMD ["./entrypoint.sh"]
+ENTRYPOINT ["./entrypoint.sh"]
