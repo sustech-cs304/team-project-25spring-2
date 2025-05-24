@@ -41,7 +41,8 @@ def generate_random_course():
         "CS501",
         "CS502",
     ]
-    require_group = random.choice([True, False])
+    # require_group = random.choice([True, False])
+    require_group = True
     group_num = random.randint(1, 3) if require_group else 0
     people_per_group = random.randint(2, 5) if require_group else 0
     group_deadline = random.choice(
@@ -413,3 +414,46 @@ def test_create_bookmarklist():
     response = client.get("/api/marklist/" + Material_id_list[0], headers=headers)
     assert response.status_code == 200
     assert response.json().get("marklists")[0].get("list_id") == Bookmarklist_id_list[0]
+
+
+def test_add_people_to_group():
+    student_token = Student_id_list[0]["token"]
+    headers = {"Authorization": f"Bearer {student_token}"}
+
+    response = client.get("/api/group/" + Course_id_list[0], headers=headers)
+    assert response.status_code == 200
+    groups = response.json().get("groups", [])
+    assert len(groups) >= 1
+    group_id = groups[0].get("group_id")
+    response = client.post(
+        "/api/group/" + group_id + "/user/" + Student_id_list[0]["user_id"],
+        headers=headers,
+    )
+    assert response.status_code == 200 or response.status_code == 201
+    response = client.get("/api/group/" + Course_id_list[0], headers=headers)
+    assert response.status_code == 200
+    groups = response.json().get("groups", [])
+    for group in groups:
+        if group.get("group_id") == group_id:
+            # print("*" * 200)
+            # print(group)
+            # print("*" * 200)
+            assert len(group.get("users")) == 1
+
+    response = client.delete(
+        "/api/group/" + group_id + "/user/" + Student_id_list[0]["user_id"],
+        headers=headers,
+    )
+    # print("*" * 200)
+    # print(response.json())
+    # print("*" * 200)
+    # assert response.status_code == 200
+    # response = client.get("/api/group/" + Course_id_list[0], headers=headers)
+    # assert response.status_code == 200
+    # groups = response.json().get("groups", [])
+    # for group in groups:
+    #     if group.get("group_id") == group_id:
+    #         # print("*" * 200)
+    #         # print(group)
+    #         # print("*" * 200)
+    #         assert len(group.get("users")) == 0

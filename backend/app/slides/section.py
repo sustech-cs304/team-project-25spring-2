@@ -79,7 +79,8 @@ async def create_section(
                 db.query(Course).filter(Course.course_id == section.course_id).first()
             )
             if origin_course is not None:
-                origin_course.sections.remove(section_id)
+                new_sections = [section for section in origin_course.sections if section != section_id]
+                setattr(origin_course, "sections", new_sections)
             new_course = db.query(Course).filter(Course.course_id == course_id).first()
             if new_course is not None:
                 new_course.sections = new_course.sections + [section_id]

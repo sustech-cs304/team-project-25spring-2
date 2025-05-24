@@ -46,6 +46,7 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
         email=user_data.email,
         is_teacher=user_data.is_teacher,
         courses=[],
+        groups=[],
     )
 
     db.add(db_user)
