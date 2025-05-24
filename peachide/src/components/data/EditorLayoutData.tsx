@@ -1,41 +1,79 @@
-import useSWR from 'swr';
-
-const fetcher = (url: string, token: string | null) => {
-  return fetch(url, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  }).then((res) => res.json());
-};
-
-export const getEditorLayout = (projectId: string, token: string | null) => {
-  const { data, error, isLoading } = useSWR(process.env.NEXT_PUBLIC_API_URL + `/environment/${projectId}/layout`, (url) => fetcher(url, token));
-  return {
-    data,
-    error,
-    isLoading
-  };
-};
-
-export const getConnectionUrl = async (projectId: string, token: string | null) => {
-
-  try {
-    const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/environment/${projectId}/collaboration/url`, {
-      method: 'GET',
-      credentials: 'include', // This ensures cookies are sent with the request
-      headers: {
-        'Authorization': `Bearer ${token}`
+export const defaultLayout = {
+  global: {
+    "splitterEnableHandle": true,
+    "tabSetEnableActiveIcon": true,
+    "tabSetMinWidth": 130,
+    "tabSetMinHeight": 100,
+    "tabSetEnableTabScrollbar": true,
+    "borderMinSize": 100,
+    "borderEnableTabScrollbar": true,
+  },
+  borders: [],
+  layout: {
+    type: "row",
+    weight: 100,
+    children: [
+      {
+        type: "tabset",
+        weight: 100,
+        id: "main",
+        children: []
       }
-    });
+    ]
+  }
+};
+
+export const getEditorLayout = async (env_id: string) => {
+  try {
+    const response = await fetch(
+      process.env.NEXT_PUBLIC_API_URL + `/environment/${env_id}/layout`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
 
     if (!response.ok) {
-      throw new Error('Failed to get collaboration URL');
+      return defaultLayout;
     }
 
     const data = await response.json();
-    return data.url;
-  } catch (error) {
-    console.error('Error getting collaboration URL:', error);
-    return 'ws://localhost:1234';
+
+    if (!data || !("layout" in data)) {
+      return defaultLayout;
+    }
+
+    const layout = data.layout;
+
+    if (
+      layout == null ||
+      (typeof layout === 'string' && layout.trim() === '') ||
+      (typeof layout === 'object' && Object.keys(layout).length === 0)
+    ) {
+      return defaultLayout;
+    }
+
+    return layout;
+  } catch (e) {
+    return defaultLayout;
   }
+};
+
+export const saveEditorLayout = async (env_id: string, layout: string) => {
+  const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/environment/${env_id}/layout`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ layout })
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to save layout');
+  }
+  return;
 };
 
 export const getLanguageFromFileName = (fileName: string): string => {

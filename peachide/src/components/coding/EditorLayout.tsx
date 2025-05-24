@@ -6,36 +6,9 @@ import TerminalComponent from "@/components/coding/Terminal";
 import { TreeNode } from "@/components/data/CodeEnvType";
 import EditorToolbar from "./EditorToolbar";
 import { PDFComponent } from "@/components/pdf/PDFComponent";
-import { getConnectionUrl, getLanguageFromFileName } from "../data/EditorLayoutData";
+import { defaultLayout, getEditorLayout, getLanguageFromFileName, saveEditorLayout } from "../data/EditorLayoutData";
 import CollaboratedEditorComponent from "./CollaboratedEditor";
 import { UserInfo } from "./CollaboratedEditor";
-import { useUserContext } from "@/app/UserEnvProvider";
-
-// Default layout configuration
-var defaultLayout = {
-  global: {
-    "splitterEnableHandle": true,
-    "tabSetEnableActiveIcon": true,
-    "tabSetMinWidth": 130,
-    "tabSetMinHeight": 100,
-    "tabSetEnableTabScrollbar": true,
-    "borderMinSize": 100,
-    "borderEnableTabScrollbar": true,
-  },
-  borders: [],
-  layout: {
-    type: "row",
-    weight: 100,
-    children: [
-      {
-        type: "tabset",
-        weight: 100,
-        id: "main",
-        children: []
-      }
-    ]
-  }
-};
 
 interface EditorLayoutProps {
   environmentId: string;
@@ -49,6 +22,16 @@ const EditorLayout = ({ environmentId, onToggleFileSystemBar, selectedFile }: Ed
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [activeUsersByEditor, setActiveUsersByEditor] = useState<Record<string, UserInfo[]>>({});
   const layoutRef = useRef<Layout>(null);
+
+  useEffect(() => {
+    getEditorLayout(environmentId).then(layout => {
+      setModel(Model.fromJson(layout));
+    });
+
+    return () => {
+      saveEditorLayout(environmentId, JSON.stringify(model.toJson()));
+    };
+  }, [environmentId, model]);
 
   const handleEditorUsersChange = useCallback((editorId: string, users: UserInfo[]) => {
     setActiveUsersByEditor(prev => {

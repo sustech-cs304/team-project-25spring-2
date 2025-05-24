@@ -26,7 +26,7 @@ export default function Coding({ params }: { params: Promise<{ id: string }> }) 
         onFileSelect={handleFileSelect}
       />
       <EditorLayout 
-        projectId={resolvedParams.id}
+        environmentId={resolvedParams.id}
         onToggleFileSystemBar={toggleFileSystemBar}
         selectedFile={selectedFile}
       />
