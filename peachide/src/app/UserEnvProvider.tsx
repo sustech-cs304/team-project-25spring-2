@@ -138,6 +138,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
     if (storedSidebarItems) {
       setSidebarItems(JSON.parse(storedSidebarItems));
+      console.log("storedSidebarItems", JSON.parse(storedSidebarItems));
     }
   }, []);
 
@@ -151,9 +152,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     if (newIsTeacher) {
       setSidebarItems([...defaultSidebarItems, ...teacherSidebarItems]);
       localStorage.setItem('sidebarItems', JSON.stringify([...defaultSidebarItems, ...teacherSidebarItems]));
+      console.log("teacherSidebarItems", [...defaultSidebarItems, ...teacherSidebarItems]);
     } else {
       setSidebarItems([...defaultSidebarItems, ...studentSidebarItems]);
       localStorage.setItem('sidebarItems', JSON.stringify([...defaultSidebarItems, ...studentSidebarItems]));
+      console.log("studentSidebarItems", [...defaultSidebarItems, ...studentSidebarItems]);
     }
   };
 

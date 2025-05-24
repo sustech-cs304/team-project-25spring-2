@@ -58,7 +58,7 @@ export default function AuthPage() {
 
       const data = await response.json();
       // data: { token, user_id, is_teacher }
-      login(data.token, data.user_id, data.is_teacher);
+      login(data.token, data.user_id, data.is_teacher === 'True');
       router.push('/');
       toast.success('Logged in successfully');
     } catch (error) {
