@@ -57,9 +57,15 @@ async def delete_group(
     if group is None:
         return {"message": "Group not found"}
     else:
-        group.users = [user for user in group.users if user != user_id]
+        new_users = [user for user in group.users if user != user_id]
+        setattr(group, "users", new_users)
+        user = db.query(User).filter(User.user_id == user_id).first()
+        new_groups = [group for group in user.groups if group.split(":")[1] != group_id]
+        setattr(user, "groups", new_groups)
         db.commit()
-        return {"message": "User deleted from group"}
+        db.refresh(user)
+        db.refresh(group)
+        return {"message": "User deleted from group", "group_users": new_users, "user_groups": new_groups}
 
 
 @router.post("/group/{group_id}/user/{user_id}")
@@ -80,8 +86,10 @@ async def add_user_to_group(
     if user.user_id in group.users:
         return {"message": "User already in group"}
 
-    group.users = group.users + [user.user_id]
+    group.users = group.users + [user.user_id]  
+    user.groups = user.groups + [f"{group.course_id}:{group.group_id}"]
     db.commit()
-
+    db.refresh(user)
+    db.refresh(group)
     print("USER", user.user_id, "GROUP", group.users)
     return {"message": "User added to group"}

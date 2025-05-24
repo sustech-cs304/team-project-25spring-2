@@ -106,7 +106,8 @@ async def update_material(
                 .first()
             )
             if origin_section is not None:
-                origin_section.materials.remove(material_id)
+                new_materials = [material for material in origin_section.materials if material != material_id]
+                setattr(origin_section, "materials", new_materials)
             new_section = (
                 db.query(Section).filter(Section.section_id == section_id).first()
             )
@@ -150,7 +151,10 @@ async def delete_material(
         db.query(Section).filter(Section.section_id == material.section_id).first()
     )
     if section is not None and material_id in section.materials:
-        section.materials.remove(material_id)
+        new_materials = [material for material in section.materials if material != material_id]
+        setattr(section, "materials", new_materials)
+        db.commit()
+        db.refresh(section)
     db.delete(material)
     db.commit()
     return {"message": "Material deleted successfully"}
