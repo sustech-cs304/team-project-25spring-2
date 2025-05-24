@@ -5,7 +5,7 @@ from datetime import datetime
 import uuid
 from pydantic import BaseModel
 
-class File(Base):
+class FileDB(Base):
     __tablename__ = "files"
 
     file_id = Column(UUID, primary_key=True, default=lambda: str(uuid.uuid4()))
