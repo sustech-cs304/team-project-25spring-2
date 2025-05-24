@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { useUserContext } from "@/app/UserEnvProvider";
 import { v4 as uuidv4 } from 'uuid';
 import { AIChatButton } from '@/components/ai/AIChatButton';
+import AIQuizButton from "@/components/ai/AIQuiz";
 
 const EditorComp = dynamic(() =>
     import('../../../components/editors/markdown-editor'), { ssr: false });
@@ -493,7 +494,10 @@ export default function Slides({ params }: {
                     </Tabs>
                 </ResizablePanel>
             </ResizablePanelGroup>
-            <AIChatButton materialId={material?.material_id} />
+            <div className="flex flex-col gap-2 mt-2 fixed bottom-20 right-8 z-[5000]">
+                <AIQuizButton materialId={material?.material_id || ''} />
+                <AIChatButton materialId={material?.material_id || ''} />
+            </div>
         </motion.div>
     );
 }
