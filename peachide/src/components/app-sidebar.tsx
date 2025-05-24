@@ -32,13 +32,17 @@ function PeachSidebarHeader() {
 }
 
 function FirstSidebar({ userInfo }: { userInfo: any }) {
-    const { sidebarItems, setSidebarItems } = useUserContext();
+    const { sidebarItems, setSidebarItems, isTeacher } = useUserContext();
 
     const router = useRouter();
 
     const handleCloseSidebarItem = (itemUrl: string) => {
         setSidebarItems(sidebarItems.filter(item => item.url !== itemUrl));
-        router.push("/classes");
+        if (isTeacher) {
+            router.push("/manage");
+        } else {
+            router.push("/classes");
+        }
     };
 
     return (<Sidebar collapsible="icon"
