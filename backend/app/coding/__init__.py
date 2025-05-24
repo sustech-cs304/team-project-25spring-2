@@ -30,7 +30,7 @@ async def websocket_endpoint(
     env_id: str,
     db: Session = Depends(get_db),
 ):
-    env = db.query(Environment).filter(Environment.id == env_id).first()
+    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     
@@ -65,7 +65,7 @@ async def terminal_endpoint(
     env_id: str,
     db: Session = Depends(get_db),
 ):
-    env = db.query(Environment).filter(Environment.id == env_id).first()
+    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     
@@ -130,7 +130,7 @@ async def get_environment_files(
     current_user: User = Depends(get_current_user)
 ):
     # TODO: add auth check
-    env = db.query(Environment).filter(Environment.id == env_id).first()
+    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     
@@ -152,7 +152,7 @@ async def create_environment_file(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    env = db.query(Environment).filter(Environment.id == env_id).first()
+    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     env_path = f"/app/data/{env_id}/{file_path}"
@@ -168,7 +168,7 @@ async def update_environment_file(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    env = db.query(Environment).filter(Environment.id == env_id).first()
+    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     
@@ -194,7 +194,7 @@ async def delete_environment_file(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    env = db.query(Environment).filter(Environment.id == env_id).first()
+    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     
@@ -217,7 +217,7 @@ async def create_environment_directory(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    env = db.query(Environment).filter(Environment.id == env_id).first()
+    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     
@@ -238,7 +238,7 @@ async def update_environment_directory(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    env = db.query(Environment).filter(Environment.id == env_id).first()
+    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     
@@ -269,7 +269,7 @@ async def delete_environment_directory(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    env = db.query(Environment).filter(Environment.id == env_id).first()
+    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     
@@ -292,7 +292,7 @@ async def save_environment_layout(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    env = db.query(Environment).filter(Environment.id == env_id).first()
+    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     
@@ -318,7 +318,7 @@ async def get_environment_layout(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    env = db.query(Environment).filter(Environment.id == env_id).first()
+    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     
@@ -382,9 +382,9 @@ async def get_environment(
 
 def check_environment(env_id: str, id: str, is_group: bool, db: Session = Depends(get_db)):
     if is_group:
-        env = db.query(Environment).filter(Environment.id == env_id, Environment.group_id == id, Environment.is_collaborative == True).first()
+        env = db.query(Environment).filter(Environment.environment_id == env_id, Environment.group_id == id, Environment.is_collaborative == True).first()
     else:
-        env = db.query(Environment).filter(Environment.id == env_id, Environment.user_id == id, Environment.is_collaborative == False).first()
+        env = db.query(Environment).filter(Environment.environment_id == env_id, Environment.user_id == id, Environment.is_collaborative == False).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     return env
