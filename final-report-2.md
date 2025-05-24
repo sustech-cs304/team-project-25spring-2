@@ -4,29 +4,29 @@
 
 - Lines of Code:
 - Number of source files:
-- Cyclomatic complexity
-- Number of dependencies
+- Cyclomatic complexity:
+- Number of dependencies:
 
 ## Documentation
 
 ### Documentation for end users
-#TODO
+
+See https://github.com/sustech-cs304/team-project-25spring-2/wiki/User-Guide
+
 ### Documentation for developers
-API Documentation: [📖](https://peach.benx.dev/docs)
+
+API Documentation: https://peach.benx.dev/docs
+
 ## Tests
 
-### 1. Technology/Tools/Frameworks/Approaches Used for Automatic Testing
+### Core Testing Framework
 
-#### **Core Testing Framework:**
-- **pytest** - Python's modern testing framework for running and organizing tests
-- **pytest-cov** - Coverage plugin for measuring test effectiveness
-- **pytest-asyncio** - Support for testing asynchronous FastAPI endpoints
+- **pytest** Python's modern testing framework for running and organizing tests
+    - **pytest-cov** Coverage plugin for measuring test effectiveness
+    - **pytest-asyncio** Support for testing asynchronous FastAPI endpoints
 
-#### **API Testing Tools:**
-- **FastAPI TestClient** - Dedicated test client for FastAPI applications
-- **httpx** - Modern HTTP client used by TestClient
+### Testing Approaches
 
-### **Testing Approaches:**
 - **Integration Testing**: End-to-end testing that simulates real user workflows
 - **Random Data Generation**: Using `uuid`, `random`, and `string` modules to ensure test isolation
 - **Authentication Testing**: Comprehensive JWT token authentication flow testing
@@ -34,13 +34,14 @@ API Documentation: [📖](https://peach.benx.dev/docs)
 
 ### 2. Source Code or Related Artifact
 
-- `test_auth.py` - Authentication and authorization testing
-- `test_data_generation.py` - Comprehensive integration testing
-- `test_config.py` - Test environment configuration
+- `test_config.py` Test environment configuration
+- `test_auth.py` Authentication and authorization testing
+- `test_data_generation.py` Comprehensive integration testing
 
-> Test Repository: [🧪](https://github.com/sustech-cs304/team-project-25spring-2/tree/backend/backend/test)
+> Test Repository: https://github.com/sustech-cs304/team-project-25spring-2/blob/main/backend/test
 
 ### 3. Test Coverage report
+
 ```
 test/test_auth.py ....                                                                                                                                            [ 33%]
 test/test_data_generation.py ........                                                                                                                             [100%]
@@ -89,19 +90,58 @@ app/slides/user.py              31      2    94%
 TOTAL                         1283    527    59%
 ========================================================================== 12 passed in 5.51s ===========================================================================
 ```
+
 ## Build
-### 1. Technology/Tools/Frameworks/Approaches Used for Automatic Testing
-### 2. 
-### 3. Final Artifacts
-- **CI** - [📖](https://github.com/sustech-cs304/team-project-25spring-2/tree/backend/.github/workflows)
-- **Actions** - [📦](https://github.com/sustech-cs304/team-project-25spring-2/actions)
+
+We use Dockerfile as our build scripts.
+
+Frontend uses Next.js for building the frontend application, which compiles to
+static html/css/js files as a standalone web application.
+
+Backend is empowered by FastAPI. As it is a Python application, it does not require compilation. The dependencies are managed by `uv`. `uv` uses a venv environment for development and deployment.
+
+Inside backend system, user's coding environment is containerized in pods of Kubernetes. Every pod has a tiny websocket server powered by node.js, which also runs as it is.
+
+### Tasks
+
+We use GitHub Actions for automated build. In the CI/CD pipeline, it
+1. Setup environment
+2. Resolve dependencies and build the project (involves compiler linting)
+3. Build Docker images
+4. Push Docker images to GitHub Container Registry
+
+In development, we do the following manually:
+1. Format code (`ruff` for Python, `ES6 Linter` for Typescript)
+2. Run tests (`pytest` for Python)
+
+### Final Artifacts
+
+Our artifacts are the source code of the project, and Docker images stored in GitHub Container Registry (ghcr.io).
+- **Actions** - https://github.com/sustech-cs304/team-project-25spring-2/actions
+
+### Build Artifacts
+
+- CI/CD workflow: https://github.com/sustech-cs304/team-project-25spring-2/tree/backend/.github/workflows
+- Frontend: https://github.com/sustech-cs304/team-project-25spring-2/blob/main/peachide/Dockerfile
+- Backend: https://github.com/sustech-cs304/team-project-25spring-2/blob/main/backend/Dockerfile
+- User Environment: https://github.com/sustech-cs304/team-project-25spring-2/blob/main/backend/websocket/Dockerfile
+
 ### 4. BuildFile
+
 1. Backend README: 
-- **Documentation** - [📖](https://github.com/sustech-cs304/team-project-25spring-2/blob/backend/backend/README.md)
-- **Package management** - [📦](https://github.com/sustech-cs304/team-project-25spring-2/blob/backend/backend/uv.lock) 
+- **Documentation** https://github.com/sustech-cs304/team-project-25spring-2/blob/main/backend/README.md
+- **Package management** https://github.com/sustech-cs304/team-project-25spring-2/blob/main/backend/pyproject.toml
 2. Frontend README: 
-- **Documentation** - [📖](https://github.com/sustech-cs304/team-project-25spring-2/blob/frontend/peachide/README.md)
-- **Package management** - [📦](https://github.com/sustech-cs304/team-project-25spring-2/blob/frontend/peachide/package.json) 
+- **Documentation** https://github.com/sustech-cs304/team-project-25spring-2/blob/main/peachide/README.md
+- **Package management** https://github.com/sustech-cs304/team-project-25spring-2/blob/main/peachide/package.json
+
 ## Deployment
 
-[🚀](https://github.com/sustech-cs304/team-project-25spring-2/wiki/Deployment)
+PeachIDE is deployed on a cloud server with Kubernetes (K3S) and Docker
+- K8S Deployments: frontend, backend, and database
+- Traefik ingress: gateway for routing to all services. [ Dashboard ](https://traefik.peach.benx.dev/)
+- Docker: hosting code execution engine, which needs to be separated from K8S.
+
+To automatically deploy our project, we use GitHub Actions to deploy to our server. The deployment can be publicly accessed via https://peach.benx.dev.
+
+See https://github.com/sustech-cs304/team-project-25spring-2/wiki/Deployment for deployment instructions.
