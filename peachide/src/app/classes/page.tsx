@@ -14,6 +14,7 @@ import Instructors from "@/app/classes/Instructors";
 import Lecture from "@/app/classes/Lecture";
 import Assignment from "@/app/classes/Assignment";
 import { useUserContext } from "../UserEnvProvider";
+import Group from "./Group";
 
 // Course type definition based on API response
 interface Course {
@@ -139,8 +140,8 @@ function ClassesLeftBar({ props, isVisible, onSelectCourse, selectedCourseId }: 
         setLoading(false);
       }
     };
-    if(token==null){
-        return;
+    if (token == null) {
+      return;
     }
     fetchCourses();
   }, [token]);
@@ -206,7 +207,7 @@ function ClassesLeftBar({ props, isVisible, onSelectCourse, selectedCourseId }: 
   );
 }
 
-type Tab = 'course-info' | 'instructors' | 'lecture' | 'assignment';
+type Tab = 'course-info' | 'instructors' | 'lecture' | 'assignment' | 'group';
 
 function ClassesRightBar({
   props,
@@ -248,6 +249,8 @@ function ClassesRightBar({
         return <Lecture courseId={selectedCourse.course_id} />;
       case 'assignment':
         return <Assignment courseId={selectedCourse.course_id} />;
+      case 'group':
+        return <Group courseId={selectedCourse.course_id} />;
       default:
         return null;
     }
@@ -285,6 +288,12 @@ function ClassesRightBar({
               onClick={() => setActiveTab('assignment')}
             >
               Assignment
+            </TabButton>
+            <TabButton
+              active={activeTab === 'group'}
+              onClick={() => setActiveTab('group')}
+            >
+              Group
             </TabButton>
           </div>
           <div className="flex-1 overflow-y-auto overflow-x-hidden">
