@@ -36,8 +36,11 @@ async def websocket_endpoint(
     
     await websocket.accept()
     
+    port = 1234 # Default port for WebSocket connection
+    websocket_url = f"{env.wsUrl}:{port}"
+        
     try:
-        async with websockets.connect(env.wsUrl) as internal_ws:
+        async with websockets.connect(websocket_url) as internal_ws:
             client_to_internal = asyncio.create_task(forward_messages(websocket, internal_ws))
             internal_to_client = asyncio.create_task(forward_messages(internal_ws, websocket))
             
@@ -55,7 +58,42 @@ async def websocket_endpoint(
         print(f"Unexpected error: {e}")
     finally:
         await websocket.close()
-
+        
+@router.websocket("/terminal/{env_id}")
+async def terminal_endpoint(
+    websocket: WebSocket,
+    env_id: str,
+    db: Session = Depends(get_db),
+):
+    env = db.query(Environment).filter(Environment.id == env_id).first()
+    if not env:
+        raise HTTPException(status_code=404, detail="Environment not found")
+    
+    await websocket.accept()
+    
+    port = 4000 # Default port for WebSocket connection
+    websocket_url = f"{env.wsUrl}:{port}"
+        
+    try:
+        async with websockets.connect(websocket_url) as internal_ws:
+            client_to_internal = asyncio.create_task(forward_messages(websocket, internal_ws))
+            internal_to_client = asyncio.create_task(forward_messages(internal_ws, websocket))
+            
+            done, pending = await asyncio.wait(
+                [client_to_internal, internal_to_client],
+                return_when=asyncio.FIRST_COMPLETED
+            )
+            
+            for task in pending:
+                task.cancel()
+                
+    except websockets.exceptions.WebSocketException as e:
+        print(f"WebSocket error: {e}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+    finally:
+        await websocket.close()
+    
 async def forward_messages(source, destination):
     try:
         while True:
@@ -289,13 +327,6 @@ async def get_environment_layout(
         "layout": env.layout,
     }
 
-@router.post("/terminal/{env_id}")
-async def terminal_exec(
-    env_id: str,
-    command: str,
-):
-    return exec_pod(env_id, command)
-
 @router.get("/file/{env_id}/pdf")
 async def get_pdf_file(
     env_id: str,
@@ -324,16 +355,16 @@ async def get_environment(
     newly_created = False
     env = check_environment(assign_id, current_user.id if not is_group else group_id, is_group, db)
     if not env:
+        name = create_pod(core_v1, env_id)
         if is_group:
-            env = Environment(assignment_id=assign_id, group_id=group_id, is_collaborative=True)
+            env = Environment(assignment_id=assign_id, group_id=group_id, is_collaborative=True, wsUrl=f"ws://{name}")
         else:
-            env = Environment(assignment_id=assign_id, user_id=current_user.id, is_collaborative=False)
+            env = Environment(assignment_id=assign_id, user_id=current_user.id, is_collaborative=False, wsUrl=f"ws://{name}")
         db.add(env)
         db.commit()
         db.refresh(env)
         newly_created = True
     env_id = env.id
-    create_pod(core_v1, env_id)
     if newly_created:
         assign = db.query(Assignment).filter(Assignment.id == assign_id).first()
         if not assign:

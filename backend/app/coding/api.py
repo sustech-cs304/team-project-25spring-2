@@ -48,7 +48,7 @@ def create_pod(api_instance, env_id):
         if resp.status.phase != 'Pending':
             break
         time.sleep(1)
-    print("Done.")
+    return name
 
 
 def exec_pod(api_instance, env_id: str, cmd: str):
