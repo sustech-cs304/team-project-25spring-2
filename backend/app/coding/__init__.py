@@ -6,6 +6,7 @@ from app.models.user import User
 from app.models.group import Group
 from app.models.environment import Environment
 from app.models.assignment import Assignment
+from app.models.course import Course
 from app.models.file import FileDB
 from typing import Annotated, List, Dict, Any
 from kubernetes import config, client
@@ -345,7 +346,7 @@ async def get_pdf_file(
 
 @router.post("/environment")
 async def get_environment(
-    is_group: bool,
+    course_id: str,
     assign_id: str,
     group_id: str,
     db: Session = Depends(get_db),
@@ -353,6 +354,10 @@ async def get_environment(
 ):
     core_v1 = client.CoreV1Api()
     newly_created = False
+    course = db.query(Course).filter(Course.id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    is_group = course.require_group
     env = check_environment(assign_id, current_user.id if not is_group else group_id, is_group, db)
     if not env:
         name = create_pod(core_v1, env_id)
@@ -364,7 +369,7 @@ async def get_environment(
         db.commit()
         db.refresh(env)
         newly_created = True
-    env_id = env.id
+    env_id = env.environment_id
     if newly_created:
         assign = db.query(Assignment).filter(Assignment.id == assign_id).first()
         if not assign:
