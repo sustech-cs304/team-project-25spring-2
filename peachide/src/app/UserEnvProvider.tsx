@@ -107,6 +107,16 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         const data = await response.json();
+
+        // Convert photo base64 to data URL if needed
+        if (data.photo && !data.photo.startsWith('data:')) {
+          // Backend returns pure base64, convert to data URL
+          // Assume JPEG format by default, but detect PNG if it starts with PNG signature
+          const isPNG = data.photo.startsWith('iVBORw0KGgo'); // PNG base64 signature
+          const mimeType = isPNG ? 'image/png' : 'image/jpeg';
+          data.photo = `data:${mimeType};base64,${data.photo}`;
+        }
+
         setUserData(data);
         setIsTeacher(data ? data.is_teacher : false);
         let groups = {} as JSON;
