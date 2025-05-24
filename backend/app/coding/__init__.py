@@ -324,7 +324,6 @@ async def get_environment(
     newly_created = False
     env = check_environment(assign_id, current_user.id if not is_group else group_id, is_group, db)
     if not env:
-        # create environment
         if is_group:
             env = Environment(assignment_id=assign_id, group_id=group_id, is_collaborative=True)
         else:
