@@ -128,7 +128,7 @@ export default function Instructors({ courseId }: InstructorsProps) {
                   </div>
                 </div>
               </CardHeader>
-              {/* <CardContent className="text-center pb-6">
+              <CardContent className="text-center pb-6">
                 <div className="space-y-3">
                   <div className="flex items-center justify-center gap-2">
                     <Clock size={16} className="text-primary" />
@@ -143,7 +143,7 @@ export default function Instructors({ courseId }: InstructorsProps) {
                     </p>
                   </div>
                 </div>
-              </CardContent> */}
+              </CardContent>
             </Card>
           </motion.div>
         ))}
