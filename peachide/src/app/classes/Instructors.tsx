@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { SmartAvatar } from '@/components/ui/smart-avatar';
 import { GraduationCap, Clock, MapPin, Users } from 'lucide-react';
 import { useUserContext } from '../UserEnvProvider';
 
@@ -96,14 +96,6 @@ export default function Instructors({ courseId }: InstructorsProps) {
     show: { opacity: 1, y: 0, transition: { duration: 0.5 } }
   };
 
-  const getInitials = (name: string) => {
-    return name.split(' ')
-      .map(part => part.charAt(0))
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
-  };
-
   return (
     <motion.div
       className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto space-y-6"
@@ -122,10 +114,11 @@ export default function Instructors({ courseId }: InstructorsProps) {
               <CardHeader className="pb-2">
                 <div className="flex flex-col items-center">
                   <div className="mb-4 relative">
-                    <Avatar className="h-24 w-24 border-4 border-primary/20 shadow-md">
-                      <AvatarImage src={teacher.photo} alt={teacher.name} />
-                      <AvatarFallback>{getInitials(teacher.name)}</AvatarFallback>
-                    </Avatar>
+                    <SmartAvatar
+                      className="h-24 w-24 border-4 border-primary/20 shadow-md"
+                      photo={teacher.photo}
+                      name={teacher.name}
+                    />
                   </div>
                   <div className="flex items-center justify-center gap-2">
                     <CardTitle className="text-xl font-bold text-center">{teacher.name}</CardTitle>

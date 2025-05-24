@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { SmartAvatar } from "@/components/ui/smart-avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -243,12 +244,12 @@ export default function Home() {
                 <>
                   {/* Avatar Section */}
                   <div className="relative group">
-                    <Avatar className="h-24 w-24 border-2 border-primary">
-                      <AvatarImage src={previewPhoto || userData.photo} alt={userData.name} />
-                      <AvatarFallback>{getInitials(userData.name)}</AvatarFallback>
-                    </Avatar>
-                    {isEditing && (
+                    {isEditing ? (
                       <>
+                        <Avatar className="h-24 w-24 border-2 border-primary">
+                          <AvatarImage src={previewPhoto || userData.photo} alt={userData.name} />
+                          <AvatarFallback>{getInitials(userData.name)}</AvatarFallback>
+                        </Avatar>
                         {/* Overlay */}
                         <div
                           className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center cursor-pointer hover:bg-black/60 transition-colors"
@@ -266,6 +267,12 @@ export default function Home() {
                           {/*</span>*/}
                         </div>
                       </>
+                    ) : (
+                      <SmartAvatar
+                        name={userData.name}
+                        photo={userData.photo}
+                        className="h-24 w-24 border-2 border-primary"
+                      />
                     )}
                     <input
                       type="file"

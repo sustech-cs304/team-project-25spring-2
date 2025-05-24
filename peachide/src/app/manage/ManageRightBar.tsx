@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { SmartAvatar } from "@/components/ui/smart-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import debounce from 'lodash/debounce';
@@ -56,15 +57,6 @@ interface SearchResult {
 
 // Student Component - more compact design for students
 const StudentCard = ({ student }: { student: Student }) => {
-  // Convert first letters of name to initials for avatar
-  const getInitials = (name: string) => {
-    return name.split(' ')
-      .map(part => part.charAt(0))
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -73,10 +65,7 @@ const StudentCard = ({ student }: { student: Student }) => {
     >
       <div className="flex items-center p-3 rounded-md border bg-background hover:shadow-sm transition-all">
         <div className="flex items-center space-x-3">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={student.photo} alt={student.name} />
-            <AvatarFallback>{getInitials(student.name)}</AvatarFallback>
-          </Avatar>
+          <SmartAvatar name={student.name} photo={student.photo} className="h-8 w-8" />
           <div>
             <p className="font-medium text-sm">{student.name}</p>
             <p className="text-xs text-muted-foreground">{student.email || 'No email available'}</p>
@@ -100,13 +89,12 @@ const TeacherCard = ({ teacher }: { teacher: Student }) => {
         <CardHeader className="pb-2">
           <div className="flex flex-col items-center">
             <div className="mb-4 relative">
-              <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-primary/20 shadow-md">
-                <Avatar className="w-full h-full">
-                  <AvatarImage src={teacher.photo} alt={teacher.name}
-                    className="w-full h-full object-cover" />
-                  <AvatarFallback className="text-2xl">{teacher.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-              </div>
+              <SmartAvatar
+                name={teacher.name}
+                photo={teacher.photo}
+                className="w-24 h-24 border-4 border-primary/20 shadow-md"
+                fallbackClassName="text-2xl"
+              />
             </div>
             <div className="flex items-center justify-center gap-2">
               <CardTitle className="text-lg font-bold text-center">{teacher.name}</CardTitle>
@@ -280,9 +268,7 @@ const AddUserDialog = ({
                   onClick={() => handleAddUser(user.user_id)}
                 >
                   <div className="flex items-center space-x-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
+                    <SmartAvatar name={user.name} />
                     <span>{user.name}</span>
                     {user.isTeacher && (
                       <Badge className="ml-2 bg-primary/20 text-primary">Teacher</Badge>
