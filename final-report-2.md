@@ -12,9 +12,7 @@
 ### Documentation for end users
 #TODO
 ### Documentation for developers
-1. Backend README: https://github.com/sustech-cs304/team-project-25spring-2/blob/backend/backend/README.md
-2. Frontend README: https://github.com/sustech-cs304/team-project-25spring-2/blob/frontend/peachide/README.md
-3. API Documentation: https://peach.benx.dev/docs
+API Documentation: [📖](https://peach.benx.dev/docs)
 ## Tests
 
 ### 1. Technology/Tools/Frameworks/Approaches Used for Automatic Testing
@@ -40,7 +38,7 @@
 - `test_data_generation.py` - Comprehensive integration testing
 - `test_config.py` - Test environment configuration
 
-> URL Links: https://github.com/sustech-cs304/team-project-25spring-2/tree/backend/backend/test
+> Test Repository: [🧪](https://github.com/sustech-cs304/team-project-25spring-2/tree/backend/backend/test)
 
 ### 3. Test Coverage report
 ```
@@ -92,7 +90,18 @@ TOTAL                         1283    527    59%
 ========================================================================== 12 passed in 5.51s ===========================================================================
 ```
 ## Build
-
+### 1. Technology/Tools/Frameworks/Approaches Used for Automatic Testing
+### 2. 
+### 3. Final Artifacts
+- **CI** - [📖](https://github.com/sustech-cs304/team-project-25spring-2/tree/backend/.github/workflows)
+- **Actions** - [📦](https://github.com/sustech-cs304/team-project-25spring-2/actions)
+### 4. BuildFile
+1. Backend README: 
+- **Documentation** - [📖](https://github.com/sustech-cs304/team-project-25spring-2/blob/backend/backend/README.md)
+- **Package management** - [📦](https://github.com/sustech-cs304/team-project-25spring-2/blob/backend/backend/uv.lock) 
+2. Frontend README: 
+- **Documentation** - [📖](https://github.com/sustech-cs304/team-project-25spring-2/blob/frontend/peachide/README.md)
+- **Package management** - [📦](https://github.com/sustech-cs304/team-project-25spring-2/blob/frontend/peachide/package.json) 
 ## Deployment
 
-https://github.com/sustech-cs304/team-project-25spring-2/wiki/Deployment
+[🚀](https://github.com/sustech-cs304/team-project-25spring-2/wiki/Deployment)
