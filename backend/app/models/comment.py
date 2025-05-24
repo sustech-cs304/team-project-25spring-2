@@ -11,7 +11,7 @@ class Comment(Base):
     content = Column(String, nullable=False)
     user_id = Column(String, ForeignKey("users.user_id"), index=True, nullable=False)
     material_id = Column(
-        UUID, ForeignKey("materials.material_id"), index=True, nullable=False
+        UUID, ForeignKey("materials.material_id", ondelete="CASCADE"), index=True, nullable=False
     )
     page = Column(Integer, nullable=False)
     ancestor_id = Column(UUID, nullable=True)

@@ -6,6 +6,14 @@ This is the backend guide for the PeachIDE project.
 
 ### Prerequisites
 
+0. Setup PostgreSQL database and set the environment variable
+
+```bash
+export POSTGRES_USER="YOUR_USERNAME"    # e.g. postgres is the default user
+export POSTGRES_PASSWORD="YOUR_PASSWORD"
+export POSTGRES_DB="YOUR_DATABASE_NAME" # e.g. postgres is the default database
+```
+
 1. Install `uv` the package manager
 
 ```bash
@@ -41,6 +49,12 @@ Run testing with pytest
 python3 -m pytest
 ```
 
+To generate the test coverage report, run
+
+```
+pytest --cov=app test/
+```
+
 ### Code Style
 
 ```
@@ -63,13 +77,4 @@ Create a new route with single py or a directory.
 
 ## Deployment
 
-TBD
-
-## Test Report
-
-To generate the test coverage report. 
-run
-
-```
-cd backend && pytest --cov=app test/
-```
+See https://github.com/sustech-cs304/team-project-25spring-2/wiki/Deployment

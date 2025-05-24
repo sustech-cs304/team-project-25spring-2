@@ -9,7 +9,7 @@ class Assignment(Base):
 
     assignment_id = Column(UUID, primary_key=True, index=True, default=lambda: str(uuid.uuid4()))
     name = Column(String, index=True)
-    course_id = Column(UUID, ForeignKey("courses.course_id"), index=True)
+    course_id = Column(UUID, ForeignKey("courses.course_id", ondelete="CASCADE"), index=True)
     teacher_id = Column(String, ForeignKey("users.user_id"), index=True)
     deadline = Column(String, index=True)
     is_over = Column(Boolean, index=True)
