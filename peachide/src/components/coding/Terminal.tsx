@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import 'xterm/css/xterm.css';
 import { useTheme } from 'next-themes';
-import { getCommandResponse } from '../data/TerminalData';
 
 interface TerminalComponentProps {
   env_id: string;
@@ -28,6 +27,7 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({ env_id }) => {
   const fitAddonRef = useRef<any | null>(null);
   const [isClient, setIsClient] = useState(false);
   const { resolvedTheme } = useTheme();
+  const socketURL = `${process.env.NEXT_PUBLIC_API_URL}/terminal/${env_id}`;
 
   useEffect(() => {
     setIsClient(true);
@@ -61,6 +61,7 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({ env_id }) => {
       const { Terminal } = await import('xterm');
       const { FitAddon } = await import('xterm-addon-fit');
       const { WebLinksAddon } = await import('xterm-addon-web-links');
+      const { AttachAddon } = await import('xterm-addon-attach');
 
       const currentTheme = resolvedTheme === 'dark' ? terminalTheme.dark : terminalTheme.light;
 
@@ -68,11 +69,17 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({ env_id }) => {
         cursorBlink: true,
         theme: currentTheme,
       });
+      
       const fitAddon = new FitAddon();
       const webLinksAddon = new WebLinksAddon();
 
+      const ws = new WebSocket(socketURL);
+      const attachAddon = new AttachAddon(ws);
+
       terminal.loadAddon(fitAddon);
       terminal.loadAddon(webLinksAddon);
+      terminal.loadAddon(attachAddon);
+
       if (terminalRef.current) {
         terminal.open(terminalRef.current);
         fitAddon.fit();
@@ -92,37 +99,7 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({ env_id }) => {
       }
 
       terminal.writeln('Welcome to PeachIDE Terminal');
-      terminal.writeln('Type "help" for available commands');
       terminal.writeln('');
-      const prompt = () => {
-        terminal.write('\r\n$ ');
-      };
-      prompt();
-
-      let commandBuffer = '';
-      terminal.onData((data) => {
-        switch (data) {
-          case '\r':
-            terminal.writeln('');
-            if (commandBuffer.trim().length > 0) {
-              handleCommand(commandBuffer);
-              commandBuffer = '';
-            }
-            terminal.write('\r\n$ ');
-            break;
-          case '\u007F':
-            if (commandBuffer.length > 0) {
-              commandBuffer = commandBuffer.substring(0, commandBuffer.length - 1);
-              terminal.write('\b \b');
-            }
-            break;
-          default:
-            if (data >= ' ' && data <= '~') {
-              commandBuffer += data;
-              terminal.write(data);
-            }
-        }
-      });
 
       const handleResize = () => {
         if (fitAddonRef.current) {
@@ -144,18 +121,6 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({ env_id }) => {
 
     loadTerminal();
   }, [isClient]);
-
-  const handleCommand = async (command: string) => {
-    const terminal = xtermRef.current;
-    if (!terminal) return;
-
-    const cmd = command.trim();
-    getCommandResponse(cmd, env_id).then((data) => {
-      for (const line of data.response) {
-        terminal.writeln(line);
-      }
-    });
-  };
 
   const bgColor = resolvedTheme === 'dark' ? '#1e1e1e' : '#f0f0f0';
 
