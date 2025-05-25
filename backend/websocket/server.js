@@ -10,7 +10,7 @@ import {
     docs,
 } from "./node_modules/@y/websocket-server/src/utils.js";
 
-const host = process.env.HOST || "localhost";
+const host = process.env.HOST || "0.0.0.0";
 const port = number.parseInt(process.env.PORT || "1234");
 const dataDir = process.env.DATA_DIR || "./data";
 
