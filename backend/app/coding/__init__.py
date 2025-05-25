@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, File, Body, Form
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, Form
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from app.db import get_db
@@ -8,7 +8,7 @@ from app.models.environment import Environment
 from app.models.assignment import Assignment
 from app.models.course import Course
 from app.models.file import FileDB
-from typing import Annotated, List, Dict, Any
+from typing import Dict, Any
 from kubernetes import config, client
 from app.auth.middleware import get_current_user
 from .api import *
@@ -16,7 +16,6 @@ import os
 import websockets
 import asyncio
 import shutil
-import json
 import base64
 
 router = APIRouter()
@@ -24,7 +23,15 @@ if os.environ.get("ENVNAME") == "k3s":
     config.load_incluster_config()
 else:
     config.load_kube_config()
-    
+
+
+# Test WebSocket connection
+@router.websocket("/foo")
+async def foo(websocket: WebSocket):
+    await websocket.accept()
+    for line in ["success"]:
+        await websocket.send_text(line)
+
 # Establish WebSocket connection to the environment
 @router.websocket("/environment/{env_id}/wsurl/{file_path}")
 async def websocket_endpoint(
@@ -32,6 +39,7 @@ async def websocket_endpoint(
     env_id: str,
     file_path: str,
     db: Session = Depends(get_db),
+    # current_user: User = Depends(get_current_user)
 ):
     env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
@@ -68,6 +76,7 @@ async def terminal_endpoint(
     websocket: WebSocket,
     env_id: str,
     db: Session = Depends(get_db),
+    # current_user: User = Depends(get_current_user)
 ):
     env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
@@ -383,7 +392,3 @@ def check_environment(assign_id: str, id: str, is_group: bool, db: Session = Dep
     else:
         env = db.query(Environment).filter(Environment.assignment_id == assign_id, Environment.user_id == id, Environment.is_collaborative == False).first()
     return env
-
-# TODO: add auth check
-def check_environment_auth(env_id: str, user_id: str, is_group: bool, db: Session = Depends(get_db)):
-    pass

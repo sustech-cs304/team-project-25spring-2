@@ -2,7 +2,7 @@ import { WebSocketServer } from 'ws';
 import * as pty from "node-pty";
 
 const shell = "bash";
-const wss = new WebSocketServer({ port: 8080 });
+const wss = new WebSocketServer({ host: '0.0.0.0', port: 8080 });
 let term = null;
 
 function nodeEnvBind() {
