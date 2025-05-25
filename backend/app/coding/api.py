@@ -47,6 +47,36 @@ def create_pod(api_instance, env_id):
         }
     }
 
+    service_manifest = {
+        'apiVersion': 'v1',
+        'kind': 'Service',
+        'metadata': {
+            'name': name,
+            'labels': {
+                'app': name,
+            }
+        },
+        'spec': {
+            'type': 'ClusterIP',
+            'ports': [
+                {
+                    "port": 1234,
+                    "targetPort": 1234,
+                },
+                {
+                    "port": 4000,
+                    "targetPort": 4000,
+                }
+            ],
+            'selector': {
+                'app': name
+            }
+        },
+        'status': {
+            'loadBalancer': {}
+        }
+    }
+
     resp = api_instance.create_namespaced_pod(body=pod_manifest,
         namespace='default')
     while True:
@@ -55,4 +85,8 @@ def create_pod(api_instance, env_id):
         if resp.status.phase != 'Pending':
             break
         time.sleep(1)
+
+    resp = api_instance.create_namespaced_service(body=service_manifest,
+        namespace='default')
+
     return name
