@@ -130,9 +130,13 @@ export default function Assignment({ courseId }: AssignmentProps) {
         body: formData
       });
       if (!response.ok) {
-        throw new Error('Failed to start assignment environment');
+        throw new Error(response.statusText);
       }
       result = await response.json();
+      if (result.message == "Require group" && !(courseId in myGroups)) {
+        setError('You need to join a group to start this assignment.');
+        return;
+      }
       console.log('Environment started successfully:', result);
     } catch (error) {
       console.error('Error starting assignment environment:', error);
