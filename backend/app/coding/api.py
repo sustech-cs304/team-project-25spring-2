@@ -62,10 +62,12 @@ def create_pod(api_instance, env_id):
                 {
                     "port": 1234,
                     "targetPort": 1234,
+                    "name": name + "-y"
                 },
                 {
                     "port": 4000,
                     "targetPort": 4000,
+                    "name": name + "-term"
                 }
             ],
             'selector': {
