@@ -32,7 +32,7 @@ setContentInitializor(async (ydoc) => {
 
 const saveDocToFile = (doc) => {
     const docName = doc.name;
-    const filePath = `${dataDir}${docName}`;
+    const filePath = `${dataDir}/${docName}`;
 
     try {
         if (!fs.existsSync(dataDir)) {
