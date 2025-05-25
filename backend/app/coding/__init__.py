@@ -41,7 +41,7 @@ async def websocket_endpoint(
     await websocket.accept()
     
     port = 1234 # Default port for WebSocket connection
-    websocket_url = f"{env.wsUrl}:{port}/{file_path}"
+    websocket_url = f"{env.wsUrl}:{port}{file_path}"
     print(f"[Debug] Connecting to WebSocket URL: {websocket_url}")
         
     try:
@@ -104,22 +104,22 @@ async def terminal_endpoint(
 async def forward_to_pod(source: WebSocket, destination):
     try:
         while True:
-            message = await source.receive_text()
+            message = await source.receive_bytes()
             await destination.send(message)
     except websockets.exceptions.ConnectionClosed:
         pass
     except Exception as e:
-        print(f"Error in forward_messages: {e}")
+        print(f"Error in forward_to_pod: {e}")
         
 async def forward_from_pod(source, destination: WebSocket):
     try:
         while True:
             message = await source.recv()
-            await destination.send_text(message)
+            await destination.send_bytes(message)
     except websockets.exceptions.ConnectionClosed:
         pass
     except Exception as e:
-        print(f"Error in forward_messages: {e}")
+        print(f"Error in forward_from_pod: {e}")
 
 def build_file_structure(path: str, base_uri: str = "/") -> Dict[str, Any]:
     if os.path.isfile(path):
