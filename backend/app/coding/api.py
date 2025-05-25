@@ -5,6 +5,7 @@ import os
 def create_pod(api_instance, env_id):
     # copy raw files to `id` directory
     # create id directory:
+    env_id = str(env_id)
     os.makedirs(f"/app/data/{env_id}", exist_ok=True)
     name = "practicum-ws-" + env_id
     pod_manifest = {
