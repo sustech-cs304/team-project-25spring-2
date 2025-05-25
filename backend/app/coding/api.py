@@ -1,14 +1,19 @@
 import time
 from kubernetes.stream import stream
 import os
+from hashlib import sha256
 
+
+sha = sha256()
 
 def create_pod(api_instance, env_id):
     # copy raw files to `id` directory
     # create id directory:
-    env_id = str(hash(env_id))[:8]
+    sha.update(str(env_id).encode())
+    env_id = sha.hexdigest()[:8]
     os.makedirs(f"/app/data/{env_id}", exist_ok=True)
     name = "prac-" + env_id
+
     pod_manifest = {
         'apiVersion': 'v1',
         'kind': 'Pod',
