@@ -359,8 +359,12 @@ async def get_environment(
     # Check if the user is in a group for the course
     is_group = course.require_group
     if is_group:
-        group = db.query(Group).filter(Group.course_id == course_id, Group.user_id == current_user.user_id).first()
-        group_id = group.group_id if group else None
+        groups = db.query(Group).filter(Group.course_id == course_id).all()
+        group_id = None
+        for group in groups:
+            if current_user.user_id in group.users:
+                group_id = group.group_id
+                break
         if not group_id:
             raise HTTPException(status_code=404, detail="User not in a group for this course")
     else:

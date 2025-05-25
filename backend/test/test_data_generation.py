@@ -47,8 +47,8 @@ def generate_random_course():
     people_per_group = random.randint(2, 5) if require_group else 0
     group_deadline = random.choice(
         [
-            "2025-01-01",
-            "2025-01-02",
+            "2025-06-01",
+            "2025-06-02",
         ]
     )
 
@@ -77,11 +77,11 @@ def generate_random_section(course_id):
         "第七章 总结与展望",
     ]
     schedules = [
-        "2025-01-01 10:00:00",
-        "2025-01-02 10:00:00",
-        "2025-01-03 10:00:00",
-        "2025-01-04 10:00:00",
-        "2025-01-05 10:00:00",
+        "2025-06-01 10:00:00",
+        "2025-06-02 10:00:00",
+        "2025-06-03 10:00:00",
+        "2025-06-04 10:00:00",
+        "2025-06-05 10:00:00",
     ]
     # select 3 random schedules
     selected_schedules = random.sample(schedules, 3)
@@ -140,10 +140,16 @@ def generate_random_code_snippet():
 
 def generate_random_user_data(is_teacher=False):
     """Generate random user data for testing"""
-    user_id = f"1221" + str(random.randint(1000, 9999))
-    name = f"{generate_random_string(4)}"
-    password = f"password"
-    email = f"test{generate_random_string(4)}@gmail.com"
+    if is_teacher:
+        user_id = "30001221"
+        name = "Teacher"
+        password = f"password"
+        email = f"testTeacher@gmail.com"
+    else:
+        user_id = "12211414"
+        name = f"Student {generate_random_string(4)}"
+        password = f"password"
+        email = f"test{generate_random_string(4)}@gmail.com"
     return {
         "user_id": user_id,
         "name": name,
@@ -505,9 +511,9 @@ def test_create_assignment():
     headers = {"Authorization": f"Bearer {teacher_token}"}
     assignment_data = {
         "course_id": Course_id_list[0],
-        "name": "第一次作业",
-        "description": "请完成以下任务：\n1. 阅读课本第1章\n2. 完成课后习题",
-        "deadline": "2025-01-01 23:59:59",
+        "name": "Homework 1",
+        "description": "This is the first homework assignment.",
+        "deadline": "2025-06-01 23:59:59",
         "is_group_assign": False,
         "files": File_id_list,
     }
