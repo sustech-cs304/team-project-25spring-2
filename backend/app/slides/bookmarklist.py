@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Body, Form, status
+from fastapi import APIRouter, Depends, Body, Form, HTTPException, status
 from sqlalchemy.orm import Session
 from app.models.material import Material
 from app.models.comment import Comment
@@ -108,13 +108,17 @@ async def create_marklist(
 async def delete_marklist(
     list_id: str,
     db: Session = Depends(get_db),
-    current_user: str = Depends(get_current_user)
+    current_user: str = Depends(get_current_user),
 ):
     marklist = db.query(BookmarkList).filter(BookmarkList.list_id == list_id).first()
     if marklist is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Marklist not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Marklist not found"
+        )
     elif current_user.user_id != marklist.user_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User not authorized")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="User not authorized"
+        )
     else:
         db.delete(marklist)
         db.commit()
