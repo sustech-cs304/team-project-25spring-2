@@ -407,7 +407,10 @@ async def get_environment(
             os.makedirs(f"/app/data/{env_id}/{file_path}", exist_ok=True)
             with open(f"/app/data/{env_id}/{file_path}/{file_name}", "w") as f:
                 f.write(file_content)
-    return env_id
+    return {
+        "message": "Environment created successfully",
+        "environment_id": env_id
+    }
 
 def check_environment(assign_id: str, id: str, is_group: bool, db: Session = Depends(get_db)):
     if is_group:
