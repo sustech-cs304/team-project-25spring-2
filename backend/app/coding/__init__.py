@@ -354,29 +354,29 @@ async def get_environment(
 ):
     core_v1 = client.CoreV1Api()
     newly_created = False
-    course = db.query(Course).filter(Course.id == course_id).first()
+    course = db.query(Course).filter(Course.course_id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
     is_group = course.require_group
-    env = check_environment(assign_id, current_user.id if not is_group else group_id, is_group, db)
+    env = check_environment(assign_id, current_user.user_id if not is_group else group_id, is_group, db)
     if not env:
         name = create_pod(core_v1, env_id)
         if is_group:
             env = Environment(assignment_id=assign_id, group_id=group_id, is_collaborative=True, wsUrl=f"ws://{name}")
         else:
-            env = Environment(assignment_id=assign_id, user_id=current_user.id, is_collaborative=False, wsUrl=f"ws://{name}")
+            env = Environment(assignment_id=assign_id, user_id=current_user.user_id, is_collaborative=False, wsUrl=f"ws://{name}")
         db.add(env)
         db.commit()
         db.refresh(env)
         newly_created = True
     env_id = env.environment_id
     if newly_created:
-        assign = db.query(Assignment).filter(Assignment.id == assign_id).first()
+        assign = db.query(Assignment).filter(Assignment.assignment_id == assign_id).first()
         if not assign:
             raise HTTPException(status_code=404, detail="Assignment not found")
         files = assign.files
         for file in files:
-            file_obj = db.query(File).filter(File.id == file).first()
+            file_obj = db.query(FileDB).filter(FileDB.file_id == file).first()
             file_name = file_obj.file_name
             file_path = file_obj.file_path
             file_content = file_obj.content
@@ -390,8 +390,6 @@ def check_environment(env_id: str, id: str, is_group: bool, db: Session = Depend
         env = db.query(Environment).filter(Environment.environment_id == env_id, Environment.group_id == id, Environment.is_collaborative == True).first()
     else:
         env = db.query(Environment).filter(Environment.environment_id == env_id, Environment.user_id == id, Environment.is_collaborative == False).first()
-    if not env:
-        raise HTTPException(status_code=404, detail="Environment not found")
     return env
 
 # TODO: add auth check

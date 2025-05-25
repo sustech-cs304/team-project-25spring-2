@@ -17,7 +17,6 @@ def run_around_tests():
     Base.metadata.create_all(bind=engine)
     yield
 
-
 def generate_random_string(length=8):
     """Generate a random string of specified length"""
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
