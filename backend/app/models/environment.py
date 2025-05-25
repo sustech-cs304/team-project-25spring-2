@@ -17,7 +17,7 @@ class Environment(Base):
     wsUrl = Column(String, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now())
     updated_at = Column(DateTime, default=lambda: datetime.now(), onupdate=lambda: datetime.now()) 
-    is_running = Column(Boolean, default=False)
+    is_running = Column(Boolean, default=True)
     layout = Column(JSON, nullable=True, default={
         "global": {
             "splitterEnableHandle": True,
