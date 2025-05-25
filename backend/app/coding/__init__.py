@@ -25,15 +25,8 @@ else:
     config.load_kube_config()
 
 
-# Test WebSocket connection
-@router.websocket("/foo")
-async def foo(websocket: WebSocket):
-    await websocket.accept()
-    for line in ["success"]:
-        await websocket.send_text(line)
-
 # Establish WebSocket connection to the environment
-@router.websocket("/environment/{env_id}/wsurl/{file_path}")
+@router.websocket("/environment/{env_id}/wsurl/{file_path:path}")
 async def websocket_endpoint(
     websocket: WebSocket,
     env_id: str,
@@ -48,7 +41,7 @@ async def websocket_endpoint(
     await websocket.accept()
     
     port = 1234 # Default port for WebSocket connection
-    websocket_url = f"{env.wsUrl}:{port}{file_path}"
+    websocket_url = f"{env.wsUrl}:{port}/{file_path}"
     print(f"[Debug] Connecting to WebSocket URL: {websocket_url}")
         
     try:
