@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { SmartAvatar } from '@/components/ui/smart-avatar';
 import { GraduationCap, Clock, MapPin, Users } from 'lucide-react';
 import { useUserContext } from '../UserEnvProvider';
 import { Button } from '@/components/ui/button';
@@ -116,9 +116,12 @@ export default function Group({ courseId }: GroupProps) {
                 <Users className="w-4 h-4 mr-1" />
                 <span>Members: {group.user_info.length}</span>
                 {group.user_info.map((user: any) => (
-                  <Avatar key={user.user_id} className="w-8 h-8" title={user.name}>
-                    <AvatarFallback title={user.name}>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-                  </Avatar>
+                  <SmartAvatar
+                    key={user.user_id}
+                    name={user.name}
+                    photo={user.photo}
+                    className="w-8 h-8"
+                  />
                 ))}
               </div>
               <div className="mt-4">
