@@ -9,10 +9,10 @@ sha = sha256()
 def create_pod(api_instance, env_id):
     # copy raw files to `id` directory
     # create id directory:
-    sha.update(str(env_id).encode())
-    env_id = sha.hexdigest()[:8]
+    env_id = str(env_id)
     os.makedirs(f"/app/data/{env_id}", exist_ok=True)
-    name = "prac-" + env_id
+    sha.update(env_id.encode())
+    name = "prac-" + sha.hexdigest()[:8]
 
     pod_manifest = {
         'apiVersion': 'v1',
