@@ -354,7 +354,6 @@ async def get_environment(
 ):
     core_v1 = client.CoreV1Api()
     newly_created = False
-    if group_id == "null": group_id = None
     course = db.query(Course).filter(Course.course_id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
