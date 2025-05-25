@@ -16,7 +16,7 @@ const dataDir = process.env.DATA_DIR || "./data";
 
 setContentInitializor(async (ydoc) => {
     const docName = ydoc.name;
-    const filePath = `${dataDir}${docName}`;
+    const filePath = `${dataDir}/${docName}`;
 
     try {
         if (fs.existsSync(filePath)) {

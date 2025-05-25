@@ -38,6 +38,26 @@ async def websocket_endpoint(
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     
+    async def forward_to_pod(source: WebSocket, destination):
+        try:
+            while True:
+                message = await source.receive_bytes()
+                await destination.send(message)
+        except websockets.exceptions.ConnectionClosed:
+            pass
+        except Exception as e:
+            print(f"Error in forward_to_pod: {e}")
+            
+    async def forward_from_pod(source, destination: WebSocket):
+        try:
+            while True:
+                message = await source.recv()
+                await destination.send_bytes(message)
+        except websockets.exceptions.ConnectionClosed:
+            pass
+        except Exception as e:
+            print(f"Error in forward_from_pod: {e}")
+    
     await websocket.accept()
     
     port = 1234 # Default port for WebSocket connection
@@ -77,6 +97,26 @@ async def terminal_endpoint(
     
     await websocket.accept()
     
+    async def forward_to_pod(source: WebSocket, destination):
+        try:
+            while True:
+                message = await source.receive_text()
+                await destination.send(message)
+        except websockets.exceptions.ConnectionClosed:
+            pass
+        except Exception as e:
+            print(f"Error in forward_to_pod: {e}")
+            
+    async def forward_from_pod(source, destination: WebSocket):
+        try:
+            while True:
+                message = await source.recv()
+                await destination.send_text(message)
+        except websockets.exceptions.ConnectionClosed:
+            pass
+        except Exception as e:
+            print(f"Error in forward_from_pod: {e}")
+    
     port = 4000 # Default port for WebSocket connection
     websocket_url = f"{env.wsUrl}:{port}"
     print(f"[Debug] Connecting to WebSocket URL: {websocket_url}")
@@ -100,26 +140,6 @@ async def terminal_endpoint(
         print(f"Unexpected error: {e}")
     finally:
         await websocket.close()
-    
-async def forward_to_pod(source: WebSocket, destination):
-    try:
-        while True:
-            message = await source.receive_bytes()
-            await destination.send(message)
-    except websockets.exceptions.ConnectionClosed:
-        pass
-    except Exception as e:
-        print(f"Error in forward_to_pod: {e}")
-        
-async def forward_from_pod(source, destination: WebSocket):
-    try:
-        while True:
-            message = await source.recv()
-            await destination.send_bytes(message)
-    except websockets.exceptions.ConnectionClosed:
-        pass
-    except Exception as e:
-        print(f"Error in forward_from_pod: {e}")
 
 def build_file_structure(path: str, base_uri: str = "/") -> Dict[str, Any]:
     if os.path.isfile(path):
