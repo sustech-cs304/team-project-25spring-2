@@ -21,6 +21,7 @@ def create_pod(api_instance, env_id):
             'name': name,
             'labels': {
                 'app': name,
+                'egress': 'practicum-ws'
             }
         },
         'spec': {
