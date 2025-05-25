@@ -137,7 +137,6 @@ export default function Assignment({ courseId }: AssignmentProps) {
         setError('You need to join a group to start this assignment.');
         return;
       }
-      console.log('Environment started successfully:', result);
     } catch (error) {
       console.error('Error starting assignment environment:', error);
       setError('Failed to start assignment environment. Please try again later.');

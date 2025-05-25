@@ -1,4 +1,4 @@
-export const defaultLayout = {
+export var defaultLayout = {
   global: {
     "splitterEnableHandle": true,
     "tabSetEnableActiveIcon": true,
@@ -21,61 +21,6 @@ export const defaultLayout = {
       }
     ]
   }
-};
-
-export const getEditorLayout = async (env_id: string, token: string | null) => {
-  try {
-    const response = await fetch(
-      process.env.NEXT_PUBLIC_API_URL + `/environment/${env_id}/layout`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        }
-      }
-    );
-
-    if (!response.ok) {
-      return defaultLayout;
-    }
-
-    const data = await response.json();
-
-    if (!data || !("layout" in data)) {
-      return defaultLayout;
-    }
-
-    const layout = data.layout;
-
-    if (
-      layout == null ||
-      (typeof layout === 'string' && layout.trim() === '') ||
-      (typeof layout === 'object' && Object.keys(layout).length === 0)
-    ) {
-      return defaultLayout;
-    }
-
-    return layout;
-  } catch (e) {
-    return defaultLayout;
-  }
-};
-
-export const saveEditorLayout = async (env_id: string, layout: string, token: string | null) => {
-  const formData = new FormData();
-  formData.append('layout', layout);
-  const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/environment/${env_id}/layout`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
-    body: formData
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to save layout');
-  }
-  return;
 };
 
 export const getLanguageFromFileName = (fileName: string): string => {
