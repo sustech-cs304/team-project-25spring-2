@@ -6,9 +6,10 @@ import TerminalComponent from "@/components/coding/Terminal";
 import { TreeNode } from "@/components/data/CodeEnvType";
 import EditorToolbar from "./EditorToolbar";
 import { PDFComponent } from "@/components/pdf/PDFComponent";
-import { defaultLayout, getEditorLayout, getLanguageFromFileName, saveEditorLayout } from "../data/EditorLayoutData";
+import { defaultLayout, getLanguageFromFileName } from "../data/EditorLayoutData";
 import CollaboratedEditorComponent from "./CollaboratedEditor";
 import { UserInfo } from "./CollaboratedEditor";
+import { useUserContext } from "@/app/UserEnvProvider";
 
 interface EditorLayoutProps {
   environmentId: string;
@@ -17,21 +18,12 @@ interface EditorLayoutProps {
 }
 
 const EditorLayout = ({ environmentId, onToggleFileSystemBar, selectedFile }: EditorLayoutProps) => {
+  const { token } = useUserContext();
   const [model, setModel] = useState<Model>(() => Model.fromJson(defaultLayout));
   const [showTerminal, setShowTerminal] = useState<boolean>(false);
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [activeUsersByEditor, setActiveUsersByEditor] = useState<Record<string, UserInfo[]>>({});
   const layoutRef = useRef<Layout>(null);
-
-  useEffect(() => {
-    getEditorLayout(environmentId).then(layout => {
-      setModel(Model.fromJson(layout));
-    });
-
-    return () => {
-      saveEditorLayout(environmentId, JSON.stringify(model.toJson()));
-    };
-  }, [environmentId, model]);
 
   const handleEditorUsersChange = useCallback((editorId: string, users: UserInfo[]) => {
     setActiveUsersByEditor(prev => {

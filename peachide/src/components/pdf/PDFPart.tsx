@@ -73,14 +73,15 @@ const BookmarkButton: React.FC<{
     position: { x: number; y: number }
 }> = ({ onFeedbackAction, props, buttonClassName, pageNumber, position }) => {
     const { bookmarks, addBookmark, removeBookmark, materialId } = usePDFContext();
-    const existingBookmark = bookmarks.find(b => b.material_id === materialId);
+    const { userId } = useUserContext();
+    const existingBookmark = bookmarks.find(b => b.material_id === materialId && b.user_id === userId);
 
     const handleAddBookmark = async () => {
-        await addBookmark(pageNumber);
+        await addBookmark(pageNumber, userId);
     };
 
     const handleRemoveBookmark = async () => {
-        await removeBookmark(pageNumber);
+        await removeBookmark(pageNumber, userId);
     };
 
     return (
@@ -106,6 +107,7 @@ export const PDFPart: React.FC<PDFPartProps> = ({ props, onFeedbackAction }) => 
     const [pageHeight, setPageHeight] = useState(0);
     const pdfContainerRef = useRef<HTMLDivElement>(null);
     const { snippets, bookmarks, setPageNumber, materialId } = usePDFContext();
+    const { userId } = useUserContext();
     const [localSnippets, setLocalSnippets] = useState<SnippetsData>([]);
     const { isTeacher } = useUserContext();
 
@@ -243,7 +245,7 @@ export const PDFPart: React.FC<PDFPartProps> = ({ props, onFeedbackAction }) => 
                 </div>
                 <div className="ml-2 flex space-x-2 overflow-x-auto max-w-full mt-2 mb-2">
                     {bookmarks
-                        .filter(bookmark => bookmark.material_id === materialId)
+                        .filter(bookmark => bookmark.material_id === materialId && bookmark.user_id === userId)
                         .map(bookmark => bookmark.bookmark_list)
                         .flat()
                         .sort((a, b) => a - b)

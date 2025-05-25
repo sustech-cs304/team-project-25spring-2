@@ -1,4 +1,4 @@
-export const defaultLayout = {
+export var defaultLayout = {
   global: {
     "splitterEnableHandle": true,
     "tabSetEnableActiveIcon": true,
@@ -21,59 +21,6 @@ export const defaultLayout = {
       }
     ]
   }
-};
-
-export const getEditorLayout = async (env_id: string) => {
-  try {
-    const response = await fetch(
-      process.env.NEXT_PUBLIC_API_URL + `/environment/${env_id}/layout`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-
-    if (!response.ok) {
-      return defaultLayout;
-    }
-
-    const data = await response.json();
-
-    if (!data || !("layout" in data)) {
-      return defaultLayout;
-    }
-
-    const layout = data.layout;
-
-    if (
-      layout == null ||
-      (typeof layout === 'string' && layout.trim() === '') ||
-      (typeof layout === 'object' && Object.keys(layout).length === 0)
-    ) {
-      return defaultLayout;
-    }
-
-    return layout;
-  } catch (e) {
-    return defaultLayout;
-  }
-};
-
-export const saveEditorLayout = async (env_id: string, layout: string) => {
-  const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/environment/${env_id}/layout`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ layout })
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to save layout');
-  }
-  return;
 };
 
 export const getLanguageFromFileName = (fileName: string): string => {

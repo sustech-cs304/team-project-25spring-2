@@ -1,6 +1,7 @@
 import { usePDFContext } from "@/components/pdf/PDFEnvProvider";
 import { Avatar } from "@radix-ui/react-avatar";
 import { AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { SmartAvatar } from "@/components/ui/smart-avatar";
 import { Button } from "@/components/ui/button";
 import { MessageSquareQuote, Reply } from "lucide-react";
 import React, { useEffect, useState } from "react";
@@ -12,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useUserContext } from "@/app/UserEnvProvider";
 
-function ReplyBox({ id, title, avatar, content, forPage, showPageNumber, children = null, mutate }:
+function ReplyBox({ id, title, avatar, content, forPage, showPageNumber, children = null, mutate, type }:
     {
         id: string,
         title: string,
@@ -21,7 +22,8 @@ function ReplyBox({ id, title, avatar, content, forPage, showPageNumber, childre
         showPageNumber: boolean,
         content: string,
         children?: any | null,
-        mutate?: any
+        mutate?: any,
+        type?: 'comment' | 'reply'
     }) {
 
     const { token } = useUserContext();
@@ -32,6 +34,7 @@ function ReplyBox({ id, title, avatar, content, forPage, showPageNumber, childre
         if (comment) {
             const replies = comment.replies;
             replies?.forEach((reply: any) => {
+                console.log(reply);
                 if (!usersInfo[reply.user_id]) {
                     fetch(process.env.NEXT_PUBLIC_API_URL + `/user/${reply.user_id}`, {
                         headers: {
@@ -51,10 +54,12 @@ function ReplyBox({ id, title, avatar, content, forPage, showPageNumber, childre
     return (
         <div className="flex flex-col m-2">
             <div className="flex flex-row">
-                <Avatar className="w-[40px] h-[40px] grow-0">
-                    <AvatarImage src={avatar} alt={title} />
-                    <AvatarFallback className="w-[40px]">U</AvatarFallback>
-                </Avatar>
+                <SmartAvatar
+                    name={title || 'User'}
+                    photo={avatar}
+                    className="w-[40px] h-[40px] grow-0"
+                    fallbackClassName="w-[40px]"
+                />
                 <div className="grow pl-3">
                     <div>
                         {title}
@@ -64,18 +69,20 @@ function ReplyBox({ id, title, avatar, content, forPage, showPageNumber, childre
                         {content}
                     </div>
                     <div className="flex items-center">
-                        <span className="text-xs opacity-50"
-                            suppressHydrationWarning>{new Date().toLocaleString()}</span>
-                        <ReplyDialog trigger={
-                            <Button variant="ghost" size="icon" className="size-4 ml-2 mr-2">
-                                <Reply />
-                            </Button>} props={{ page: forPage, type: "reply", id: id }} mutate={mutateReplies} />
-                        <span>·</span>
-                        <ExtraCommentDialog trigger={
-                            <Button variant="ghost" className="h-4 w-12 ml-1.5 flex items-center">
-                                <span className="text-xs text-gray-200">Reply {comment?.replies?.length ? `${comment?.replies?.length}` : '0'}</span>
-                            </Button>} replies={comment?.replies} fromTitle={title}
-                            props={{ page: forPage, type: "comment", id: id }} />
+                        {type === 'comment' ?
+                            (<>
+                                <ReplyDialog trigger={
+                                    <Button variant="ghost" size="icon" className="size-4 mr-2">
+                                        <Reply />
+                                    </Button>} props={{ page: forPage, type: "reply", id: id }} mutate={mutateReplies} />
+                                <span>·</span>
+                                <ExtraCommentDialog trigger={
+                                    <Button variant="ghost" className="h-4 w-12 ml-1.5 flex items-center">
+                                        <span className="text-xs text-gray-200">Reply {comment?.replies?.length ? `${comment?.replies?.length}` : '0'}</span>
+                                    </Button>} replies={comment?.replies} fromTitle={title}
+                                    props={{ page: forPage, type: "comment", id: id }} />
+                            </>)
+                            : <></>}
                     </div>
                 </div>
             </div>
@@ -174,14 +181,16 @@ function ExtraCommentDialog({ trigger, props, replies, fromTitle }: {
                 {
                     replies?.length > 0 ?
                         replies?.map((reply: any) => {
-                            return <ReplyBox
-                                id={reply.id}
-                                title={usersInfo[reply.user_id]?.name}
-                                avatar={usersInfo[reply.user_id]?.avatar}
-                                forPage={reply.page}
-                                showPageNumber={props.page !== reply.page}
-                                content={reply.content}
-                                key={reply.id} />;
+                            return <div key={reply.comment_id + String(Math.random())}>
+                                <ReplyBox
+                                    type="reply"
+                                    id={reply.comment_id}
+                                    title={usersInfo[reply.user_id]?.name}
+                                    avatar={usersInfo[reply.user_id]?.avatar}
+                                    forPage={reply.page}
+                                    showPageNumber={props.page !== reply.page}
+                                    content={reply.content} />
+                            </div>;
                         })
                         : <div className="text-center p-4">
                             No replies yet.
@@ -242,6 +251,7 @@ export function CommentsSection({ id }: { id: string }) {
                     .map((comment: any) => (
                         <div key={comment.comment_id}>
                             <ReplyBox
+                                type="comment"
                                 forPage={comment.page}
                                 showPageNumber={!onlyThisPage}
                                 id={comment.comment_id}

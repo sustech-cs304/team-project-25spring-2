@@ -2,6 +2,7 @@
 
 import { Bell, LogOut, Settings, } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage, } from "@/components/ui/avatar";
+import { SmartAvatar } from "@/components/ui/smart-avatar";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -45,10 +46,12 @@ export function NavUser({
                             size="lg"
                             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground md:h-8 md:p-0"
                         >
-                            <Avatar className="h-8 w-8 rounded-lg">
-                                <AvatarImage src={user.avatar} alt={user.name} />
-                                <AvatarFallback className="rounded-lg">U</AvatarFallback>
-                            </Avatar>
+                            <SmartAvatar
+                                name={user.name}
+                                photo={user.avatar}
+                                className="h-8 w-8 rounded-lg"
+                                fallbackClassName="rounded-lg"
+                            />
                         </SidebarMenuButton>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
@@ -58,10 +61,12 @@ export function NavUser({
                         sideOffset={4}
                     >
                         <DropdownMenuLabel className="flex items-center">
-                            <Avatar className="h-8 w-8 rounded-lg">
-                                <AvatarImage src={user.avatar} alt={user.name} />
-                                <AvatarFallback className="rounded-lg">U</AvatarFallback>
-                            </Avatar>
+                            <SmartAvatar
+                                name={user.name}
+                                photo={user.avatar}
+                                className="h-8 w-8 rounded-lg"
+                                fallbackClassName="rounded-lg"
+                            />
                             <div className="grid flex-1 ml-3 text-left text-sm leading-tight">
                                 <span className="truncate font-semibold">{user.name}</span>
                                 <span className="truncate text-xs">{user.email}</span>

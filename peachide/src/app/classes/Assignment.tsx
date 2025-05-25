@@ -39,7 +39,7 @@ export default function Assignment({ courseId }: AssignmentProps) {
   const [error, setError] = useState<string | null>(null);
   const { setSidebarItems, sidebarItems } = useUserContext();
   const router = useRouter();
-  const { token } = useUserContext();
+  const { token, myGroups } = useUserContext();
 
   useEffect(() => {
     const fetchAssignments = async () => {
@@ -52,7 +52,13 @@ export default function Assignment({ courseId }: AssignmentProps) {
         });
 
         if (!response.ok) {
-          throw new Error('Failed to fetch assignments data');
+          if (response.status === 404) {
+            setData({
+              assignments: []
+            });
+            return;
+          } else
+            throw new Error('Failed to fetch assignments data');
         }
 
         const result = await response.json();
@@ -110,13 +116,39 @@ export default function Assignment({ courseId }: AssignmentProps) {
     }
   }, [courseId]);
 
-  const handleStartAssignment = (assignmentId: string, assignmentName: string) => {
-    router.push(`/coding/${assignmentId}`);
+  const handleStartAssignment = async (assignmentId: string) => {
+    var result: any;
+    try {
+      const formData = new FormData();
+      formData.append('course_id', courseId);
+      formData.append('assign_id', assignmentId);
+      const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/environment`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        method: 'POST',
+        body: formData
+      });
+      if (!response.ok) {
+        throw new Error(response.statusText);
+      }
+      result = await response.json();
+      if (result.message == "Require group" && !(courseId in myGroups)) {
+        setError('You need to join a group to start this assignment.');
+        return;
+      }
+    } catch (error) {
+      console.error('Error starting assignment environment:', error);
+      setError('Failed to start assignment environment. Please try again later.');
+      return;
+    }
+    const environmentId = result.environment_id;
+    router.push(`/coding/${environmentId}`);
     setSidebarItems([
       ...sidebarItems,
       {
-        title: "Coding " + assignmentName,
-        url: `/coding/${assignmentId}`,
+        title: "Coding " + environmentId,
+        url: `/coding/${environmentId}`,
         icon: "CodeXml"
       }
     ]);
@@ -269,7 +301,7 @@ export default function Assignment({ courseId }: AssignmentProps) {
       <div className="flex justify-center items-center h-full p-8">
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
-            <div className="text-destructive mb-4">
+            <div className="text-destructive mb-4 w-full flex justify-center">
               <AlertCircle size={48} />
             </div>
             <h3 className="text-xl font-semibold mb-2">Failed to load assignments</h3>
@@ -285,7 +317,7 @@ export default function Assignment({ courseId }: AssignmentProps) {
       <div className="flex justify-center items-center h-full p-8">
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
-            <div className="text-muted-foreground mb-4">
+            <div className="text-muted-foreground mb-4 w-full flex justify-center">
               <ClipboardList size={48} />
             </div>
             <h3 className="text-xl font-semibold mb-2">No assignments available</h3>
@@ -407,7 +439,7 @@ export default function Assignment({ courseId }: AssignmentProps) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleStartAssignment(assignment.assignment_id, assignment.name)}
+                          onClick={() => handleStartAssignment(assignment.assignment_id)}
                           className="flex items-center gap-1 hover:gap-2 transition-all hover:text-primary"
                         >
                           <span>Start Assignment</span>
@@ -417,7 +449,7 @@ export default function Assignment({ courseId }: AssignmentProps) {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleStartAssignment(assignment.assignment_id, assignment.name)}
+                          onClick={() => handleStartAssignment(assignment.assignment_id)}
                           className="text-muted-foreground"
                         >
                           <span>View Details</span>

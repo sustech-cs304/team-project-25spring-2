@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { SmartAvatar } from '@/components/ui/smart-avatar';
 import { GraduationCap, Clock, MapPin, Users } from 'lucide-react';
 import { useUserContext } from '../UserEnvProvider';
 import { Button } from '@/components/ui/button';
@@ -25,30 +25,30 @@ export default function Group({ courseId }: GroupProps) {
   const [joining, setJoining] = useState<string | null>(null);
   const [leaving, setLeaving] = useState<string | null>(null);
 
+  const fetchGroups = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/group/${courseId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch groups');
+      }
+      const data = await response.json();
+      setGroups(data.groups || []);
+    } catch (err) {
+      setError('Error fetching groups');
+      setGroups([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Fetch all groups for the course
   useEffect(() => {
-    console.log(myGroups);
-    const fetchGroups = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/group/${courseId}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        if (!response.ok) {
-          throw new Error('Failed to fetch groups');
-        }
-        const data = await response.json();
-        setGroups(data.groups || []);
-      } catch (err) {
-        setError('Error fetching groups');
-        setGroups([]);
-      } finally {
-        setLoading(false);
-      }
-    };
     if (courseId) fetchGroups();
   }, [courseId, token]);
 
@@ -64,9 +64,7 @@ export default function Group({ courseId }: GroupProps) {
         }
       });
       if (!response.ok) throw new Error('Failed to join group');
-      console.log(await response.json());
-      // Refresh groups
-      setGroups(groups => groups.map(g => g.group_id === groupId ? { ...g, users: [...g.users, userId] } : g));
+      fetchGroups();
     } catch (err) {
       setError('Failed to join group');
     } finally {
@@ -86,8 +84,7 @@ export default function Group({ courseId }: GroupProps) {
         }
       });
       if (!response.ok) throw new Error('Failed to leave group');
-      // Refresh groups
-      setGroups(groups => groups.map(g => g.group_id === groupId ? { ...g, users: g.users.filter(u => u !== userId) } : g));
+      fetchGroups();
     } catch (err) {
       setError('Failed to leave group');
     } finally {
@@ -119,9 +116,12 @@ export default function Group({ courseId }: GroupProps) {
                 <Users className="w-4 h-4 mr-1" />
                 <span>Members: {group.user_info.length}</span>
                 {group.user_info.map((user: any) => (
-                  <Avatar key={user.user_id} className="w-8 h-8" title={user.name}>
-                    <AvatarFallback title={user.name}>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-                  </Avatar>
+                  <SmartAvatar
+                    key={user.user_id}
+                    name={user.name}
+                    photo={user.photo}
+                    className="w-8 h-8"
+                  />
                 ))}
               </div>
               <div className="mt-4">

@@ -5,6 +5,7 @@ import { BookCopy, SquareTerminal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UserInfo } from "./CollaboratedEditor";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { SmartAvatar } from "@/components/ui/smart-avatar";
 
 interface EditorToolbarProps {
   onToggleFileSystemBar: () => void;
@@ -23,14 +24,16 @@ export default function EditorToolbar({ onToggleFileSystemBar, onToggleTerminal,
           <SquareTerminal />
         </Button>
       </div>
-      
+
       <div className="relative group/avatars cursor-pointer">
         <div className="flex -space-x-2 overflow-hidden">
           {editingUsers.slice(0, 3).map((user, index) => (
-            <Avatar key={index} className="border-2 border-background">
-              <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-            </Avatar>
+            <SmartAvatar
+              key={index}
+              name={user.name}
+              photo={user.avatar}
+              className="border-2 border-background"
+            />
           ))}
           {editingUsers.length > 3 && (
             <div className="flex items-center justify-center z-10 bg-muted text-muted-foreground rounded-full border-2 border-background size-8">
@@ -38,17 +41,19 @@ export default function EditorToolbar({ onToggleFileSystemBar, onToggleTerminal,
             </div>
           )}
         </div>
-        
+
         {editingUsers.length > 0 && (
           <div className="absolute right-0 top-full mt-2 z-50 hidden group-hover/avatars:block hover:block bg-popover rounded-md shadow-md p-2 min-w-48">
             <div className="text-sm font-medium mb-1">Active users</div>
             <div className="space-y-2">
               {editingUsers.map((user, index) => (
                 <div key={index} className="flex items-center gap-2">
-                  <Avatar className="size-6">
-                    <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback className="text-xs">{user.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
+                  <SmartAvatar
+                    name={user.name}
+                    photo={user.avatar}
+                    className="size-6"
+                    fallbackClassName="text-xs"
+                  />
                   <span className="text-sm">{user.name}</span>
                 </div>
               ))}
