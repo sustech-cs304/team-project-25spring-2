@@ -121,7 +121,7 @@ export default function Assignment({ courseId }: AssignmentProps) {
         method: 'POST',
         body: JSON.stringify({
           course_id: courseId,
-          assignment_id: assignmentId,
+          assign_id: assignmentId,
           group_id: myGroups[courseId] || null
         })
       });
