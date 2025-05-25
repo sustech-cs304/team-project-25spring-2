@@ -111,8 +111,8 @@ async def terminal_endpoint(
 async def forward_messages(source, destination):
     try:
         while True:
-            message = await source.receive_text()
-            await destination.send_text(message)
+            message = await source.recv()
+            await destination.send(message)
     except websockets.exceptions.ConnectionClosed:
         pass
     except Exception as e:
