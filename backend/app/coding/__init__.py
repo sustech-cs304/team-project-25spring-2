@@ -346,9 +346,9 @@ async def get_pdf_file(
 
 @router.post("/environment")
 async def get_environment(
-    course_id: str,
-    assign_id: str,
-    group_id: str,
+    course_id: str = Body(...),
+    assign_id: str = Body(...),
+    group_id: str = Body(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
