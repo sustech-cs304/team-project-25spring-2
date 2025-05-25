@@ -122,7 +122,6 @@ export default function Assignment({ courseId }: AssignmentProps) {
       const formData = new FormData();
       formData.append('course_id', courseId);
       formData.append('assign_id', assignmentId);
-      formData.append('group_id', myGroups[courseId] || '');
       const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/environment`, {
         headers: {
           'Authorization': `Bearer ${token}`
