@@ -8,7 +8,7 @@ import uuid
 class Environment(Base):
     __tablename__ = "environments"
 
-    environment_id = Column(UUID, primary_key=True, default=lambda: str(uuid.uuid4()))
+    environment_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     course_id = Column(UUID, ForeignKey("courses.course_id", ondelete="CASCADE"), nullable=False)
     assignment_id = Column(UUID, ForeignKey("assignments.assignment_id", ondelete="CASCADE"), nullable=False)
     user_id = Column(String, ForeignKey("users.user_id"), nullable=True)

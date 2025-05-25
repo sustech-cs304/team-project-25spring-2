@@ -366,7 +366,10 @@ async def get_environment(
                 group_id = group.group_id
                 break
         if not group_id:
-            raise HTTPException(status_code=404, detail="User not in a group for this course")
+            return {
+                "message": "Require group",
+                "group_required": True
+            }
     else:
         group_id = None
         
