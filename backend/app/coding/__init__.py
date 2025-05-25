@@ -46,8 +46,8 @@ async def websocket_endpoint(
         
     try:
         async with websockets.connect(websocket_url) as internal_ws:
-            client_to_internal = asyncio.create_task(forward_messages(websocket, internal_ws))
-            internal_to_client = asyncio.create_task(forward_messages(internal_ws, websocket))
+            client_to_internal = asyncio.create_task(forward_to_pod(websocket, internal_ws))
+            internal_to_client = asyncio.create_task(forward_from_pod(internal_ws, websocket))
             
             done, pending = await asyncio.wait(
                 [client_to_internal, internal_to_client],
@@ -83,8 +83,8 @@ async def terminal_endpoint(
         
     try:
         async with websockets.connect(websocket_url) as internal_ws:
-            client_to_internal = asyncio.create_task(forward_messages(websocket, internal_ws))
-            internal_to_client = asyncio.create_task(forward_messages(internal_ws, websocket))
+            client_to_internal = asyncio.create_task(forward_to_pod(websocket, internal_ws))
+            internal_to_client = asyncio.create_task(forward_from_pod(internal_ws, websocket))
             
             done, pending = await asyncio.wait(
                 [client_to_internal, internal_to_client],
@@ -101,11 +101,21 @@ async def terminal_endpoint(
     finally:
         await websocket.close()
     
-async def forward_messages(source, destination):
+async def forward_to_pod(source: WebSocket, destination):
+    try:
+        while True:
+            message = await source.receive_text()
+            await destination.send(message)
+    except websockets.exceptions.ConnectionClosed:
+        pass
+    except Exception as e:
+        print(f"Error in forward_messages: {e}")
+        
+async def forward_from_pod(source, destination: WebSocket):
     try:
         while True:
             message = await source.recv()
-            await destination.send(message)
+            await destination.send_text(message)
     except websockets.exceptions.ConnectionClosed:
         pass
     except Exception as e:
