@@ -113,17 +113,16 @@ export default function Assignment({ courseId }: AssignmentProps) {
   const handleStartAssignment = async (assignmentId: string) => {
     var result: any;
     try {
+      const formData = new FormData();
+      formData.append('course_id', courseId);
+      formData.append('assign_id', assignmentId);
+      formData.append('group_id', myGroups[courseId] || '');
       const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/environment`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${token}`
         },
         method: 'POST',
-        body: JSON.stringify({
-          course_id: courseId,
-          assign_id: assignmentId,
-          group_id: myGroups[courseId] || null
-        })
+        body: formData
       });
       if (!response.ok) {
         throw new Error('Failed to start assignment environment');

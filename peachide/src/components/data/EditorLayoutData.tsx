@@ -23,14 +23,14 @@ export const defaultLayout = {
   }
 };
 
-export const getEditorLayout = async (env_id: string) => {
+export const getEditorLayout = async (env_id: string, token: string | null) => {
   try {
     const response = await fetch(
       process.env.NEXT_PUBLIC_API_URL + `/environment/${env_id}/layout`,
       {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${token}`,
         }
       }
     );
@@ -61,13 +61,15 @@ export const getEditorLayout = async (env_id: string) => {
   }
 };
 
-export const saveEditorLayout = async (env_id: string, layout: string) => {
+export const saveEditorLayout = async (env_id: string, layout: string, token: string | null) => {
+  const formData = new FormData();
+  formData.append('layout', layout);
   const response = await fetch(process.env.NEXT_PUBLIC_API_URL + `/environment/${env_id}/layout`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+      'Authorization': `Bearer ${token}`,
     },
-    body: JSON.stringify({ layout })
+    body: formData
   });
 
   if (!response.ok) {

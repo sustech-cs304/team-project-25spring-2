@@ -9,6 +9,7 @@ import { PDFComponent } from "@/components/pdf/PDFComponent";
 import { defaultLayout, getEditorLayout, getLanguageFromFileName, saveEditorLayout } from "../data/EditorLayoutData";
 import CollaboratedEditorComponent from "./CollaboratedEditor";
 import { UserInfo } from "./CollaboratedEditor";
+import { useUserContext } from "@/app/UserEnvProvider";
 
 interface EditorLayoutProps {
   environmentId: string;
@@ -17,6 +18,7 @@ interface EditorLayoutProps {
 }
 
 const EditorLayout = ({ environmentId, onToggleFileSystemBar, selectedFile }: EditorLayoutProps) => {
+  const { token } = useUserContext();
   const [model, setModel] = useState<Model>(() => Model.fromJson(defaultLayout));
   const [showTerminal, setShowTerminal] = useState<boolean>(false);
   const [currentFile, setCurrentFile] = useState<string | null>(null);
@@ -24,12 +26,12 @@ const EditorLayout = ({ environmentId, onToggleFileSystemBar, selectedFile }: Ed
   const layoutRef = useRef<Layout>(null);
 
   useEffect(() => {
-    getEditorLayout(environmentId).then(layout => {
+    getEditorLayout(environmentId, token).then(layout => {
       setModel(Model.fromJson(layout));
     });
 
     return () => {
-      saveEditorLayout(environmentId, JSON.stringify(model.toJson()));
+      saveEditorLayout(environmentId, JSON.stringify(model.toJson()), token);
     };
   }, [environmentId, model]);
 
