@@ -46,7 +46,7 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
     const [showMaterialPrompt, setShowMaterialPrompt] = useState(true);
     const [showPresetDialog, setShowPresetDialog] = useState(false);
     const [showChatList, setShowChatList] = useState(false);
-    const { token } = useUserContext();
+    const { token, userId } = useUserContext();
     const [editingChatId, setEditingChatId] = useState<string | null>(null);
     const [editingTitle, setEditingTitle] = useState<string>('');
 
@@ -332,7 +332,7 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
                                                 New Chat
                                             </Button>
                                             {chats.map((chat) => (
-                                                isNotQuiz(chat) && (
+                                                isNotQuiz(chat) && chat.user_id === userId && (
                                                     <div key={chat.chat_id} className="flex items-center group">
                                                         {editingChatId === chat.chat_id ? (
                                                             <input
