@@ -25,30 +25,30 @@ export default function Group({ courseId }: GroupProps) {
   const [joining, setJoining] = useState<string | null>(null);
   const [leaving, setLeaving] = useState<string | null>(null);
 
+  const fetchGroups = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/group/${courseId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch groups');
+      }
+      const data = await response.json();
+      setGroups(data.groups || []);
+    } catch (err) {
+      setError('Error fetching groups');
+      setGroups([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Fetch all groups for the course
   useEffect(() => {
-    console.log(myGroups);
-    const fetchGroups = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/group/${courseId}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        if (!response.ok) {
-          throw new Error('Failed to fetch groups');
-        }
-        const data = await response.json();
-        setGroups(data.groups || []);
-      } catch (err) {
-        setError('Error fetching groups');
-        setGroups([]);
-      } finally {
-        setLoading(false);
-      }
-    };
     if (courseId) fetchGroups();
   }, [courseId, token]);
 
@@ -64,9 +64,7 @@ export default function Group({ courseId }: GroupProps) {
         }
       });
       if (!response.ok) throw new Error('Failed to join group');
-      console.log(await response.json());
-      // Refresh groups
-      setGroups(groups => groups.map(g => g.group_id === groupId ? { ...g, users: [...g.users, userId] } : g));
+      fetchGroups();
     } catch (err) {
       setError('Failed to join group');
     } finally {
@@ -86,8 +84,7 @@ export default function Group({ courseId }: GroupProps) {
         }
       });
       if (!response.ok) throw new Error('Failed to leave group');
-      // Refresh groups
-      setGroups(groups => groups.map(g => g.group_id === groupId ? { ...g, users: g.users.filter(u => u !== userId) } : g));
+      fetchGroups();
     } catch (err) {
       setError('Failed to leave group');
     } finally {
