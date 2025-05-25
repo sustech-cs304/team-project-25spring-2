@@ -273,6 +273,9 @@ async def delete_environment_directory(
     env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
+
+    if current_user.user_id != env.user_id:
+        raise HTTPException(status_code=403, detail="You do not have permission to delete this directory")
     
     env_path = f"/app/data/{env_id}"
     directory_path = os.path.join(env_path, directory_path.lstrip('/'))
@@ -285,48 +288,6 @@ async def delete_environment_directory(
         return {"message": "Directory deleted successfully"}
     except OSError as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete directory: {str(e)}")
-
-@router.post("/environment/{env_id}/layout")
-async def save_environment_layout(
-    env_id: str,
-    body: Dict[str, Any] = Body(...),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
-    if not env:
-        raise HTTPException(status_code=404, detail="Environment not found")
-    
-    layout = body.get("layout")
-    if layout is None:
-        raise HTTPException(status_code=400, detail="Missing 'layout' in request body")
-    
-    if isinstance(layout, str):
-        try:
-            layout = json.loads(layout)
-        except Exception:
-            raise HTTPException(status_code=400, detail="Invalid layout JSON string")
-    
-    env.layout = layout
-    db.commit()
-    return {
-        "message": "Layout saved successfully"
-    }
-
-@router.get("/environment/{env_id}/layout")
-async def get_environment_layout(
-    env_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
-    if not env:
-        raise HTTPException(status_code=404, detail="Environment not found")
-    
-    return {
-        "message": "Layout fetched successfully",
-        "layout": env.layout,
-    }
 
 @router.get("/file/{env_id}/pdf")
 async def get_pdf_file(
