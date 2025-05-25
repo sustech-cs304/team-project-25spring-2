@@ -14,7 +14,7 @@ class Environment(Base):
     user_id = Column(String, ForeignKey("users.user_id"), nullable=True)
     group_id = Column(UUID, ForeignKey("groups.group_id", ondelete="CASCADE"), nullable=True)
     is_collaborative = Column(Boolean, default=False)
-    wsUrl = Column(String, nullable=False)
+    wsUrl = Column(String, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now())
     updated_at = Column(DateTime, default=lambda: datetime.now(), onupdate=lambda: datetime.now()) 
     is_running = Column(Boolean, default=True)
