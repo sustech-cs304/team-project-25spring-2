@@ -26,8 +26,8 @@ type PDFContextType = {
     setMaterialId: (materialId: string) => void;
     bookmarks: BookmarkType[];
     setBookmarks: (bookmarks: BookmarkType[]) => void;
-    addBookmark: (page: number) => Promise<void>;
-    removeBookmark: (page: number) => Promise<void>;
+    addBookmark: (page: number, userId: string | null) => Promise<void>;
+    removeBookmark: (page: number, userId: string | null) => Promise<void>;
     fetchBookmarks: () => Promise<void>;
 };
 
@@ -90,12 +90,13 @@ export const PDFProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
-    const addBookmark = async (page: number) => {
+    const addBookmark = async (page: number, userId: string | null) => {
         if (!materialId) return;
+        if (!userId) return;
 
         try {
             // First, try to find an existing bookmark list for this material
-            const existingBookmark = bookmarks.find(b => b.material_id === materialId);
+            const existingBookmark = bookmarks.find(b => b.material_id === materialId && b.user_id === userId);
 
             if (existingBookmark) {
                 // If exists, update the bookmark list
@@ -124,12 +125,13 @@ export const PDFProvider = ({ children }: { children: React.ReactNode }) => {
             } else {
                 // If no existing bookmark list, create a new one
                 const formData = new FormData();
-                formData.append('list_id', uuidv4());
+                const listId = uuidv4()
+                formData.append('list_id', listId);
                 formData.append('material_id', materialId);
                 formData.append('bookmark_list', JSON.stringify([page]));
 
                 const response = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/marklist/${materialId}/page/${page}`, {
+                    `${process.env.NEXT_PUBLIC_API_URL}/marklist/${listId}/page/${page}`, {
                     method: 'POST',
                     body: formData,
                     headers: {
@@ -151,9 +153,10 @@ export const PDFProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
-    const removeBookmark = async (page: number) => {
+    const removeBookmark = async (page: number, userId: string | null) => {
+        if (!userId) return;
         try {
-            const existingBookmark = bookmarks.find(b => b.material_id === materialId);
+            const existingBookmark = bookmarks.find(b => b.material_id === materialId && b.user_id === userId);
             if (!existingBookmark) return;
             const updatedBookmarkList = existingBookmark.bookmark_list.filter(p => p !== page);
             const formData = new FormData();
