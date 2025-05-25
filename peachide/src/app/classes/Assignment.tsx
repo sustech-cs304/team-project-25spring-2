@@ -52,7 +52,13 @@ export default function Assignment({ courseId }: AssignmentProps) {
         });
 
         if (!response.ok) {
-          throw new Error('Failed to fetch assignments data');
+          if (response.status === 404) {
+            setData({
+              assignments: []
+            });
+            return;
+          } else
+            throw new Error('Failed to fetch assignments data');
         }
 
         const result = await response.json();
@@ -130,12 +136,12 @@ export default function Assignment({ courseId }: AssignmentProps) {
       }
       result = await response.json();
       console.log('Environment started successfully:', result);
-    }catch (error) {
+    } catch (error) {
       console.error('Error starting assignment environment:', error);
       setError('Failed to start assignment environment. Please try again later.');
       return;
     }
-    const environmentId = result.environment_id;  
+    const environmentId = result.environment_id;
     router.push(`/coding/${environmentId}`);
     setSidebarItems([
       ...sidebarItems,
@@ -294,7 +300,7 @@ export default function Assignment({ courseId }: AssignmentProps) {
       <div className="flex justify-center items-center h-full p-8">
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
-            <div className="text-destructive mb-4">
+            <div className="text-destructive mb-4 w-full flex justify-center">
               <AlertCircle size={48} />
             </div>
             <h3 className="text-xl font-semibold mb-2">Failed to load assignments</h3>
@@ -310,7 +316,7 @@ export default function Assignment({ courseId }: AssignmentProps) {
       <div className="flex justify-center items-center h-full p-8">
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
-            <div className="text-muted-foreground mb-4">
+            <div className="text-muted-foreground mb-4 w-full flex justify-center">
               <ClipboardList size={48} />
             </div>
             <h3 className="text-xl font-semibold mb-2">No assignments available</h3>

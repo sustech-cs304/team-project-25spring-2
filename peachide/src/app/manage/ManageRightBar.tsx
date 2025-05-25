@@ -1985,6 +1985,10 @@ const AssignmentsTab = ({ courseId }: { courseId: string }) => {
       });
 
       if (!response.ok) {
+        if (response.status === 404) {
+          setAssignments([]);
+          return;
+        }
         throw new Error('Failed to fetch assignments');
       }
 
