@@ -18,7 +18,9 @@ import {
   FilePlus, EditIcon,
   MousePointer,
   ComponentIcon,
-  Calendar
+  Calendar,
+  Trash2,
+  Edit3
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1251,7 +1253,15 @@ interface UploadedFile {
 }
 
 // Assignment Card Component
-const AssignmentCard = ({ assignment }: { assignment: Assignment }) => {
+const AssignmentCard = ({
+  assignment,
+  onEdit,
+  onDelete
+}: {
+  assignment: Assignment;
+  onEdit: (assignment: Assignment) => void;
+  onDelete: (assignmentId: string) => void;
+}) => {
   const formatDeadline = (deadline: string) => {
     try {
       const date = new Date(deadline);
@@ -1337,6 +1347,30 @@ const AssignmentCard = ({ assignment }: { assignment: Assignment }) => {
                 {assignment.name}
               </CardTitle>
             </div>
+
+            {/* Action buttons - only show for non-closed assignments */}
+            {!assignment.is_over && (
+              <div className="flex items-center gap-1 ml-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-primary"
+                  onClick={() => onEdit(assignment)}
+                  title="Edit assignment"
+                >
+                  <Edit3 size={16} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                  onClick={() => onDelete(assignment.assignment_id)}
+                  title="Delete assignment"
+                >
+                  <Trash2 size={16} />
+                </Button>
+              </div>
+            )}
           </div>
         </CardHeader>
 
@@ -1420,6 +1454,15 @@ const CreateAssignmentDialog = ({
     }
   }, [open]);
 
+  // Helper function to check if selected deadline is in the past
+  const isDeadlineInPast = () => {
+    if (!selectedDate || !selectedHour || !selectedMinute) return false;
+    const deadline = `${selectedDate} ${selectedHour.padStart(2, '0')}:${selectedMinute.padStart(2, '0')}:00`;
+    const deadlineDate = new Date(deadline);
+    const now = new Date();
+    return deadlineDate <= now;
+  };
+
   const handleFileUpload = async (file: File, filePath: string) => {
     setIsUploading(true);
     try {
@@ -1488,9 +1531,18 @@ const CreateAssignmentDialog = ({
       return;
     }
 
+    // Check if deadline is in the past
+    const deadline = `${selectedDate} ${selectedHour.padStart(2, '0')}:${selectedMinute.padStart(2, '0')}:00`;
+    const deadlineDate = new Date(deadline);
+    const now = new Date();
+
+    if (deadlineDate <= now) {
+      toast.error('Deadline cannot be in the past. Please select a future date and time.');
+      return;
+    }
+
     setIsCreating(true);
     try {
-      const deadline = `${selectedDate} ${selectedHour.padStart(2, '0')}:${selectedMinute.padStart(2, '0')}:00`;
 
       const formData = new FormData();
       formData.append('name', name);
@@ -1845,6 +1897,7 @@ const CreateAssignmentDialog = ({
                       type="date"
                       value={selectedDate}
                       onChange={(e) => setSelectedDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
                       required
                       className="h-11 pr-10 focus:ring-2 focus:ring-primary/20 transition-all"
                     />
@@ -1891,9 +1944,13 @@ const CreateAssignmentDialog = ({
 
               {/* Preview of selected datetime */}
               {selectedDate && selectedHour && selectedMinute && (
-                <div className="mt-2 p-2 bg-primary/5 border border-primary/20 rounded-md">
+                <div className={`mt-2 p-2 rounded-md border ${isDeadlineInPast()
+                  ? 'bg-destructive/5 border-destructive/20'
+                  : 'bg-primary/5 border-primary/20'
+                  }`}>
                   <p className="text-xs text-muted-foreground">Selected deadline:</p>
-                  <p className="text-sm font-medium text-primary">
+                  <p className={`text-sm font-medium ${isDeadlineInPast() ? 'text-destructive' : 'text-primary'
+                    }`}>
                     {new Date(`${selectedDate} ${selectedHour}:${selectedMinute}`).toLocaleDateString('en-US', {
                       weekday: 'long',
                       year: 'numeric',
@@ -1901,6 +1958,12 @@ const CreateAssignmentDialog = ({
                       day: 'numeric'
                     })} at {selectedHour}:{selectedMinute}
                   </p>
+                  {isDeadlineInPast() && (
+                    <p className="text-xs text-destructive mt-1 flex items-center gap-1">
+                      <span>⚠️</span>
+                      This deadline is in the past. Please select a future date and time.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -1921,7 +1984,7 @@ const CreateAssignmentDialog = ({
               <Button
                 type="button"
                 onClick={() => setShowConfirmDialog(true)}
-                disabled={!name || !selectedDate || !selectedHour || !selectedMinute}
+                disabled={!name || !selectedDate || !selectedHour || !selectedMinute || isDeadlineInPast()}
               >
                 Create Assignment
               </Button>
@@ -1936,7 +1999,7 @@ const CreateAssignmentDialog = ({
           <DialogHeader>
             <DialogTitle>Confirm Assignment Creation</DialogTitle>
             <DialogDescription>
-              Once created, uploaded files cannot be modified. Are you sure you want to create this assignment?
+              After creation, only name, description, and deadline can be modified. Uploaded files cannot be changed. Are you sure you want to create this assignment?
             </DialogDescription>
           </DialogHeader>
           <div className="pt-4 flex justify-end space-x-2">
@@ -1966,11 +2029,262 @@ const CreateAssignmentDialog = ({
   );
 };
 
+// Edit Assignment Dialog
+const EditAssignmentDialog = ({
+  open,
+  onOpenChange,
+  assignment,
+  onAssignmentUpdated
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  assignment: Assignment | null;
+  onAssignmentUpdated: () => void;
+}) => {
+  const { token } = useUserContext();
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedHour, setSelectedHour] = useState('');
+  const [selectedMinute, setSelectedMinute] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Initialize form when assignment changes
+  useEffect(() => {
+    if (assignment && open) {
+      setName(assignment.name);
+      setDescription(assignment.description || '');
+
+      // Parse deadline
+      const deadline = new Date(assignment.deadline);
+      setSelectedDate(deadline.toISOString().split('T')[0]);
+      setSelectedHour(deadline.getHours().toString().padStart(2, '0'));
+      setSelectedMinute(deadline.getMinutes().toString().padStart(2, '0'));
+    } else if (!open) {
+      // Reset form when closing
+      setName('');
+      setDescription('');
+      setSelectedDate('');
+      setSelectedHour('');
+      setSelectedMinute('');
+    }
+  }, [assignment, open]);
+
+  // Helper function to check if selected deadline is in the past
+  const isDeadlineInPast = () => {
+    if (!selectedDate || !selectedHour || !selectedMinute) return false;
+    const deadline = `${selectedDate} ${selectedHour.padStart(2, '0')}:${selectedMinute.padStart(2, '0')}:00`;
+    const deadlineDate = new Date(deadline);
+    const now = new Date();
+    return deadlineDate <= now;
+  };
+
+  const handleUpdateAssignment = async () => {
+    if (!assignment || !name || !selectedDate || !selectedHour || !selectedMinute) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    // Check if deadline is in the past
+    const deadline = `${selectedDate} ${selectedHour.padStart(2, '0')}:${selectedMinute.padStart(2, '0')}:00`;
+    const deadlineDate = new Date(deadline);
+    const now = new Date();
+
+    if (deadlineDate <= now) {
+      toast.error('Deadline cannot be in the past. Please select a future date and time.');
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('deadline', deadline);
+      formData.append('description', description);
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/assignment/${assignment.assignment_id}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update assignment');
+      }
+
+      toast.success('Assignment updated successfully');
+      onOpenChange(false);
+      onAssignmentUpdated();
+    } catch (error) {
+      console.error('Error updating assignment:', error);
+      toast.error('Failed to update assignment');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  if (!assignment) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Edit Assignment</DialogTitle>
+          <DialogDescription>
+            Update assignment details. Files cannot be modified.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 mt-4">
+          <div className="space-y-2">
+            <label htmlFor="edit-assignment-name" className="text-sm font-medium">
+              Assignment Name *
+            </label>
+            <Input
+              id="edit-assignment-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., Homework 1: Basic Algorithms"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="edit-description" className="text-sm font-medium">
+              Description
+            </label>
+            <Textarea
+              id="edit-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe the assignment objectives and requirements..."
+              rows={3}
+            />
+          </div>
+
+          <div className="space-y-3">
+            <label className="text-sm font-medium">Deadline *</label>
+            <div className="grid grid-cols-3 gap-3">
+              {/* Date Picker */}
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Date</label>
+                <div className="relative">
+                  <Input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    required
+                    className="h-11 pr-10 focus:ring-2 focus:ring-primary/20 transition-all"
+                  />
+                  <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Hour Picker */}
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Hour</label>
+                <select
+                  title="Select hour"
+                  className="w-full h-11 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all hover:border-primary/50"
+                  value={selectedHour}
+                  onChange={(e) => setSelectedHour(e.target.value)}
+                >
+                  <option value="" disabled>Hour</option>
+                  {Array.from({ length: 24 }, (_, i) => i).map(hour => (
+                    <option key={hour} value={hour.toString().padStart(2, '0')}>
+                      {hour.toString().padStart(2, '0')}:00
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Minute Picker */}
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Minute</label>
+                <select
+                  title="Select minute"
+                  className="w-full h-11 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all hover:border-primary/50"
+                  value={selectedMinute}
+                  onChange={(e) => setSelectedMinute(e.target.value)}
+                >
+                  <option value="" disabled>Min</option>
+                  {[0, 15, 30, 45].map(minute => (
+                    <option key={minute} value={minute.toString().padStart(2, '0')}>
+                      :{minute.toString().padStart(2, '0')}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Preview of selected datetime */}
+            {selectedDate && selectedHour && selectedMinute && (
+              <div className={`mt-2 p-2 rounded-md border ${isDeadlineInPast()
+                ? 'bg-destructive/5 border-destructive/20'
+                : 'bg-primary/5 border-primary/20'
+                }`}>
+                <p className="text-xs text-muted-foreground">Updated deadline:</p>
+                <p className={`text-sm font-medium ${isDeadlineInPast() ? 'text-destructive' : 'text-primary'
+                  }`}>
+                  {new Date(`${selectedDate} ${selectedHour}:${selectedMinute}`).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })} at {selectedHour}:{selectedMinute}
+                </p>
+                {isDeadlineInPast() && (
+                  <p className="text-xs text-destructive mt-1 flex items-center gap-1">
+                    <span>⚠️</span>
+                    This deadline is in the past. Please select a future date and time.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="pt-4 flex justify-end space-x-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleUpdateAssignment}
+              disabled={!name || !selectedDate || !selectedHour || !selectedMinute || isDeadlineInPast() || isUpdating}
+            >
+              {isUpdating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                'Update Assignment'
+              )}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 // Assignments Tab Content
 const AssignmentsTab = ({ courseId }: { courseId: string }) => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null);
+  const [deletingAssignmentId, setDeletingAssignmentId] = useState<string>('');
+  const [isDeleting, setIsDeleting] = useState(false);
   const { token } = useUserContext();
 
   const fetchAssignments = async () => {
@@ -2027,6 +2341,56 @@ const AssignmentsTab = ({ courseId }: { courseId: string }) => {
   useEffect(() => {
     fetchAssignments();
   }, [courseId, token]);
+
+  // Handle edit assignment
+  const handleEditAssignment = (assignment: Assignment) => {
+    setEditingAssignment(assignment);
+    setEditDialogOpen(true);
+  };
+
+  // Handle delete assignment - open confirmation dialog
+  const handleDeleteAssignment = (assignmentId: string) => {
+    const assignment = assignments.find(a => a.assignment_id === assignmentId);
+    if (!assignment) return;
+
+    // Check if assignment is already closed
+    if (assignment.is_over) {
+      toast.error('Cannot delete a closed assignment');
+      return;
+    }
+
+    setDeletingAssignmentId(assignmentId);
+    setDeleteDialogOpen(true);
+  };
+
+  // Confirm and execute deletion
+  const confirmDeleteAssignment = async () => {
+    if (!deletingAssignmentId) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/assignment/${deletingAssignmentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete assignment');
+      }
+
+      toast.success('Assignment deleted successfully');
+      setDeleteDialogOpen(false);
+      setDeletingAssignmentId('');
+      fetchAssignments(); // Refresh the list
+    } catch (error) {
+      console.error('Error deleting assignment:', error);
+      toast.error('Failed to delete assignment');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -2104,6 +2468,8 @@ const AssignmentsTab = ({ courseId }: { courseId: string }) => {
                     <AssignmentCard
                       key={assignment.assignment_id}
                       assignment={assignment}
+                      onEdit={handleEditAssignment}
+                      onDelete={handleDeleteAssignment}
                     />
                   ))}
                 </AnimatePresence>
@@ -2129,6 +2495,8 @@ const AssignmentsTab = ({ courseId }: { courseId: string }) => {
                     <AssignmentCard
                       key={assignment.assignment_id}
                       assignment={assignment}
+                      onEdit={handleEditAssignment}
+                      onDelete={handleDeleteAssignment}
                     />
                   ))}
                 </AnimatePresence>
@@ -2162,6 +2530,57 @@ const AssignmentsTab = ({ courseId }: { courseId: string }) => {
         courseId={courseId}
         onAssignmentCreated={fetchAssignments}
       />
+
+      <EditAssignmentDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        assignment={editingAssignment}
+        onAssignmentUpdated={fetchAssignments}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-destructive" />
+              Delete Assignment
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this assignment? This action cannot be undone and will permanently remove the assignment and all associated data.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="pt-4 flex justify-end space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setDeletingAssignmentId('');
+              }}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDeleteAssignment}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Assignment
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
