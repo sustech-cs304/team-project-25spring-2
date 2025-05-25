@@ -365,8 +365,7 @@ async def get_environment(
             file_obj = db.query(FileDB).filter(FileDB.file_id == file).first()
             file_name = file_obj.file_name
             file_path = file_obj.file_path
-            file_content = file_obj.content # base64 encoded content
-            file_content = base64.b64decode(file_obj.data)  # Decode the base64 content from 'data'
+            file_content = base64.b64decode(file_obj.content)  # Decode the base64 content from 'data'
             os.makedirs(f"/app/data/{env_id}/{file_path}", exist_ok=True)
             with open(f"/app/data/{env_id}/{file_path}/{file_name}", "wb") as f:
                 f.write(file_content)
