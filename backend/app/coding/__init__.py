@@ -379,9 +379,9 @@ async def get_environment(
     newly_created = False
     if not env:
         if is_group:
-            env = Environment(assignment_id=assign_id, group_id=group_id, is_collaborative=True)
+            env = Environment(course_id=course_id, assignment_id=assign_id, group_id=group_id, is_collaborative=True)
         else:
-            env = Environment(assignment_id=assign_id, user_id=current_user.user_id, is_collaborative=False)
+            env = Environment(course_id=course_id, assignment_id=assign_id, user_id=current_user.user_id, is_collaborative=False)
         db.add(env)
         db.commit()
         db.refresh(env)
