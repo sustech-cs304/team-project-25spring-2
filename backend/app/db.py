@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-host = "postgres" if os.environ.get("ENVNAME") == "k3s" else "postgres"
+host = "postgres" if os.environ.get("ENVNAME") == "k3s" else "localhost"
 db_port = 5432
 DATABASE_URL = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@{host}:{db_port}/{os.getenv('POSTGRES_DB')}"
 

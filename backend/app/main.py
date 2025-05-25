@@ -2,9 +2,7 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer
 
-from app.db import Base, engine
 from app.models import *
 
 from app.ai import router as ai_router
@@ -24,10 +22,6 @@ from app.slides.file import router as file_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: setup database
-    Base.metadata.reflect(bind=engine)
-    Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
     yield
     # Shutdown: no cleanup needed
 

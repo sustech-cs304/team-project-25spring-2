@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Body
+from fastapi import APIRouter, Depends, Form, UploadFile
 from sqlalchemy.orm import Session
 from app.models.material import Material
 from app.models.comment import Comment
@@ -11,7 +11,7 @@ from app.models.section import Section
 from app.models.bookmarklist import BookmarkList
 from app.auth.middleware import get_current_user
 from app.db import get_db
-
+import base64
 import json
 
 router = APIRouter()
@@ -60,3 +60,25 @@ async def search_user(
             for user in users
         ],
     }
+
+@router.post("/user/{user_id}")
+async def modify_user(
+    user_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    office_hour: str = Form(None),
+    office_place: str = Form(None),
+    photo: UploadFile = Form(None),
+):
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if user.user_id != current_user.user_id:
+        return {"message": "You are not allowed to modify this user."}
+    if office_hour:
+        user.office_hour = office_hour
+    if office_place:
+        user.office_place = office_place
+    if photo:
+        # convert to base64
+        user.photo = base64.b64encode(photo.file.read()).decode("utf-8")
+    db.commit()
+    return {"message": "User modified successfully"}

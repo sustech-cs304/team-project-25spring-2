@@ -1,10 +1,13 @@
 FROM ghcr.io/astral-sh/uv:python3.13-alpine
 
 WORKDIR /app
-COPY uv.lock pyproject.toml .
-COPY app/ ./app
+COPY uv.lock pyproject.toml ./
+COPY entrypoint.sh ./
 
-RUN uv sync --frozen
+ADD app /app/app
+ADD test /app/test
+
+RUN uv sync --frozen && chmod +x entrypoint.sh
 ENV PATH="/app/.venv/bin:$PATH"
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5000", "--workers", "4"]
+ENTRYPOINT ["./entrypoint.sh"]

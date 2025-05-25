@@ -26,8 +26,7 @@ client = OpenAI(
 
 @router.get("/chat")
 async def chat(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     chats = db.query(Chat).all()
     if not chats:
@@ -36,6 +35,7 @@ async def chat(
         return [
             {
                 "chat_id": chat.chat_id,
+                "user_id": chat.user_id,
                 "title": chat.title,
             }
             for chat in chats
@@ -46,7 +46,7 @@ async def chat(
 async def get_chat(
     chat_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     chat = db.query(Chat).filter(Chat.chat_id == chat_id).first()
     if not chat:
@@ -63,12 +63,15 @@ async def get_chat(
 
 @router.post("/chat")
 async def create_chat(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     chat_id = str(uuid.uuid4())
     chat = Chat(
-        chat_id=chat_id, user_id=None, material_id=None, title="New Chat", messages=[]
+        chat_id=chat_id,
+        user_id=current_user.user_id,
+        material_id=None,
+        title="New Chat",
+        messages=[],
     )
 
     db.add(chat)
@@ -83,7 +86,7 @@ async def update_chat_name(
     chat_id: str,
     title: str = Form(...),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     chat = db.query(Chat).filter(Chat.chat_id == chat_id).first()
     if not chat:
@@ -113,7 +116,7 @@ async def update_chat_name(
 async def delete_chat(
     chat_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     chat = db.query(Chat).filter(Chat.chat_id == chat_id).first()
     if not chat:

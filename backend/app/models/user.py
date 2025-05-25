@@ -1,6 +1,6 @@
 # app/models/user.py
 from sqlalchemy import Column, String, Boolean, ForeignKey, DateTime
-from sqlalchemy.dialects.postgresql import ARRAY, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, UUID, JSON
 from app.db import Base
 from pydantic import BaseModel
 from typing import Optional
@@ -18,6 +18,7 @@ class User(Base):
     courses = Column(
         ARRAY(String), nullable=True
     )  # corresponding to course_id, but whole course in the api
+    groups = Column(ARRAY(String), nullable=True)  # Array of "course_id:group_id"
     photo = Column(String, nullable=True)
     office_hour = Column(String, nullable=True)
     office_place = Column(String, nullable=True)
@@ -65,5 +66,6 @@ class UserResponse(BaseModel):
     photo: Optional[str] = None
     office_hour: Optional[str] = None
     office_place: Optional[str] = None
+    groups: Optional[list[str]] = None
 
     model_config = {"from_attributes": True}

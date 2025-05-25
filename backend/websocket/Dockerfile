@@ -2,14 +2,15 @@ FROM node:23-alpine
 
 WORKDIR /root
 
-COPY server.js package* ./
+COPY *.js package* entrypoint.sh ./
 ENV DATA_DIR=/root/data
 ENV PORT=1234
 
-RUN apk add --no-cache python3 && \
+RUN apk add --no-cache python3 build-base && \
     apk update && \
-    npm install
+    npm install && chmod +x entrypoint.sh
 
 EXPOSE 1234
+EXPOSE 4000
 
-CMD ["node", "server.js"]
+ENTRYPOINT ["./entrypoint.sh"]

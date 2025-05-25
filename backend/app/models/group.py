@@ -9,6 +9,6 @@ class Group(Base):
 
     group_id = Column(UUID, primary_key=True, index=True)
     course_id = Column(
-        UUID, ForeignKey("courses.course_id"), nullable=False, index=True
+        UUID, ForeignKey("courses.course_id", ondelete="CASCADE"), nullable=False, index=True
     )
     users = Column(ARRAY(String), index=True)

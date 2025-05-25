@@ -21,9 +21,13 @@ router = APIRouter()
 async def get_group(
     course_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     groups = db.query(Group).filter(Group.course_id == course_id).all()
+    user_info = []
+    for group in groups:
+        for user_id in group.users:
+            user_info.append(db.query(User).filter(User.user_id == user_id).first())
     if groups is None:
         return {"message": "Group not found"}
     else:
@@ -34,6 +38,7 @@ async def get_group(
                     "group_id": group.group_id,
                     "course_id": group.course_id,
                     "users": group.users,
+                    "user_info": user_info,
                 }
                 for group in groups
             ],
@@ -46,17 +51,21 @@ async def delete_group(
     group_id: str,
     user_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     group = db.query(Group).filter(Group.group_id == group_id).first()
     if group is None:
         return {"message": "Group not found"}
     else:
-        users = group.users
-        users.remove(user_id)
-        group.users = users
+        new_users = [user for user in group.users if user != user_id]
+        setattr(group, "users", new_users)
+        user = db.query(User).filter(User.user_id == user_id).first()
+        new_groups = [group for group in user.groups if group.split(":")[1] != group_id]
+        setattr(user, "groups", new_groups)
         db.commit()
-        return {"message": "User deleted from group"}
+        db.refresh(user)
+        db.refresh(group)
+        return {"message": "User deleted from group", "group_users": new_users, "user_groups": new_groups}
 
 
 @router.post("/group/{group_id}/user/{user_id}")
@@ -64,14 +73,23 @@ async def add_user_to_group(
     group_id: str,
     user_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     group = db.query(Group).filter(Group.group_id == group_id).first()
     if group is None:
         return {"message": "Group not found"}
-    else:
-        users = group.users
-        users.append(user_id)
-        group.users = users
-        db.commit()
-        return {"message": "User added to group"}
+
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if user is None:
+        return {"message": "User not found"}
+
+    if user.user_id in group.users:
+        return {"message": "User already in group"}
+
+    group.users = group.users + [user.user_id]  
+    user.groups = user.groups + [f"{group.course_id}:{group.group_id}"]
+    db.commit()
+    db.refresh(user)
+    db.refresh(group)
+    print("USER", user.user_id, "GROUP", group.users)
+    return {"message": "User added to group"}

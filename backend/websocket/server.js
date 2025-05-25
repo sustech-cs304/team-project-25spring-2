@@ -10,13 +10,13 @@ import {
     docs,
 } from "./node_modules/@y/websocket-server/src/utils.js";
 
-const host = process.env.HOST || "localhost";
+const host = process.env.HOST || "0.0.0.0";
 const port = number.parseInt(process.env.PORT || "1234");
 const dataDir = process.env.DATA_DIR || "./data";
 
 setContentInitializor(async (ydoc) => {
     const docName = ydoc.name;
-    const filePath = `${dataDir}${docName}`;
+    const filePath = `${dataDir}/${docName}`;
 
     try {
         if (fs.existsSync(filePath)) {
@@ -32,7 +32,7 @@ setContentInitializor(async (ydoc) => {
 
 const saveDocToFile = (doc) => {
     const docName = doc.name;
-    const filePath = `${dataDir}${docName}`;
+    const filePath = `${dataDir}/${docName}`;
 
     try {
         if (!fs.existsSync(dataDir)) {

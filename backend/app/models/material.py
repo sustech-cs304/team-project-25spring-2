@@ -10,7 +10,7 @@ class Material(Base):
     material_id = Column(UUID, primary_key=True, index=True)
     material_name = Column(String, nullable=False)
     section_id = Column(
-        UUID, ForeignKey("sections.section_id"), index=True, nullable=True
+        UUID, ForeignKey("sections.section_id", ondelete="CASCADE"), index=True, nullable=True
     )
     data = Column(String, nullable=False)
     comments = Column(

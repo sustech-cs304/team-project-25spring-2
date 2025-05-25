@@ -1,12 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status, WebSocket
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, Form
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from app.db import get_db
 from app.models.user import User
 from app.models.group import Group
 from app.models.environment import Environment
 from app.models.assignment import Assignment
-from app.models.file import File
-from typing import Annotated, List, Dict, Any
+from app.models.course import Course
+from app.models.file import FileDB
+from typing import Dict, Any
 from kubernetes import config, client
 from app.auth.middleware import get_current_user
 from .api import *
@@ -14,29 +16,58 @@ import os
 import websockets
 import asyncio
 import shutil
+import base64
+
 router = APIRouter()
 if os.environ.get("ENVNAME") == "k3s":
     config.load_incluster_config()
 else:
     config.load_kube_config()
-    
+
+
 # Establish WebSocket connection to the environment
-@router.websocket("/environment/{env_id}/wsurl")
+@router.websocket("/environment/{env_id}/wsurl/{file_path:path}")
 async def websocket_endpoint(
     websocket: WebSocket,
     env_id: str,
+    file_path: str,
     db: Session = Depends(get_db),
+    # current_user: User = Depends(get_current_user)
 ):
-    env = db.query(Environment).filter(Environment.id == env_id).first()
+    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     
+    async def forward_to_pod(source: WebSocket, destination):
+        try:
+            while True:
+                message = await source.receive_bytes()
+                await destination.send(message)
+        except websockets.exceptions.ConnectionClosed:
+            pass
+        except Exception as e:
+            print(f"Error in forward_to_pod: {e}")
+            
+    async def forward_from_pod(source, destination: WebSocket):
+        try:
+            while True:
+                message = await source.recv()
+                await destination.send_bytes(message)
+        except websockets.exceptions.ConnectionClosed:
+            pass
+        except Exception as e:
+            print(f"Error in forward_from_pod: {e}")
+    
     await websocket.accept()
     
+    port = 1234 # Default port for WebSocket connection
+    websocket_url = f"{env.wsUrl}:{port}{file_path}"
+    print(f"[Debug] Connecting to WebSocket URL: {websocket_url}")
+        
     try:
-        async with websockets.connect(env.wsUrl) as internal_ws:
-            client_to_internal = asyncio.create_task(forward_messages(websocket, internal_ws))
-            internal_to_client = asyncio.create_task(forward_messages(internal_ws, websocket))
+        async with websockets.connect(websocket_url) as internal_ws:
+            client_to_internal = asyncio.create_task(forward_to_pod(websocket, internal_ws))
+            internal_to_client = asyncio.create_task(forward_from_pod(internal_ws, websocket))
             
             done, pending = await asyncio.wait(
                 [client_to_internal, internal_to_client],
@@ -52,16 +83,63 @@ async def websocket_endpoint(
         print(f"Unexpected error: {e}")
     finally:
         await websocket.close()
-
-async def forward_messages(source, destination):
+        
+@router.websocket("/terminal/{env_id}")
+async def terminal_endpoint(
+    websocket: WebSocket,
+    env_id: str,
+    db: Session = Depends(get_db),
+    # current_user: User = Depends(get_current_user)
+):
+    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
+    if not env:
+        raise HTTPException(status_code=404, detail="Environment not found")
+    
+    await websocket.accept()
+    
+    async def forward_to_pod(source: WebSocket, destination):
+        try:
+            while True:
+                message = await source.receive_text()
+                await destination.send(message)
+        except websockets.exceptions.ConnectionClosed:
+            pass
+        except Exception as e:
+            print(f"Error in forward_to_pod: {e}")
+            
+    async def forward_from_pod(source, destination: WebSocket):
+        try:
+            while True:
+                message = await source.recv()
+                await destination.send_text(message)
+        except websockets.exceptions.ConnectionClosed:
+            pass
+        except Exception as e:
+            print(f"Error in forward_from_pod: {e}")
+    
+    port = 4000 # Default port for WebSocket connection
+    websocket_url = f"{env.wsUrl}:{port}"
+    print(f"[Debug] Connecting to WebSocket URL: {websocket_url}")
+        
     try:
-        while True:
-            message = await source.receive_text()
-            await destination.send_text(message)
-    except websockets.exceptions.ConnectionClosed:
-        pass
+        async with websockets.connect(websocket_url) as internal_ws:
+            client_to_internal = asyncio.create_task(forward_to_pod(websocket, internal_ws))
+            internal_to_client = asyncio.create_task(forward_from_pod(internal_ws, websocket))
+            
+            done, pending = await asyncio.wait(
+                [client_to_internal, internal_to_client],
+                return_when=asyncio.FIRST_COMPLETED
+            )
+            
+            for task in pending:
+                task.cancel()
+                
+    except websockets.exceptions.WebSocketException as e:
+        print(f"WebSocket error: {e}")
     except Exception as e:
-        print(f"Error in forward_messages: {e}")
+        print(f"Unexpected error: {e}")
+    finally:
+        await websocket.close()
 
 def build_file_structure(path: str, base_uri: str = "/") -> Dict[str, Any]:
     if os.path.isfile(path):
@@ -82,7 +160,6 @@ def build_file_structure(path: str, base_uri: str = "/") -> Dict[str, Any]:
         "children": children
     }
 
-
 @router.get("/environment/{env_id}/files")
 async def get_environment_files(
     env_id: str,
@@ -90,7 +167,7 @@ async def get_environment_files(
     current_user: User = Depends(get_current_user)
 ):
     # TODO: add auth check
-    env = db.query(Environment).filter(Environment.id == env_id).first()
+    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     
@@ -107,12 +184,12 @@ async def get_environment_files(
 @router.post("/environment/{env_id}/file")
 async def create_environment_file(
     env_id: str,
-    file_path: str,
-    file_name: str,
+    file_path: str = Form(...),
+    file_name: str = Form(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    env = db.query(Environment).filter(Environment.id == env_id).first()
+    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     env_path = f"/app/data/{env_id}/{file_path}"
@@ -123,12 +200,12 @@ async def create_environment_file(
 @router.put("/environment/{env_id}/file")
 async def update_environment_file(
     env_id: str,
-    origin: str,
-    destination: str,
+    origin: str = Form(...),
+    destination: str = Form(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    env = db.query(Environment).filter(Environment.id == env_id).first()
+    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     
@@ -150,11 +227,11 @@ async def update_environment_file(
 @router.delete("/environment/{env_id}/file")
 async def delete_environment_file(
     env_id: str,
-    file_path: str,
+    file_path: str = Form(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    env = db.query(Environment).filter(Environment.id == env_id).first()
+    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     
@@ -173,11 +250,11 @@ async def delete_environment_file(
 @router.post("/environment/{env_id}/directory")
 async def create_environment_directory(
     env_id: str,
-    directory_path: str,
+    directory_path: str = Form(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    env = db.query(Environment).filter(Environment.id == env_id).first()
+    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     
@@ -193,12 +270,12 @@ async def create_environment_directory(
 @router.put("/environment/{env_id}/directory")
 async def update_environment_directory(
     env_id: str,
-    origin: str,
-    destination: str,
+    origin: str = Form(...),
+    destination: str = Form(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    env = db.query(Environment).filter(Environment.id == env_id).first()
+    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     
@@ -225,13 +302,16 @@ async def update_environment_directory(
 @router.delete("/environment/{env_id}/directory")
 async def delete_environment_directory(
     env_id: str,
-    directory_path: str,
+    directory_path: str = Form(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    env = db.query(Environment).filter(Environment.id == env_id).first()
+    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
+
+    if current_user.user_id != env.user_id:
+        raise HTTPException(status_code=403, detail="You do not have permission to delete this directory")
     
     env_path = f"/app/data/{env_id}"
     directory_path = os.path.join(env_path, directory_path.lstrip('/'))
@@ -245,89 +325,93 @@ async def delete_environment_directory(
     except OSError as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete directory: {str(e)}")
 
-@router.post("/environment/{env_id}/layout")
-async def save_environment_layout(
+@router.get("/file/{env_id}/pdf")
+async def get_pdf_file(
     env_id: str,
-    layout: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    file_path: str = Form(...),
 ):
-    env = db.query(Environment).filter(Environment.id == env_id).first()
-    if not env:
-        raise HTTPException(status_code=404, detail="Environment not found")
+    env_path = f"/app/data/{env_id}"
+    file_path = os.path.join(env_path, file_path.lstrip('/'))
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
     
-    env.layout = layout
-    db.commit()
-    return {"message": "Layout saved successfully"}
-
-@router.get("/environment/{env_id}/layout")
-async def get_environment_layout(
-    env_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    env = db.query(Environment).filter(Environment.id == env_id).first()
-    if not env:
-        raise HTTPException(status_code=404, detail="Environment not found")
-    
-    return env.layout
-
-@router.post("/terminal/{env_id}")
-async def terminal_exec(
-    env_id: str,
-    command: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    return exec_pod(env_id, command)
+    return FileResponse(
+        path=file_path,
+        media_type='application/pdf',
+        filename=os.path.basename(file_path)
+    )
 
 @router.post("/environment")
 async def get_environment(
-    is_group: bool,
-    assign_id: str,
-    group_id: str,
+    course_id: str = Form(...),
+    assign_id: str = Form(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     core_v1 = client.CoreV1Api()
+    course = db.query(Course).filter(Course.course_id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    # Check if the user is in a group for the course
+    is_group = course.require_group
+    if is_group:
+        groups = db.query(Group).filter(Group.course_id == course_id).all()
+        group_id = None
+        for group in groups:
+            if current_user.user_id in group.users:
+                group_id = group.group_id
+                break
+        if not group_id:
+            return {
+                "message": "Require group",
+                "group_required": True
+            }
+    else:
+        group_id = None
+        
+    # Check if the environment already exists
+    env = check_environment(assign_id, current_user.user_id if not is_group else group_id, is_group, db)
+    
     newly_created = False
-    env = check_environment(assign_id, current_user.id if not is_group else group_id, is_group, db)
     if not env:
-        # create environment
         if is_group:
-            env = Environment(assignment_id=assign_id, group_id=group_id, is_collaborative=True)
+            env = Environment(course_id=course_id, assignment_id=assign_id, group_id=group_id, is_collaborative=True)
         else:
-            env = Environment(assignment_id=assign_id, user_id=current_user.id, is_collaborative=False)
+            env = Environment(course_id=course_id, assignment_id=assign_id, user_id=current_user.user_id, is_collaborative=False)
+        db.add(env)
+        db.commit()
+        db.refresh(env)
+        name = create_pod(core_v1, env.environment_id)
+        env.wsUrl = f"ws://{name}" # Set the WebSocket URL to the pod name
         db.add(env)
         db.commit()
         db.refresh(env)
         newly_created = True
-    env_id = env.id
-    create_pod(core_v1, env_id)
+        
+    env_id = env.environment_id
+    
     if newly_created:
-        assign = db.query(Assignment).filter(Assignment.id == assign_id).first()
+        assign = db.query(Assignment).filter(Assignment.assignment_id == assign_id).first()
         if not assign:
             raise HTTPException(status_code=404, detail="Assignment not found")
         files = assign.files
         for file in files:
-            file_obj = db.query(File).filter(File.id == file).first()
+            file_obj = db.query(FileDB).filter(FileDB.file_id == file).first()
             file_name = file_obj.file_name
             file_path = file_obj.file_path
-            file_content = file_obj.content
+            file_content = base64.b64decode(file_obj.content)  # Decode the base64 content from 'data'
             os.makedirs(f"/app/data/{env_id}/{file_path}", exist_ok=True)
-            with open(f"/app/data/{env_id}/{file_path}/{file_name}", "w") as f:
+            with open(f"/app/data/{env_id}/{file_path}/{file_name}", "wb") as f:
                 f.write(file_content)
-    return env_id
+    return {
+        "message": "Environment created successfully",
+        "environment_id": env_id
+    }
 
-def check_environment(env_id: str, id: str, is_group: bool, db: Session = Depends(get_db)):
+def check_environment(assign_id: str, id: str, is_group: bool, db: Session = Depends(get_db)):
     if is_group:
-        env = db.query(Environment).filter(Environment.id == env_id, Environment.group_id == id, Environment.is_collaborative == True).first()
+        env = db.query(Environment).filter(Environment.assignment_id == assign_id, Environment.group_id == id, Environment.is_collaborative == True).first()
     else:
-        env = db.query(Environment).filter(Environment.id == env_id, Environment.user_id == id, Environment.is_collaborative == False).first()
-    if not env:
-        raise HTTPException(status_code=404, detail="Environment not found")
+        env = db.query(Environment).filter(Environment.assignment_id == assign_id, Environment.user_id == id, Environment.is_collaborative == False).first()
     return env
-
-# TODO: add auth check
-def check_environment_auth(env_id: str, user_id: str, is_group: bool, db: Session = Depends(get_db)):
-    pass
