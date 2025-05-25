@@ -382,6 +382,9 @@ async def get_environment(
             env = Environment(assignment_id=assign_id, group_id=group_id, is_collaborative=True)
         else:
             env = Environment(assignment_id=assign_id, user_id=current_user.user_id, is_collaborative=False)
+        db.add(env)
+        db.commit()
+        db.refresh(env)
         name = create_pod(core_v1, env.environment_id)
         env.wsUrl = f"ws://{name}" # Set the WebSocket URL to the pod name
         db.add(env)
