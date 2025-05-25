@@ -2,12 +2,13 @@ import time
 from kubernetes.stream import stream
 import os
 
+
 def create_pod(api_instance, env_id):
     # copy raw files to `id` directory
     # create id directory:
-    env_id = str(env_id)
+    env_id = str(hash(env_id))[:8]
     os.makedirs(f"/app/data/{env_id}", exist_ok=True)
-    name = "practicum-ws-" + env_id
+    name = "prac-" + env_id
     pod_manifest = {
         'apiVersion': 'v1',
         'kind': 'Pod',
@@ -50,28 +51,3 @@ def create_pod(api_instance, env_id):
             break
         time.sleep(1)
     return name
-
-
-def exec_pod(api_instance, env_id: str, cmd: str):
-    name = "practicum-ws-" + env_id
-    # Calling exec and waiting for response
-    exec_command = [
-        '/bin/sh',
-        '-c',
-        cmd
-    ]
-
-    # When calling a pod with multiple containers running the target container
-    # has to be specified with a keyword argument container=<name>.
-    resp = stream(
-        api_instance.connect_get_namespaced_pod_exec,
-        name,
-        'default',
-        command=exec_command,
-        stderr=True, stdin=False,
-        stdout=True, tty=False
-    )
-
-    output = str(resp)
-    resp.close()
-    return output
