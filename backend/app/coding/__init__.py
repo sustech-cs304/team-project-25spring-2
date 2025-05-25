@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, File, Body
+from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, File, Body, Form
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from app.db import get_db
@@ -148,8 +148,8 @@ async def get_environment_files(
 @router.post("/environment/{env_id}/file")
 async def create_environment_file(
     env_id: str,
-    file_path: str,
-    file_name: str,
+    file_path: str = Form(...),
+    file_name: str = Form(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -164,8 +164,8 @@ async def create_environment_file(
 @router.put("/environment/{env_id}/file")
 async def update_environment_file(
     env_id: str,
-    origin: str,
-    destination: str,
+    origin: str = Form(...),
+    destination: str = Form(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -191,7 +191,7 @@ async def update_environment_file(
 @router.delete("/environment/{env_id}/file")
 async def delete_environment_file(
     env_id: str,
-    file_path: str,
+    file_path: str = Form(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -214,7 +214,7 @@ async def delete_environment_file(
 @router.post("/environment/{env_id}/directory")
 async def create_environment_directory(
     env_id: str,
-    directory_path: str,
+    directory_path: str = Form(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -234,8 +234,8 @@ async def create_environment_directory(
 @router.put("/environment/{env_id}/directory")
 async def update_environment_directory(
     env_id: str,
-    origin: str,
-    destination: str,
+    origin: str = Form(...),
+    destination: str = Form(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -266,7 +266,7 @@ async def update_environment_directory(
 @router.delete("/environment/{env_id}/directory")
 async def delete_environment_directory(
     env_id: str,
-    directory_path: str,
+    directory_path: str = Form(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -331,7 +331,7 @@ async def get_environment_layout(
 @router.get("/file/{env_id}/pdf")
 async def get_pdf_file(
     env_id: str,
-    file_path: str,
+    file_path: str = Form(...),
 ):
     env_path = f"/app/data/{env_id}"
     file_path = os.path.join(env_path, file_path.lstrip('/'))
@@ -346,30 +346,44 @@ async def get_pdf_file(
 
 @router.post("/environment")
 async def get_environment(
-    course_id: str = Body(...),
-    assign_id: str = Body(...),
-    group_id: str = Body(...),
+    course_id: str = Form(...),
+    assign_id: str = Form(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     core_v1 = client.CoreV1Api()
-    newly_created = False
     course = db.query(Course).filter(Course.course_id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
+    
+    # Check if the user is in a group for the course
     is_group = course.require_group
+    if is_group:
+        group = db.query(Group).filter(Group.course_id == course_id, Group.user_id == current_user.user_id).first()
+        group_id = group.group_id if group else None
+        if not group_id:
+            raise HTTPException(status_code=404, detail="User not in a group for this course")
+    else:
+        group_id = None
+        
+    # Check if the environment already exists
     env = check_environment(assign_id, current_user.user_id if not is_group else group_id, is_group, db)
+    
+    newly_created = False
     if not env:
-        name = create_pod(core_v1, env_id)
         if is_group:
-            env = Environment(assignment_id=assign_id, group_id=group_id, is_collaborative=True, wsUrl=f"ws://{name}")
+            env = Environment(assignment_id=assign_id, group_id=group_id, is_collaborative=True)
         else:
-            env = Environment(assignment_id=assign_id, user_id=current_user.user_id, is_collaborative=False, wsUrl=f"ws://{name}")
+            env = Environment(assignment_id=assign_id, user_id=current_user.user_id, is_collaborative=False)
+        name = create_pod(core_v1, env.environment_id)
+        env.wsUrl = f"ws://{name}" # Set the WebSocket URL to the pod name
         db.add(env)
         db.commit()
         db.refresh(env)
         newly_created = True
+        
     env_id = env.environment_id
+    
     if newly_created:
         assign = db.query(Assignment).filter(Assignment.assignment_id == assign_id).first()
         if not assign:
@@ -385,11 +399,11 @@ async def get_environment(
                 f.write(file_content)
     return env_id
 
-def check_environment(env_id: str, id: str, is_group: bool, db: Session = Depends(get_db)):
+def check_environment(assign_id: str, id: str, is_group: bool, db: Session = Depends(get_db)):
     if is_group:
-        env = db.query(Environment).filter(Environment.environment_id == env_id, Environment.group_id == id, Environment.is_collaborative == True).first()
+        env = db.query(Environment).filter(Environment.assignment_id == assign_id, Environment.group_id == id, Environment.is_collaborative == True).first()
     else:
-        env = db.query(Environment).filter(Environment.environment_id == env_id, Environment.user_id == id, Environment.is_collaborative == False).first()
+        env = db.query(Environment).filter(Environment.assignment_id == assign_id, Environment.user_id == id, Environment.is_collaborative == False).first()
     return env
 
 # TODO: add auth check
