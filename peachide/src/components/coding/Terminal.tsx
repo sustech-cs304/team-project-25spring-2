@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import 'xterm/css/xterm.css';
 import { useTheme } from 'next-themes';
 import { init } from 'next/dist/compiled/webpack/webpack';
+import { useUserContext } from '@/app/UserEnvProvider';
 
 interface TerminalComponentProps {
   env_id: string;
@@ -30,6 +31,7 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({ env_id }) => {
   const { resolvedTheme } = useTheme();
   const [pid, setPid] = useState<number | null>(null);
   const socketURL = `${process.env.NEXT_PUBLIC_API_URL}/terminal/${env_id}/`;
+  const { token } = useUserContext();
 
   useEffect(() => {
     setIsClient(true);
@@ -80,7 +82,7 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({ env_id }) => {
           const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/terminal/${env_id}/init`, {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
             },
           });
           if (!response.ok) {
