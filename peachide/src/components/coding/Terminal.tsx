@@ -27,13 +27,11 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({ env_id }) => {
   const xtermRef = useRef<any | null>(null);
   const fitAddonRef = useRef<any | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const [terminalPid, setTerminalPid] = useState<string | null>(null);
   const { resolvedTheme } = useTheme();
   const { token } = useUserContext();
-  const [terminalPid, setTerminalPid] = useState<string | null>(null);
 
   useEffect(() => {
-    setIsClient(true);
-
     const initTermPID = async () => {
       try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/terminal/${env_id}/init`, {
@@ -57,12 +55,13 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({ env_id }) => {
       if (pid) {
         pid = pid.toString();
         setTerminalPid(pid);
+        setIsClient(true);
         console.log(`Terminal initialized with PID: ${terminalPid}`);
       } else {
         console.error('Failed to initialize terminal PID');
       }
     });
-
+    
     return () => {
       setIsClient(false);
     };
