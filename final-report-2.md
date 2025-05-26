@@ -26,7 +26,7 @@ SUM:                           104           1455            509          14546
 - Number of dependencies:
     > Number of Direct Dependency for backend: 30
 
-    > Number of Direct Dependency for backend: 56
+    > Number of Direct Dependency for frontend: 56
 ## Documentation
 
 ### Documentation for end users
