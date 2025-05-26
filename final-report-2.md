@@ -43,11 +43,13 @@ API Documentation: https://peach.benx.dev/docs
 ### 3. Test Coverage report
 
 ```
-test/test_auth.py ....                                                                                                                                            [ 33%]
-test/test_data_generation.py ........                                                                                                                             [100%]
+collected 18 items                                                                                                                                          
 
-============================================================================ tests coverage =============================================================================
-___________________________________________________________ coverage: platform darwin, python 3.13.3-final-0 ____________________________________________________________
+test/test_auth.py ....                                                                                                                                [ 22%]
+test/test_data_generation.py ..............                                                                                                           [100%]
+
+====================================================================== tests coverage =======================================================================
+_____________________________________________________ coverage: platform darwin, python 3.13.3-final-0 ______________________________________________________
 
 Name                         Stmts   Miss  Cover
 ------------------------------------------------
@@ -56,39 +58,38 @@ app/ai/__init__.py             101     72    29%
 app/auth/__init__.py            49      4    92%
 app/auth/middleware.py          14      0   100%
 app/auth/utils.py               32      0   100%
-app/coding/__init__.py         213    163    23%
-app/coding/api.py               21     16    24%
+app/coding/__init__.py         282    233    17%
+app/coding/api.py               20     14    30%
 app/db.py                       16      0   100%
-app/main.py                     45      5    89%
-app/models/assignment.py        14      0   100%
+app/main.py                     40      2    95%
+app/models/assignment.py        15      0   100%
 app/models/bookmarklist.py      10      0   100%
 app/models/chat.py              10      0   100%
 app/models/code_snippet.py      14      0   100%
 app/models/comment.py           11      0   100%
 app/models/course.py            16      0   100%
 app/models/environment.py       18      0   100%
-app/models/file.py              17      0   100%
+app/models/file.py              16      0   100%
 app/models/group.py              8      0   100%
 app/models/material.py          10      0   100%
 app/models/note.py               9      0   100%
 app/models/section.py           10      0   100%
-app/models/user.py              48      0   100%
+app/models/user.py              50      0   100%
 app/slides/__init__.py           0      0   100%
-app/slides/assignment.py        38     17    55%
+app/slides/assignment.py        71     29    59%
 app/slides/bookmarklist.py      56     23    59%
 app/slides/code_snippet.py      68     30    56%
 app/slides/comment.py           40     24    40%
-app/slides/course.py           104     41    61%
-app/slides/environment.py        0      0   100%
-app/slides/file.py              43     30    30%
-app/slides/group.py             42     20    52%
-app/slides/material.py          75     42    44%
+app/slides/course.py           108     42    61%
+app/slides/file.py              43      4    91%
+app/slides/group.py             57      5    91%
+app/slides/material.py          67     36    46%
 app/slides/note.py              42     17    60%
-app/slides/section.py           56     21    62%
-app/slides/user.py              31      2    94%
+app/slides/section.py           57     22    61%
+app/slides/user.py              45     13    71%
 ------------------------------------------------
-TOTAL                         1283    527    59%
-========================================================================== 12 passed in 5.51s ===========================================================================
+TOTAL                         1407    570    59%
+==================================================================== 18 passed in 7.35s =====================================================================
 ```
 
 ## Build
