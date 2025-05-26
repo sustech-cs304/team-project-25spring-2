@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import 'xterm/css/xterm.css';
 import { useTheme } from 'next-themes';
+import { init } from 'next/dist/compiled/webpack/webpack';
 
 interface TerminalComponentProps {
   env_id: string;
@@ -27,7 +28,8 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({ env_id }) => {
   const fitAddonRef = useRef<any | null>(null);
   const [isClient, setIsClient] = useState(false);
   const { resolvedTheme } = useTheme();
-  const socketURL = `${process.env.NEXT_PUBLIC_API_URL}/terminal/${env_id}`;
+  const [pid, setPid] = useState<number | null>(null);
+  const socketURL = `${process.env.NEXT_PUBLIC_API_URL}/terminal/${env_id}/`;
 
   useEffect(() => {
     setIsClient(true);
@@ -73,7 +75,35 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({ env_id }) => {
       const fitAddon = new FitAddon();
       const webLinksAddon = new WebLinksAddon();
 
-      const ws = new WebSocket(socketURL);
+      const initTermPID = async () => {
+        try {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/terminal/${env_id}/init`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          if (!response.ok) {
+            throw new Error('Failed to initialize terminal PID');
+          }
+          const data = await response.json();
+          setPid(data.pid);
+          return data.pid;
+        } catch (error) {
+          console.error('Error initializing terminal PID:', error);
+          return null;
+        }
+      }
+
+      initTermPID().then((pid) => {
+        if (pid) {
+          console.log(`Terminal initialized with PID: ${pid}`);
+        } else {
+          console.error('Failed to initialize terminal PID');
+        }
+      });
+
+      const ws = new WebSocket(socketURL + pid);
       const attachAddon = new AttachAddon(ws);
 
       terminal.loadAddon(fitAddon);
