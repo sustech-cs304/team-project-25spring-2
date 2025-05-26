@@ -6,6 +6,7 @@
   "main": "server.js",
   "dependencies": {
     "@y/websocket-server": "^0.1.1",
+    "express": "^5.1.0",
     "lib0": "^0.2.87",
     "node-pty": "^1.0.0",
     "ws": "^8.18.2",

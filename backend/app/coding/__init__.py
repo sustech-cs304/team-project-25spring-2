@@ -17,6 +17,7 @@ import websockets
 import asyncio
 import shutil
 import base64
+import httpx
 
 router = APIRouter()
 if os.environ.get("ENVNAME") == "k3s":
@@ -84,10 +85,35 @@ async def websocket_endpoint(
     finally:
         await websocket.close()
         
-@router.websocket("/terminal/{env_id}")
+@router.post("/terminal/{env_id}/init")
+async def init_terminal(
+    env_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
+    if not env:
+        raise HTTPException(status_code=404, detail="Environment not found")
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(f"{env.wsUrl}:4000/init")
+            response.raise_for_status()
+            data = response.json()
+            pid = data.get("pid")
+            if not pid:
+                raise HTTPException(status_code=500, detail="Failed to initialize terminal")
+    except Exception as e:
+        print(f"[init_terminal] error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to initialize terminal")
+
+    return {"message": "Terminal initialized successfully", "pid": pid}
+        
+@router.websocket("/terminal/{env_id}/{pid}")
 async def terminal_endpoint(
     websocket: WebSocket,
     env_id: str,
+    pid: str,
     db: Session = Depends(get_db),
     # current_user: User = Depends(get_current_user)
 ):
@@ -118,7 +144,7 @@ async def terminal_endpoint(
             print(f"Error in forward_from_pod: {e}")
     
     port = 4000 # Default port for WebSocket connection
-    websocket_url = f"{env.wsUrl}:{port}"
+    websocket_url = f"{env.wsUrl}:{port}/?pid={pid}"
     print(f"[Debug] Connecting to WebSocket URL: {websocket_url}")
         
     try:
