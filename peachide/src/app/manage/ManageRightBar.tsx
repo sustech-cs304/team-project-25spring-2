@@ -1312,7 +1312,7 @@ const AssignmentEnvironmentsDialog = ({
       }
 
       const data = await response.json();
-      setEnvironments(data || []);
+      setEnvironments(data.environments || []);
     } catch (error) {
       console.error('Error fetching environments:', error);
       toast.error('Failed to fetch assignment environments');
