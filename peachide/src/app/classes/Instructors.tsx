@@ -128,22 +128,34 @@ export default function Instructors({ courseId }: InstructorsProps) {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="text-center pb-6">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-center gap-2">
-                    <Clock size={16} className="text-primary" />
-                    <p className="text-sm text-muted-foreground">
-                      <span className="font-medium">Office Hours:</span> {teacher.office_hour}
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-center gap-2">
-                    <MapPin size={16} className="text-primary" />
-                    <p className="text-sm text-muted-foreground">
-                      <span className="font-medium">Location:</span> {teacher.office_place}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
+              {
+                (teacher.office_hour || teacher.office_place) && (
+                  <CardContent className="text-center pb-6">
+                    <div className="space-y-3">
+                      {
+                        teacher.office_hour && (
+                          <div className="flex items-center justify-center gap-2">
+                            <Clock size={16} className="text-primary" />
+                            <p className="text-sm text-muted-foreground">
+                              <span className="font-medium">Office Hours:</span> {teacher.office_hour}
+                            </p>
+                          </div>
+                        )
+                      }
+                      {
+                        teacher.office_place && (
+                          <div className="flex items-center justify-center gap-2">
+                            <MapPin size={16} className="text-primary" />
+                            <p className="text-sm text-muted-foreground">
+                              <span className="font-medium">Location:</span> {teacher.office_place}
+                            </p>
+                          </div>
+                        )
+                      }
+                    </div>
+                  </CardContent>
+                )
+              }
             </Card>
           </motion.div>
         ))}

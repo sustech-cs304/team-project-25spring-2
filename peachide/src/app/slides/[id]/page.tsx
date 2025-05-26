@@ -66,7 +66,7 @@ function PDFSection({ url, materialId, materialName }: { url: string, materialId
                     position: feedback.clickPosition,
                     page: feedback.pageNumber,
                     id: uuidv4(),
-                    lang: 'javascript'
+                    lang: 'typescript'
                 };
 
                 setSnippets([...snippets, newSnippet]);
@@ -172,7 +172,7 @@ function CodeSnippetEditor({ materialId }: { materialId: string }) {
     const [title, setTitle] = useState<string>('');
     const [editor, setEditor] = useState<any>(null);
     const [snippetContent, setSnippetContent] = useState<string>('');
-    const [selectedLanguage, setSelectedLanguage] = useState<string>('javascript');
+    const [selectedLanguage, setSelectedLanguage] = useState<string>('typescript');
     const { token } = useUserContext();
     const { note } = useNote(materialId, token);
     const [executionResult, setExecutionResult] = useState<{ result: string; error: string | null }>({ result: '', error: null });
@@ -185,7 +185,7 @@ function CodeSnippetEditor({ materialId }: { materialId: string }) {
         } else {
             setTitle(`Snippet on page ${currentSnippet.page}`);
             setSnippetContent(note?.content || currentSnippet.text);
-            setSelectedLanguage(currentSnippet.lang || 'javascript');
+            setSelectedLanguage(currentSnippet.lang || 'typescript');
         }
         updateEditor();
     }, [currentSnippet, note]);
@@ -289,7 +289,7 @@ function CodeSnippetEditor({ materialId }: { materialId: string }) {
     };
 
     const languages = [
-        "python", "java", "c", "cpp", "javascript", "typescript",
+        "python", "java", "c", "cpp", "typescript",
     ];
 
     return (
