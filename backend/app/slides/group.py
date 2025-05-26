@@ -1,18 +1,10 @@
 from fastapi import APIRouter, Depends, Body, Form
 from sqlalchemy.orm import Session
-from app.models.material import Material
-from app.models.comment import Comment
-from app.models.note import Note
-from app.models.code_snippet import CodeSnippet
-from app.models.assignment import Assignment
 from app.models.user import User
-from app.models.course import Course
-from app.models.section import Section
-from app.models.bookmarklist import BookmarkList
 from app.models.group import Group
 from app.auth.middleware import get_current_user
-import json
 from app.db import get_db
+
 
 router = APIRouter()
 

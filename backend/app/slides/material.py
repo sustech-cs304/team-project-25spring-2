@@ -5,9 +5,9 @@ from app.models.comment import Comment
 from app.auth.middleware import get_current_user
 from app.models.user import User
 from app.models.section import Section
-import uuid
 import base64
 from app.db import get_db
+
 
 router = APIRouter()
 

@@ -1,18 +1,11 @@
 from fastapi import APIRouter, Depends, Form, UploadFile
 from sqlalchemy.orm import Session
-from app.models.material import Material
-from app.models.comment import Comment
-from app.models.note import Note
-from app.models.code_snippet import CodeSnippet
-from app.models.assignment import Assignment
 from app.models.user import User
 from app.models.course import Course
-from app.models.section import Section
-from app.models.bookmarklist import BookmarkList
 from app.auth.middleware import get_current_user
 from app.db import get_db
 import base64
-import json
+
 
 router = APIRouter()
 
