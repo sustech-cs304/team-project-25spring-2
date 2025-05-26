@@ -1,9 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import 'xterm/css/xterm.css';
 import { useTheme } from 'next-themes';
-import { init } from 'next/dist/compiled/webpack/webpack';
 import { useUserContext } from '@/app/UserEnvProvider';
-import { set } from 'lodash';
 
 interface TerminalComponentProps {
   env_id: string;
