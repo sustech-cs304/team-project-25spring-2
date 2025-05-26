@@ -29,7 +29,6 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({ env_id }) => {
   const [isClient, setIsClient] = useState(false);
   const { resolvedTheme } = useTheme();
   const [terminalPid, setTerminalPid] = useState<string | null>(null);
-  const socketURL = `${process.env.NEXT_PUBLIC_API_URL}/terminal/${env_id}/`;
   const { token } = useUserContext();
 
   useEffect(() => {
@@ -99,13 +98,14 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({ env_id }) => {
         if (pid) {
           pid = pid.toString();
           setTerminalPid(pid);
-          console.log(`Terminal initialized with PID: ${pid}`);
+          console.log(`Terminal initialized with PID: ${terminalPid}`);
         } else {
           console.error('Failed to initialize terminal PID');
         }
       });
 
-      const ws = new WebSocket(socketURL + terminalPid);
+      const socketURL = `${process.env.NEXT_PUBLIC_API_URL}/terminal/${env_id}/${terminalPid}`;
+      const ws = new WebSocket(socketURL);
       const attachAddon = new AttachAddon(ws);
 
       terminal.loadAddon(fitAddon);
