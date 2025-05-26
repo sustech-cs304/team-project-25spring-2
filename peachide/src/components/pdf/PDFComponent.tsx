@@ -53,10 +53,12 @@ export const PDFComponent: React.FC<PDFComponentProps> = ({ env_id, file_path })
         const formData = new FormData();
         formData.append('file_path', file_path);
         
-        return fetch(url.toString(), {
+        return fetch(url, {
+            method: 'POST',
             headers: {
                 'Accept': 'application/pdf'
-            }
+            },
+            body: formData,
         })
         .then(response => {
             if (!response.ok) {
