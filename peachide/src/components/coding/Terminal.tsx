@@ -29,9 +29,39 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({ env_id }) => {
   const [isClient, setIsClient] = useState(false);
   const { resolvedTheme } = useTheme();
   const { token } = useUserContext();
+  const [terminalPid, setTerminalPid] = useState<string | null>(null);
 
   useEffect(() => {
     setIsClient(true);
+
+    const initTermPID = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/terminal/${env_id}/init`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        if (!response.ok) {
+          throw new Error('Failed to initialize terminal PID');
+        }
+        const data = await response.json();
+        return data.pid;
+      } catch (error) {
+        console.error('Error initializing terminal PID:', error);
+        return null;
+      }
+    }
+
+    initTermPID().then((pid) => {
+      if (pid) {
+        pid = pid.toString();
+        setTerminalPid(pid);
+        console.log(`Terminal initialized with PID: ${terminalPid}`);
+      } else {
+        console.error('Failed to initialize terminal PID');
+      }
+    });
 
     return () => {
       setIsClient(false);
@@ -74,38 +104,8 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({ env_id }) => {
       const fitAddon = new FitAddon();
       const webLinksAddon = new WebLinksAddon();
 
-      const initTermPID = async () => {
-        try {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/terminal/${env_id}/init`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          });
-          if (!response.ok) {
-            throw new Error('Failed to initialize terminal PID');
-          }
-          const data = await response.json();
-          return data.pid;
-        } catch (error) {
-          console.error('Error initializing terminal PID:', error);
-          return null;
-        }
-      }
-
-      let terminalPid = null;
-
-      initTermPID().then((pid) => {
-        if (pid) {
-          pid = pid.toString();
-          terminalPid = pid;
-          console.log(`Terminal initialized with PID: ${terminalPid}`);
-        } else {
-          console.error('Failed to initialize terminal PID');
-        }
-      });
-
       const socketURL = `${process.env.NEXT_PUBLIC_API_URL}/terminal/${env_id}/${terminalPid}`;
+      console.log(`Connecting to terminal at: ${socketURL}`);
       const ws = new WebSocket(socketURL);
       const attachAddon = new AttachAddon(ws);
 
