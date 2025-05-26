@@ -28,7 +28,6 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({ env_id }) => {
   const fitAddonRef = useRef<any | null>(null);
   const [isClient, setIsClient] = useState(false);
   const { resolvedTheme } = useTheme();
-  const [terminalPid, setTerminalPid] = useState<string | null>(null);
   const { token } = useUserContext();
 
   useEffect(() => {
@@ -94,10 +93,12 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({ env_id }) => {
         }
       }
 
+      let terminalPid = null;
+
       initTermPID().then((pid) => {
         if (pid) {
           pid = pid.toString();
-          setTerminalPid(pid);
+          terminalPid = pid;
           console.log(`Terminal initialized with PID: ${terminalPid}`);
         } else {
           console.error('Failed to initialize terminal PID');
