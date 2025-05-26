@@ -129,7 +129,7 @@ export default function Instructors({ courseId }: InstructorsProps) {
                 </div>
               </CardHeader>
               {
-                teacher.office_hour || teacher.office_place && (
+                (teacher.office_hour || teacher.office_place) && (
                   <CardContent className="text-center pb-6">
                     <div className="space-y-3">
                       {
