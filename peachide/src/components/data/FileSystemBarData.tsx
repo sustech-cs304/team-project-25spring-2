@@ -141,3 +141,58 @@ export const deleteNode = (node: TreeNode, uri: string): TreeNode => {
   }
   return node;
 };
+
+export const mvPath = (fromUri: string, toUri: string, token: string | null, env_id: string) => {
+  const formData = new FormData();
+  formData.append("from_uri", fromUri);
+  formData.append("to_uri", toUri);
+
+  fetch(process.env.NEXT_PUBLIC_API_URL + `/environment/${env_id}/move`, {
+      method: "POST",
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Failed to move file");
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log("File moved successfully:", data.message);
+      }
+      )
+      .catch(error => {
+        console.error("Error moving file:", error);
+      }
+    );
+}
+
+export const rmPath = (uri: string, token: string | null, env_id: string) => {
+  const formData = new FormData();
+  formData.append("uri", uri);
+
+  fetch(process.env.NEXT_PUBLIC_API_URL + `/environment/${env_id}/delete`, {
+      method: "DELETE",
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Failed to delete item");
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log("Item deleted successfully:", data.message);
+      }
+      )
+      .catch(error => {
+        console.error("Error deleting item:", error);
+      }
+    );
+}

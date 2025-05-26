@@ -7,7 +7,7 @@ import { TreeNode } from "@/components/data/CodeEnvType";
 import { FileTreeProps, FileTree } from "@/components/coding/FileStructure";
 import { assignTreeNode } from "@/components/coding/FileUtils";
 import { Input } from "@/components/ui/input";
-import { useTree, removeNode, addNodeToTarget, addFolderToDir, addFileToDir, fileExists, folderExists, deleteNode, findNode } from "../data/FileSystemBarData";
+import { useTree, removeNode, addNodeToTarget, addFolderToDir, addFileToDir, fileExists, folderExists, deleteNode, findNode, rmPath, mvPath } from "../data/FileSystemBarData";
 import { useUserContext } from "@/app/UserEnvProvider";
 
 interface FileSystemBarProps {
@@ -58,6 +58,8 @@ export default function FileSystemBar({ projectId, isVisible, onFileSelect }: Fi
 
     setNewItemName("");
     setShowFileInput(false);
+
+    // TODO: connect with backend: post("/environment/{env_id}/file")
   };
 
   const createNewFolder = () => {
@@ -87,6 +89,8 @@ export default function FileSystemBar({ projectId, isVisible, onFileSelect }: Fi
 
     setNewItemName("");
     setShowFolderInput(false);
+    
+    // TODO: connect with backend: post("/environment/{env_id}/directory")
   };
 
   const handleItemClick: FileTreeProps["onItemClick"] = (treeNode) => {
@@ -157,6 +161,8 @@ export default function FileSystemBar({ projectId, isVisible, onFileSelect }: Fi
     });
 
     setDragOverNode(null);
+
+    mvPath(fromUri, newUri, token, projectId);
   };
 
   const handleDelete = (uri: string) => {
@@ -169,6 +175,7 @@ export default function FileSystemBar({ projectId, isVisible, onFileSelect }: Fi
         return deleteNode(newTree, uri);
       });
     }
+    rmPath(uri, token, projectId);
   };
 
   return (
