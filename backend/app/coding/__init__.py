@@ -350,7 +350,7 @@ async def delete_environment_directory(
     except OSError as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete directory: {str(e)}")
 
-@router.get("/file/{env_id}/pdf")
+@router.post("/file/{env_id}/pdf")
 async def get_pdf_file(
     env_id: str,
     file_path: str = Form(...),
