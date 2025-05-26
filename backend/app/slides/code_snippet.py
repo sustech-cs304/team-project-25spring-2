@@ -171,6 +171,6 @@ async def execute_code_snippet(
         )
 
     return {
-        "result": result["raw_json"]["run"]["stdout"],
-        "error": result["raw_json"]["run"]["stderr"],
+        "result": result.run_stage.output,
+        "error": result.run_stage.stderr,
     }
