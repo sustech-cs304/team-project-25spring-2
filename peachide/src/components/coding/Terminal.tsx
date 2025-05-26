@@ -56,12 +56,11 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({ env_id }) => {
         pid = pid.toString();
         setTerminalPid(pid);
         setIsClient(true);
-        console.log(`Terminal initialized with PID: ${terminalPid}`);
       } else {
         console.error('Failed to initialize terminal PID');
       }
     });
-    
+
     return () => {
       setIsClient(false);
     };
@@ -104,7 +103,6 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({ env_id }) => {
       const webLinksAddon = new WebLinksAddon();
 
       const socketURL = `${process.env.NEXT_PUBLIC_API_URL}/terminal/${env_id}/${terminalPid}`;
-      console.log(`Connecting to terminal at: ${socketURL}`);
       const ws = new WebSocket(socketURL);
       const attachAddon = new AttachAddon(ws);
 

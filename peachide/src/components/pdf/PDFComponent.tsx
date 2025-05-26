@@ -49,8 +49,9 @@ export const PDFComponent: React.FC<PDFComponentProps> = ({ env_id, file_path })
     }), []);
 
     const getPDFFile = () => {
-        const url = new URL(`/file/${env_id}/pdf`, window.location.origin);
-        url.searchParams.append('file_path', file_path);
+        const url = process.env.NEXT_PUBLIC_API_URL + `/file/${env_id}/pdf`
+        const formData = new FormData();
+        formData.append('file_path', file_path);
         
         return fetch(url.toString(), {
             headers: {
