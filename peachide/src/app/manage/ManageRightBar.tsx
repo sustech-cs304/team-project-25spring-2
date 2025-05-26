@@ -2195,7 +2195,7 @@ const EditAssignmentDialog = ({
                   <option value="" disabled>Hour</option>
                   {Array.from({ length: 24 }, (_, i) => i).map(hour => (
                     <option key={hour} value={hour.toString().padStart(2, '0')}>
-                      {hour.toString().padStart(2, '0')}:00
+                      {hour.toString().padStart(2, '0')}
                     </option>
                   ))}
                 </select>
@@ -2213,7 +2213,7 @@ const EditAssignmentDialog = ({
                   <option value="" disabled>Min</option>
                   {[0, 15, 30, 45].map(minute => (
                     <option key={minute} value={minute.toString().padStart(2, '0')}>
-                      :{minute.toString().padStart(2, '0')}
+                      {minute.toString().padStart(2, '0')}
                     </option>
                   ))}
                 </select>

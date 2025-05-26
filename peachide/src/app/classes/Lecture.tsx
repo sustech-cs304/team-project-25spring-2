@@ -212,11 +212,11 @@ export default function Lecture({ courseId }: LectureProps) {
       <div className="flex justify-center items-center h-full p-8">
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
-            <div className="text-muted-foreground mb-4">
+            <div className="text-muted-foreground mb-4 w-full flex justify-center">
               <Presentation size={48} />
             </div>
             <h3 className="text-xl font-semibold mb-2">No lectures available</h3>
-            <p className="text-muted-foreground">There are no lecture sections available for this course yet.</p>
+            <p className="text-muted-foreground">Only teacher can add lecture sections.</p>
           </CardContent>
         </Card>
       </div>
@@ -320,7 +320,7 @@ export default function Lecture({ courseId }: LectureProps) {
           <div className="max-h-[60vh] mt-4 overflow-hidden">
             <div className="space-y-3 px-1 overflow-y-auto max-h-[58vh] pr-2">
               <AnimatePresence>
-                {selectedSection?.materials.map((material, index) => (
+                {(selectedSection?.materials?.length || 0) > 0 ? selectedSection?.materials.map((material, index) => (
                   <motion.div
                     key={material.material_id}
                     initial={{ opacity: 0, y: 10 }}
@@ -348,7 +348,11 @@ export default function Lecture({ courseId }: LectureProps) {
                       </div>
                     </div>
                   </motion.div>
-                ))}
+                )) : (
+                  <div className="flex items-center justify-center p-4">
+                    <p className="text-muted-foreground">No materials available</p>
+                  </div>
+                )}
               </AnimatePresence>
             </div>
           </div>
