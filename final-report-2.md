@@ -2,11 +2,27 @@
 
 ## Metrics
 
-- Lines of Code:
-- Number of source files:
+- Lines of Code & Number of source files
+```
+-------------------------------------------------------------------------------
+Language                     files          blank        comment           code
+-------------------------------------------------------------------------------
+TypeScript                      53            941            350          10169
+Python                          37            410             88           2914
+CSS                              5             52             19           1030
+JavaScript                       5             26             37            357
+Dockerfile                       3             24             15             47
+TOML                             1              2              0             29
+-------------------------------------------------------------------------------
+SUM:                           104           1455            509          14546
+-------------------------------------------------------------------------------
+```
 - Cyclomatic complexity:
+    > https://github.com/sustech-cs304/team-project-25spring-2/blob/final-report/backend_complexity.md
 - Number of dependencies:
+    > Number of Direct Dependency for backend: 30
 
+    > Number of Direct Dependency for backend: 56
 ## Documentation
 
 ### Documentation for end users
