@@ -19,11 +19,13 @@ interface GroupsMap {
 interface UserContextType {
   token: string | null;
   userId: string | null;
+  fetchFailed: boolean;
   isAuthenticated: boolean;
   isTeacher: boolean;
   myGroups: GroupsMap;
   userData: UserData | null;
   setUserData: (userData: UserData) => void;
+  setFetchFailed: (fetchFailed: boolean) => void;
   setIsTeacher: (isTeacher: boolean) => void;
   setMyGroups: (groups: GroupsMap) => void;
   login: (token: string, userId: string, isTeacher: boolean) => void;
@@ -65,6 +67,7 @@ const defaultSidebarItems: SidebarItem[] = [...baseSidebarItems];
 const UserContext = createContext<UserContextType>({
   token: null,
   userId: null,
+  fetchFailed: false,
   isAuthenticated: false,
   isTeacher: false,
   myGroups: {} as GroupsMap,
@@ -73,6 +76,7 @@ const UserContext = createContext<UserContextType>({
   login: () => { },
   logout: () => { },
   setUserData: () => { },
+  setFetchFailed: () => { },
   sidebarItems: defaultSidebarItems,
   setSidebarItems: () => { },
   setMyGroups: () => { },
@@ -85,6 +89,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [isTeacher, setIsTeacher] = useState<boolean>(false);
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [fetchFailed, setFetchFailed] = useState<boolean>(false);
   const [sidebarItems, setSidebarItems] = useState<SidebarItem[]>(defaultSidebarItems);
   const [myGroups, setMyGroups] = useState<GroupsMap>({} as GroupsMap);
 
@@ -107,7 +112,9 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         });
 
         if (!response.ok) {
-          throw new Error('Failed to fetch user data');
+          setFetchFailed(true);
+          console.log("Failed to fetch user data", response);
+          return;
         }
 
         const data = await response.json();
@@ -132,6 +139,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         }
         setMyGroups(groups as GroupsMap);
       } catch (error) {
+        setFetchFailed(true);
         console.error('Error fetching user data:', error);
         toast.error('Failed to load user information');
       }
@@ -185,6 +193,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       localStorage.setItem('sidebarItems', JSON.stringify([...defaultSidebarItems, ...studentSidebarItems]));
       console.log("studentSidebarItems", [...defaultSidebarItems, ...studentSidebarItems]);
     }
+    setFetchFailed(false);
   };
 
   const logout = () => {
@@ -197,6 +206,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     // Reset sidebar items to default when logging out
     setSidebarItems(defaultSidebarItems);
     localStorage.setItem('sidebarItems', JSON.stringify(defaultSidebarItems));
+    setFetchFailed(false);
   };
 
   const isAuthenticated = IS_MOCK_AUTH || !!token;
@@ -212,6 +222,8 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         setIsTeacher,
         login,
         logout,
+        fetchFailed,
+        setFetchFailed,
         userData,
         setMyGroups,
         setUserData,
