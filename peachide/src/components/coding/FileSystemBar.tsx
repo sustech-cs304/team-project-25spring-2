@@ -7,7 +7,7 @@ import { TreeNode } from "@/components/data/CodeEnvType";
 import { FileTreeProps, FileTree } from "@/components/coding/FileStructure";
 import { assignTreeNode } from "@/components/coding/FileUtils";
 import { Input } from "@/components/ui/input";
-import { useTree, removeNode, addNodeToTarget, addFolderToDir, addFileToDir, fileExists, folderExists, deleteNode, findNode, rmPath, mvPath } from "../data/FileSystemBarData";
+import { useTree, removeNode, addNodeToTarget, addFolderToDir, addFileToDir, fileExists, folderExists, deleteNode, findNode, rmPath, mvPath, createDirectory, createFile } from "../data/FileSystemBarData";
 import { useUserContext } from "@/app/UserEnvProvider";
 
 interface FileSystemBarProps {
@@ -53,13 +53,12 @@ export default function FileSystemBar({ projectId, isVisible, onFileSelect }: Fi
       if (!currentTree) return currentTree;
       const newTree = JSON.parse(JSON.stringify(currentTree));
       addFileToDir(newTree, targetDir, newFileNode);
+      createFile(targetDir, newItemName, token, projectId);
       return newTree;
     });
 
     setNewItemName("");
     setShowFileInput(false);
-
-    // TODO: connect with backend: post("/environment/{env_id}/file")
   };
 
   const createNewFolder = () => {
@@ -84,13 +83,12 @@ export default function FileSystemBar({ projectId, isVisible, onFileSelect }: Fi
       if (!currentTree) return currentTree;
       const newTree = JSON.parse(JSON.stringify(currentTree));
       addFolderToDir(newTree, targetDir, newFolderNode);
+      createDirectory(newFolderUri, token, projectId);
       return newTree;
     });
 
     setNewItemName("");
     setShowFolderInput(false);
-    
-    // TODO: connect with backend: post("/environment/{env_id}/directory")
   };
 
   const handleItemClick: FileTreeProps["onItemClick"] = (treeNode) => {
@@ -156,13 +154,11 @@ export default function FileSystemBar({ projectId, isVisible, onFileSelect }: Fi
       const newTree = JSON.parse(JSON.stringify(currentTree));
       removeNode(newTree, fromUri);
       addNodeToTarget(newTree, toUri, sourceNode, fromUri, newUri);
-      console.log("newTree", newTree);
+      mvPath(fromUri, toUri, token, projectId);
       return newTree;
     });
 
     setDragOverNode(null);
-
-    mvPath(fromUri, newUri, token, projectId);
   };
 
   const handleDelete = (uri: string) => {
@@ -172,10 +168,10 @@ export default function FileSystemBar({ projectId, isVisible, onFileSelect }: Fi
       setTree(currentTree => {
         if (!currentTree) return currentTree;
         const newTree = JSON.parse(JSON.stringify(currentTree));
+        rmPath(uri, token, projectId);
         return deleteNode(newTree, uri);
       });
     }
-    rmPath(uri, token, projectId);
   };
 
   return (

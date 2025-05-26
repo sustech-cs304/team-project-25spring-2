@@ -8,7 +8,11 @@ const fetcher = (url: string, token: string | null) => {
 };
 
 export function useTree(projectId: string, token: string | null) {
-  const { data, error, isLoading } = useSWR(process.env.NEXT_PUBLIC_API_URL + `/environment/${projectId}/files`, (url) => fetcher(url, token));
+  const { data, error, isLoading } = useSWR(
+    process.env.NEXT_PUBLIC_API_URL + `/environment/${projectId}/files`, 
+    (url) => fetcher(url, token),
+    { refreshInterval: 3000 }
+  );
   return {
     fileTree: data,
     isLoading: isLoading,
@@ -141,6 +145,61 @@ export const deleteNode = (node: TreeNode, uri: string): TreeNode => {
   }
   return node;
 };
+
+export const createFile = (file_path: string, file_name: string, token: string | null, env_id: string) => {
+  const formData = new FormData();
+  formData.append("file_path", file_path);
+  formData.append("file_name", file_name);
+
+  fetch(process.env.NEXT_PUBLIC_API_URL + `/environment/${env_id}/file`, {
+      method: "POST",
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Failed to create file");
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log("File created successfully:", data.message);
+      }
+      )
+      .catch(error => {
+        console.error("Error creating file:", error);
+      }
+    );
+}
+
+export const createDirectory = (uri: string, token: string | null, env_id: string) => {
+  const formData = new FormData();
+  formData.append("directory_path", uri);
+
+  fetch(process.env.NEXT_PUBLIC_API_URL + `/environment/${env_id}/directory`, {
+      method: "POST",
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Failed to create directory");
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log("Directory created successfully:", data.message);
+      }
+      )
+      .catch(error => {
+        console.error("Error creating directory:", error);
+      }
+    );
+}
 
 export const mvPath = (fromUri: string, toUri: string, token: string | null, env_id: string) => {
   const formData = new FormData();
