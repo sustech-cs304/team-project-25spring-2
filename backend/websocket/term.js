@@ -1,5 +1,6 @@
 import express from "express";
 import { WebSocketServer } from "ws";
+import pty from "node-pty";
 
 const app = express();
 app.use(express.json());
