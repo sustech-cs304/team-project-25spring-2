@@ -9,7 +9,9 @@ import {
   ChevronRight,
   AlertCircle,
   BookOpen,
-  CodeXml
+  CodeXml,
+  Users,
+  User
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,9 +22,13 @@ import { useUserContext } from '../UserEnvProvider';
 
 interface Assignment {
   assignment_id: string;
+  is_group_assign: boolean;
   name: string;
+  course_id: string;
+  teacher_id: string;
   deadline: string;
   isOver: boolean;
+  description?: string;
 }
 
 interface AssignmentData {
@@ -67,44 +73,7 @@ export default function Assignment({ courseId }: AssignmentProps) {
         console.error('Error fetching assignments:', err);
         // Mock data for development
         setData({
-          assignments: [
-            {
-              assignment_id: "asn_001",
-              name: "Getting Started with Algorithms",
-              deadline: "2023-06-15T23:59:59Z",
-              isOver: false
-            },
-            {
-              assignment_id: "asn_002",
-              name: "Data Structures Implementation",
-              deadline: "2023-06-20T23:59:59Z",
-              isOver: false
-            },
-            {
-              assignment_id: "asn_003",
-              name: "Algorithm Complexity Analysis",
-              deadline: "2023-06-10T23:59:59Z",
-              isOver: true
-            },
-            {
-              assignment_id: "asn_004",
-              name: "Advanced Problem Solving",
-              deadline: "2023-07-05T23:59:59Z",
-              isOver: false
-            },
-            {
-              assignment_id: "asn_005",
-              name: "Team Project Planning",
-              deadline: "2023-06-25T23:59:59Z",
-              isOver: false
-            },
-            {
-              assignment_id: "asn_006",
-              name: "Basic Programming Concepts",
-              deadline: "2023-05-30T23:59:59Z",
-              isOver: true
-            }
-          ]
+          assignments: []
         });
       } finally {
         setLoading(false);
@@ -411,21 +380,42 @@ export default function Assignment({ courseId }: AssignmentProps) {
                     {!isActive && (
                       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-muted-foreground/30 to-muted-foreground/10"></div>
                     )}
-                    <CardHeader className="pb-2">
-                      <CardTitle className={`text-xl font-semibold flex items-center ${!isActive ? 'text-muted-foreground' : ''}`}>
-                        <BookOpen className="h-5 w-5 mr-2 text-primary" />
-                        {assignment.name}
-                        {assignment.isOver && (
-                          <Badge variant="outline" className="ml-2 text-xs">
-                            Completed
-                          </Badge>
-                        )}
-                        {isMissed && (
-                          <Badge variant="destructive" className="ml-2 text-xs">
-                            Missed
-                          </Badge>
-                        )}
-                      </CardTitle>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <CardTitle className={`text-xl font-semibold flex items-center ${!isActive ? 'text-muted-foreground' : ''}`}>
+                          <BookOpen className="h-5 w-5 mr-2 text-primary" />
+                          {assignment.name}
+                        </CardTitle>
+                        <div className="flex gap-2 ml-4">
+                          {assignment.is_group_assign && (
+                            <Badge variant="secondary" className="flex items-center gap-1 text-xs">
+                              <Users size={10} />
+                              Group
+                            </Badge>
+                          )}
+                          {!assignment.is_group_assign && (
+                            <Badge variant="outline" className="flex items-center gap-1 text-xs">
+                              <User size={10} />
+                              Individual
+                            </Badge>
+                          )}
+                          {assignment.isOver && (
+                            <Badge variant="outline" className="text-xs">
+                              Completed
+                            </Badge>
+                          )}
+                          {isMissed && (
+                            <Badge variant="destructive" className="text-xs">
+                              Missed
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      {assignment.description && (
+                        <p className={`text-sm mt-2 ${!isActive ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
+                          {assignment.description}
+                        </p>
+                      )}
                     </CardHeader>
                     <CardContent className="pb-4">
                       {renderDeadlineInfo(assignment.deadline, assignment.isOver)}
