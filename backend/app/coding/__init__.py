@@ -217,16 +217,47 @@ async def create_environment_file(
     env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
+    
+    if env.user_id != current_user.user_id:
+        raise HTTPException(status_code=403, detail="No privilege for creating the file.")
+    
     env_path = f"/app/data/{env_id}/{file_path}"
     os.makedirs(os.path.dirname(env_path), exist_ok=True)
     with open(env_path + "/" + file_name, "w") as f:
         f.write("")
+    return {
+        "message": "File created successfully",
+    }
+
+@router.post("/environment/{env_id}/directory")
+async def create_environment_directory(
+    env_id: str,
+    directory_path: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
+    if not env:
+        raise HTTPException(status_code=404, detail="Environment not found")
+    
+    if current_user.user_id != env.user_id:
+        raise HTTPException(status_code=403, detail="No privilege for creating the directory.")
+    
+    env_path = f"/app/data/{env_id}"
+    directory_path = os.path.join(env_path, directory_path.lstrip('/'))
+    
+    if not os.path.exists(directory_path):
+        os.makedirs(directory_path)
+        return {"message": "Directory created successfully"}
+    else:
+        raise HTTPException(status_code=400, detail="Directory already exists")
+
 
 @router.post("/environment/{env_id}/move")
 async def update_environment_path(
     env_id: str,
-    from_uri: str = Form(...),
-    to_uri: str = Form(...),
+    from_uri: str = Form(...),  # File or a directory
+    to_uri: str = Form(...),    # Always a directory
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -239,18 +270,28 @@ async def update_environment_path(
     
     env_path = f"/app/data/{env_id}"
     origin_path = os.path.join(env_path, from_uri.lstrip('/'))
-    destination_path = os.path.join(env_path, to_uri.lstrip('/'))
-    
+    destination_dir = os.path.join(env_path, to_uri.lstrip('/'))
+
     if not os.path.exists(origin_path):
-        raise HTTPException(status_code=404, detail="Source file not found")
-    
-    os.makedirs(os.path.dirname(destination_path), exist_ok=True)
-    
+        raise HTTPException(status_code=404, detail="Source path not found")
+    if not os.path.isdir(destination_dir):
+        os.makedirs(destination_dir, exist_ok=True)
+
     try:
-        os.rename(origin_path, destination_path)
-        return {"message": "File moved successfully"}
+        if os.path.isfile(origin_path):
+            dest_path = os.path.join(destination_dir, os.path.basename(origin_path))
+            os.rename(origin_path, dest_path)
+        elif os.path.isdir(origin_path):
+            dir_name = os.path.basename(os.path.normpath(origin_path))
+            dest_path = os.path.join(destination_dir, dir_name)
+            if os.path.exists(dest_path):
+                raise HTTPException(status_code=400, detail="Destination directory already exists")
+            os.rename(origin_path, dest_path)
+        else:
+            raise HTTPException(status_code=400, detail="Source is neither file nor directory")
+        return {"message": "Move operation successful"}
     except OSError as e:
-        raise HTTPException(status_code=500, detail=f"Failed to move file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to move: {str(e)}")
     
 @router.delete("/environment/{env_id}/delete")
 async def delete_environment_path(
@@ -277,26 +318,6 @@ async def delete_environment_path(
         return {"message": "File deleted successfully"}
     except OSError as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete: {str(e)}")
-    
-@router.post("/environment/{env_id}/directory")
-async def create_environment_directory(
-    env_id: str,
-    directory_path: str = Form(...),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
-    if not env:
-        raise HTTPException(status_code=404, detail="Environment not found")
-    
-    env_path = f"/app/data/{env_id}"
-    directory_path = os.path.join(env_path, directory_path.lstrip('/'))
-    
-    if not os.path.exists(directory_path):
-        os.makedirs(directory_path)
-        return {"message": "Directory created successfully"}
-    else:
-        raise HTTPException(status_code=400, detail="Directory already exists")
 
 @router.post("/file/{env_id}/pdf")
 async def get_pdf_file(
