@@ -27,7 +27,7 @@ export interface UserData {
 }
 
 export default function Home() {
-  const { userId, logout, isTeacher, setIsTeacher, userData, setUserData, token } = useUserContext();
+  const { userId, logout, isTeacher, setIsTeacher, userData, setUserData, token, fetchFailed, setFetchFailed } = useUserContext();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -42,7 +42,6 @@ export default function Home() {
   const [previewPhoto, setPreviewPhoto] = useState<string>('');
   const [showLoginDialog, setShowLoginDialog] = useState(false);
 
-  // Initialize edit data when userData changes
   useEffect(() => {
     if (userData) {
       setEditData({
@@ -51,13 +50,19 @@ export default function Home() {
         photo: null
       });
       setPreviewPhoto(userData.photo || '');
-    } else {
-      setShowLoginDialog(true);
     }
   }, [userData]);
 
+  useEffect(() => {
+    if (fetchFailed) {
+      console.log("fetchFailed", fetchFailed);
+      setShowLoginDialog(true);
+    }
+  }, [fetchFailed]);
+
   const handleLogout = () => {
     logout();
+    setFetchFailed(false);
     router.push('/auth');
     toast.success('Logged out successfully');
   };
