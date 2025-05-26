@@ -115,7 +115,6 @@ async def terminal_endpoint(
     env_id: str,
     pid: str,
     db: Session = Depends(get_db),
-    # current_user: User = Depends(get_current_user)
 ):
     env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
@@ -366,6 +365,50 @@ async def get_pdf_file(
         media_type='application/pdf',
         filename=os.path.basename(file_path)
     )
+    
+@router.get("/environment/{course_id}/{assign_id}")
+async def get_environments(
+    course_id: str,
+    assign_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user) # This is a teacher account
+):
+    course = db.query(Course).filter(Course.course_id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    assign = db.query(Assignment).filter(Assignment.assignment_id == assign_id).first()
+    if not assign:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    
+    is_group = assign.is_group_assign
+    
+    envs = db.query(Environment).filter(
+        Environment.assignment_id == assign_id,
+        Environment.course_id == course_id,
+        Environment.is_collaborative == is_group
+    ).all()
+    
+    return {
+        "message": "Environments retrieved successfully",
+        "environments": [
+            {
+                "env_id": env.environment_id,
+                "users": [
+                    {
+                        "name": user.name,
+                        "avatar": user.photo,
+                        "user_id": user.user_id
+                    } for user in db.query(User).filter(
+                        (User.user_id == env.user_id) | (User.user_id.in_(db.query(Group).filter(Group.group_id == env.group_id).first().users if env.group_id else []))
+                    ).all()
+                ],
+                "is_group_assign": env.is_collaborative,
+                "create_time": env.created_at.isoformat(),
+                "last_update_time": env.updated_at.isoformat()
+            } for env in envs
+        ]
+    }
 
 @router.post("/environment")
 async def get_environment(
@@ -379,8 +422,12 @@ async def get_environment(
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
     
+    assign = db.query(Assignment).filter(Assignment.assignment_id == assign_id).first()
+    if not assign:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    
     # Check if the user is in a group for the course
-    is_group = course.require_group
+    is_group = assign.is_group_assign
     if is_group:
         groups = db.query(Group).filter(Group.course_id == course_id).all()
         group_id = None
