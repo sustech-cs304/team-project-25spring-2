@@ -140,7 +140,7 @@ Our artifacts are the source code of the project, and Docker images stored in Gi
 
 PeachIDE is deployed on a cloud server with Kubernetes (K3S) and Docker
 - K8S Deployments: frontend, backend, and database
-- Traefik ingress: gateway for routing to all services. [ Dashboard ](https://traefik.peach.benx.dev/)
+- Traefik ingress: gateway for routing to all services. [ Dashboard ](https://traefik.peach.benx.dev/dashboard/)
 - Docker: hosting code execution engine, which needs to be separated from K8S.
 
 To automatically deploy our project, we use GitHub Actions to deploy to our server. The deployment can be publicly accessed via https://peach.benx.dev.
