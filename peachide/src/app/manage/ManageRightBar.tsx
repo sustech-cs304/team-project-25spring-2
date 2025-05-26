@@ -248,6 +248,7 @@ const AddUserDialog = ({
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
+              title="Search by name..."
               placeholder="Search by name..."
               className="pl-10"
               value={searchTerm}
@@ -914,6 +915,7 @@ const SectionDialog = ({
               Section Name
             </label>
             <Input
+              title="Section Name"
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -931,6 +933,7 @@ const SectionDialog = ({
                 <div className="flex-1">
                   <label className="text-xs font-medium mb-1 block">Date</label>
                   <Input
+                    title="Select date"
                     type="date"
                     onChange={(e) => {
                       setSelectedDate(e.target.value);
@@ -1144,6 +1147,7 @@ const UploadMaterialDialog = ({
               Material Name
             </label>
             <Input
+              title="Material Name"
               id="material-name"
               value={materialName}
               onChange={(e) => setMaterialName(e.target.value)}
@@ -1599,6 +1603,7 @@ const CreateAssignmentDialog = ({
             onClick={selectedFile && showPathInput ? undefined : () => fileInputRef.current?.click()}
           >
             <input
+              title="Choose file"
               type="file"
               className="hidden"
               ref={fileInputRef}
@@ -1917,7 +1922,7 @@ const CreateAssignmentDialog = ({
                     <option value="" disabled>Hour</option>
                     {Array.from({ length: 24 }, (_, i) => i).map(hour => (
                       <option key={hour} value={hour.toString().padStart(2, '0')}>
-                        {hour.toString().padStart(2, '0')}:00
+                        {hour.toString().padStart(2, '0')}
                       </option>
                     ))}
                   </select>
@@ -1935,7 +1940,7 @@ const CreateAssignmentDialog = ({
                     <option value="" disabled>Min</option>
                     {[0, 15, 30, 45].map(minute => (
                       <option key={minute} value={minute.toString().padStart(2, '0')}>
-                        :{minute.toString().padStart(2, '0')}
+                        {minute.toString().padStart(2, '0')}
                       </option>
                     ))}
                   </select>
