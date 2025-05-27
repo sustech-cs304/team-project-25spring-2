@@ -218,7 +218,8 @@ Material_id_list = []
 Note_id_list = []
 Code_snippet_id_list = []
 Bookmarklist_id_list = []
-File_id_list = []
+File_id_list_individual = []
+File_id_list_group = []
 Assignment_id_list = []
 Envrionment_id_list = []
 
@@ -506,13 +507,38 @@ def test_create_file():
         assert response.status_code == 200 or response.status_code == 201
         data = response.json()
         assert "file_id" in data
-        File_id_list.append(data["file_id"])
+        File_id_list_individual.append(data["file_id"])
+        assert data["message"] == "File created successfully"
+        
+    files_path_group = [
+        os.path.join(os.path.dirname(__file__), "./test_group_environment/dijkstra.py"),
+        os.path.join(os.path.dirname(__file__), "./test_group_environment/README.md"),
+    ]
+    
+    for file_path in files_path_group:
+        assert os.path.exists(file_path), "Sample PDF file does not exist."
+        with open(file_path, "rb") as f:
+            files = {"file": (os.path.basename(file_path), f, "application/pdf")}
+            data = {
+                "file_name": os.path.basename(file_path),
+                "file_path": "/code" if file_path.endswith(".py") else "/",
+            }
+            response = client.post(
+                "/api/file",
+                headers=headers,
+                data=data,
+                files=files,
+            )
+        assert response.status_code == 200 or response.status_code == 201
+        data = response.json()
+        assert "file_id" in data
+        File_id_list_group.append(data["file_id"])
         assert data["message"] == "File created successfully"
 
 def test_update_file():
     headers = {"Authorization": f"Bearer {Teacher_id_list[0]['token']}"}
     update_resp = client.put(
-        f"/api/file/{File_id_list[3]}",
+        f"/api/file/{File_id_list_individual[3]}",
         headers=headers,
         data={
             "file_name": "hello_world.py",
@@ -521,14 +547,14 @@ def test_update_file():
     )
     updated_file = update_resp.json()
     assert update_resp.status_code == 200
-    assert updated_file["file_id"] == File_id_list[3]
+    assert updated_file["file_id"] == File_id_list_individual[3]
     assert updated_file["file_name"] == "hello_world.py"
     assert updated_file["file_path"] == "/test_code_files"
 
 def test_delete_file():
     headers = {"Authorization": f"Bearer {Teacher_id_list[0]['token']}"}
     delete_resp = client.delete(
-        f"/api/file/{File_id_list[2]}",
+        f"/api/file/{File_id_list_individual[2]}",
         headers=headers,
     )
     assert delete_resp.status_code == 200
@@ -542,9 +568,9 @@ def test_create_assignment():
         "course_id": Course_id_list[0],
         "name": "Homework 1",
         "description": "This is the first homework assignment.",
-        "deadline": "2025-06-01 23:59:59",
+        "deadline": "2025-06-03 23:59:59",
         "is_group_assign": False,
-        "files": File_id_list,
+        "files": File_id_list_individual,
     }
     response = client.post("/api/assignment", data=assignment_data, headers=headers)
     assert response.status_code == 200 or response.status_code == 201
@@ -552,6 +578,21 @@ def test_create_assignment():
     assert "assignment_id" in data
     Assignment_id_list.append(data["assignment_id"])
     assert data["message"] == "Assignment created successfully."
+    
+    assignment_data2 = {
+        "course_id": Course_id_list[0],
+        "name": "Group Project",
+        "description": "This is a group project assignment.",
+        "deadline": "2025-06-15 23:59:59",
+        "is_group_assign": True,
+        "files": File_id_list_group,
+    }
+    response2 = client.post("/api/assignment", data=assignment_data2, headers=headers)
+    assert response2.status_code == 200 or response2.status_code == 201
+    data2 = response2.json()
+    assert "assignment_id" in data2
+    Assignment_id_list.append(data2["assignment_id"])
+    assert data2["message"] == "Assignment created successfully."
     
 def test_get_assignments():
     student_token = Student_id_list[0]["token"]
