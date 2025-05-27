@@ -17,6 +17,7 @@ import websockets
 import asyncio
 import shutil
 import base64
+import httpx
 
 router = APIRouter()
 if os.environ.get("ENVNAME") == "k3s":
@@ -84,12 +85,36 @@ async def websocket_endpoint(
     finally:
         await websocket.close()
         
-@router.websocket("/terminal/{env_id}")
+@router.post("/terminal/{env_id}/init")
+async def init_terminal(
+    env_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
+    if not env:
+        raise HTTPException(status_code=404, detail="Environment not found")
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(f"{env.wsUrl}:4000/init")
+            response.raise_for_status()
+            data = response.json()
+            pid = data.get("pid")
+            if not pid:
+                raise HTTPException(status_code=500, detail="Failed to initialize terminal")
+    except Exception as e:
+        print(f"[init_terminal] error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to initialize terminal")
+
+    return {"message": "Terminal initialized successfully", "pid": pid}
+        
+@router.websocket("/terminal/{env_id}/{pid}")
 async def terminal_endpoint(
     websocket: WebSocket,
     env_id: str,
+    pid: str,
     db: Session = Depends(get_db),
-    # current_user: User = Depends(get_current_user)
 ):
     env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
@@ -118,7 +143,7 @@ async def terminal_endpoint(
             print(f"Error in forward_from_pod: {e}")
     
     port = 4000 # Default port for WebSocket connection
-    websocket_url = f"{env.wsUrl}:{port}"
+    websocket_url = f"{env.wsUrl}:{port}/?pid={pid}"
     print(f"[Debug] Connecting to WebSocket URL: {websocket_url}")
         
     try:
@@ -192,61 +217,18 @@ async def create_environment_file(
     env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
+    
+    if env.user_id != current_user.user_id:
+        raise HTTPException(status_code=403, detail="No privilege for creating the file.")
+    
     env_path = f"/app/data/{env_id}/{file_path}"
     os.makedirs(os.path.dirname(env_path), exist_ok=True)
     with open(env_path + "/" + file_name, "w") as f:
         f.write("")
+    return {
+        "message": "File created successfully",
+    }
 
-@router.put("/environment/{env_id}/file")
-async def update_environment_file(
-    env_id: str,
-    origin: str = Form(...),
-    destination: str = Form(...),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
-    if not env:
-        raise HTTPException(status_code=404, detail="Environment not found")
-    
-    env_path = f"/app/data/{env_id}"
-    origin_path = os.path.join(env_path, origin.lstrip('/'))
-    destination_path = os.path.join(env_path, destination.lstrip('/'))
-    
-    if not os.path.exists(origin_path):
-        raise HTTPException(status_code=404, detail="Source file not found")
-    
-    os.makedirs(os.path.dirname(destination_path), exist_ok=True)
-    
-    try:
-        os.rename(origin_path, destination_path)
-        return {"message": "File moved successfully"}
-    except OSError as e:
-        raise HTTPException(status_code=500, detail=f"Failed to move file: {str(e)}")
-    
-@router.delete("/environment/{env_id}/file")
-async def delete_environment_file(
-    env_id: str,
-    file_path: str = Form(...),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
-    if not env:
-        raise HTTPException(status_code=404, detail="Environment not found")
-    
-    env_path = f"/app/data/{env_id}"
-    file_path = os.path.join(env_path, file_path.lstrip('/'))
-    
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="File not found")
-    
-    try:
-        os.remove(file_path)
-        return {"message": "File deleted successfully"}
-    except OSError as e:
-        raise HTTPException(status_code=500, detail=f"Failed to delete file: {str(e)}")
-    
 @router.post("/environment/{env_id}/directory")
 async def create_environment_directory(
     env_id: str,
@@ -258,6 +240,9 @@ async def create_environment_directory(
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     
+    if current_user.user_id != env.user_id:
+        raise HTTPException(status_code=403, detail="No privilege for creating the directory.")
+    
     env_path = f"/app/data/{env_id}"
     directory_path = os.path.join(env_path, directory_path.lstrip('/'))
     
@@ -267,11 +252,12 @@ async def create_environment_directory(
     else:
         raise HTTPException(status_code=400, detail="Directory already exists")
 
-@router.put("/environment/{env_id}/directory")
-async def update_environment_directory(
+
+@router.post("/environment/{env_id}/move")
+async def update_environment_path(
     env_id: str,
-    origin: str = Form(...),
-    destination: str = Form(...),
+    from_uri: str = Form(...),  # File or a directory
+    to_uri: str = Form(...),    # Always a directory
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -279,53 +265,61 @@ async def update_environment_directory(
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     
-    env_path = f"/app/data/{env_id}"
-    origin_path = os.path.join(env_path, origin.lstrip('/'))
-    destination_path = os.path.join(env_path, destination.lstrip('/'))
-    
-    if not os.path.exists(origin_path):
-        raise HTTPException(status_code=404, detail="Source directory not found")
-    
-    os.makedirs(destination_path, exist_ok=True)
-    
-    try:
-        for item in os.listdir(origin_path):
-            item_path = os.path.join(origin_path, item)
-            if os.path.isfile(item_path):
-                shutil.move(item_path, os.path.join(destination_path, item))
-            else:
-                shutil.move(item_path, os.path.join(destination_path, item))
-        return {"message": "Directory moved successfully"}
-    except OSError as e:
-        raise HTTPException(status_code=500, detail=f"Failed to move directory: {str(e)}")
-
-@router.delete("/environment/{env_id}/directory")
-async def delete_environment_directory(
-    env_id: str,
-    directory_path: str = Form(...),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
-    if not env:
-        raise HTTPException(status_code=404, detail="Environment not found")
-
     if current_user.user_id != env.user_id:
-        raise HTTPException(status_code=403, detail="You do not have permission to delete this directory")
+        raise HTTPException(status_code=403, detail="No privilege for modifying the file.")
     
     env_path = f"/app/data/{env_id}"
-    directory_path = os.path.join(env_path, directory_path.lstrip('/'))
+    origin_path = os.path.join(env_path, from_uri.lstrip('/'))
+    destination_dir = os.path.join(env_path, to_uri.lstrip('/'))
+
+    if not os.path.exists(origin_path):
+        raise HTTPException(status_code=404, detail="Source path not found")
+    if not os.path.isdir(destination_dir):
+        os.makedirs(destination_dir, exist_ok=True)
+
+    try:
+        if os.path.isfile(origin_path):
+            dest_path = os.path.join(destination_dir, os.path.basename(origin_path))
+            os.rename(origin_path, dest_path)
+        elif os.path.isdir(origin_path):
+            dir_name = os.path.basename(os.path.normpath(origin_path))
+            dest_path = os.path.join(destination_dir, dir_name)
+            if os.path.exists(dest_path):
+                raise HTTPException(status_code=400, detail="Destination directory already exists")
+            os.rename(origin_path, dest_path)
+        else:
+            raise HTTPException(status_code=400, detail="Source is neither file nor directory")
+        return {"message": "Move operation successful"}
+    except OSError as e:
+        raise HTTPException(status_code=500, detail=f"Failed to move: {str(e)}")
     
-    if not os.path.exists(directory_path):
-        raise HTTPException(status_code=404, detail="Directory not found")
+@router.delete("/environment/{env_id}/delete")
+async def delete_environment_path(
+    env_id: str,
+    uri: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    env = db.query(Environment).filter(Environment.environment_id == env_id).first()
+    if not env:
+        raise HTTPException(status_code=404, detail="Environment not found")
+    
+    if current_user.user_id != env.user_id:
+        raise HTTPException(status_code=403, detail="No privilege for deleting the file.")
+    
+    env_path = f"/app/data/{env_id}"
+    file_path = os.path.join(env_path, uri.lstrip('/'))
+    
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Path not found")
     
     try:
-        shutil.rmtree(directory_path)
-        return {"message": "Directory deleted successfully"}
+        os.remove(file_path)
+        return {"message": "File deleted successfully"}
     except OSError as e:
-        raise HTTPException(status_code=500, detail=f"Failed to delete directory: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete: {str(e)}")
 
-@router.get("/file/{env_id}/pdf")
+@router.post("/file/{env_id}/pdf")
 async def get_pdf_file(
     env_id: str,
     file_path: str = Form(...),
@@ -340,6 +334,50 @@ async def get_pdf_file(
         media_type='application/pdf',
         filename=os.path.basename(file_path)
     )
+    
+@router.get("/environment/{course_id}/{assign_id}")
+async def get_environments(
+    course_id: str,
+    assign_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user) # This is a teacher account
+):
+    course = db.query(Course).filter(Course.course_id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    assign = db.query(Assignment).filter(Assignment.assignment_id == assign_id).first()
+    if not assign:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    
+    is_group = assign.is_group_assign
+    
+    envs = db.query(Environment).filter(
+        Environment.assignment_id == assign_id,
+        Environment.course_id == course_id,
+        Environment.is_collaborative == is_group
+    ).all()
+    
+    return {
+        "message": "Environments retrieved successfully",
+        "environments": [
+            {
+                "env_id": env.environment_id,
+                "users": [
+                    {
+                        "name": user.name,
+                        "avatar": user.photo,
+                        "user_id": user.user_id
+                    } for user in db.query(User).filter(
+                        (User.user_id == env.user_id) | (User.user_id.in_(db.query(Group).filter(Group.group_id == env.group_id).first().users if env.group_id else []))
+                    ).all()
+                ],
+                "is_group_assign": env.is_collaborative,
+                "create_time": env.created_at.isoformat(),
+                "last_update_time": env.updated_at.isoformat()
+            } for env in envs
+        ]
+    }
 
 @router.post("/environment")
 async def get_environment(
@@ -353,8 +391,12 @@ async def get_environment(
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
     
+    assign = db.query(Assignment).filter(Assignment.assignment_id == assign_id).first()
+    if not assign:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    
     # Check if the user is in a group for the course
-    is_group = course.require_group
+    is_group = assign.is_group_assign
     if is_group:
         groups = db.query(Group).filter(Group.course_id == course_id).all()
         group_id = None

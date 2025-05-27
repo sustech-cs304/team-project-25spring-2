@@ -1,30 +1,53 @@
-import { WebSocketServer } from 'ws';
-import * as pty from "node-pty";
+import express from "express";
+import { WebSocketServer } from "ws";
+import pty from "node-pty";
+
+const app = express();
+app.use(express.json());
 
 const shell = "sh";
-const wss = new WebSocketServer({ host: '0.0.0.0', port: 4000 });
+const port = 4000;
 
-let term = null;
+const terminalMap = new Map(); // pid -> term
 
-wss.on('connection', function connection(ws) {
-  if (!term) {
-    term = pty.spawn(shell, [], {
+app.post("/init", (req, res) => {
+    const term = pty.spawn(shell, [], {
         name: "xterm-color",
         cwd: "/root/data",
         env: process.env,
     });
-  }
+    const pid = term.pid.toString();
+    terminalMap.set(pid, term);
+    res.json({ pid });
+});
 
-  term.onData((data) => {
-    ws.send(data);
-  });
+const server = app.listen(port, () => {
+    console.log("Server running on port", port);
+});
 
-  ws.on("message", (data) => {
-    term.write(data);
-  });
+const wss = new WebSocketServer({ server });
 
-  ws.on("close", function () {
-    term.kill();
-    term = null;
-  });
+wss.on("connection", function connection(ws, req) {
+    const urlParams = new URLSearchParams(req.url.split("?")[1]);
+    const pid = urlParams.get("pid");
+
+    if (!pid || !terminalMap.has(pid)) {
+        ws.close();
+        return;
+    }
+
+    const term = terminalMap.get(pid);
+
+    term.onData((data) => {
+        ws.send(data);
+    });
+
+    ws.on("message", (data) => {
+        term.write(data.toString());
+    });
+
+    ws.on("close", () => {
+        term.kill();
+        terminalMap.delete(pid);
+    });
 });

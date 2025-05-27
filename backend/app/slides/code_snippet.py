@@ -1,8 +1,5 @@
 from fastapi import APIRouter, Depends, Body, Form, HTTPException, status
 from sqlalchemy.orm import Session
-from app.models.material import Material
-from app.models.comment import Comment
-from app.models.note import Note
 from app.models.code_snippet import CodeSnippet
 from pyston import PystonClient, File
 from app.auth.middleware import get_current_user
@@ -171,6 +168,6 @@ async def execute_code_snippet(
         )
 
     return {
-        "result": result["raw_json"]["run"]["stdout"],
-        "error": result["raw_json"]["run"]["stderr"],
+        "result": result.run_stage.output,
+        "error": result.run_stage.stdrr,
     }

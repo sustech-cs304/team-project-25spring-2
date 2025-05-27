@@ -138,7 +138,7 @@ def generate_random_code_snippet():
     )
 
 
-def generate_random_user_data(is_teacher=False):
+def generate_random_user_data(is_teacher=False, id = 0):
     """Generate random user data for testing"""
     if is_teacher:
         user_id = "30001221"
@@ -146,10 +146,31 @@ def generate_random_user_data(is_teacher=False):
         password = f"password"
         email = f"testTeacher@gmail.com"
     else:
-        user_id = "12211414"
-        name = f"Student {generate_random_string(4)}"
-        password = f"password"
-        email = f"test{generate_random_string(4)}@gmail.com"
+        if id == 0: 
+            user_id = "12211414"
+            name = f"MingzhiChen"
+            password = f"password"
+            email = f"test{generate_random_string(4)}@gmail.com"
+        elif id == 1:
+            user_id = "12210829"
+            name = "TianrunQiu"
+            password = f"password"
+            email = f"test{generate_random_string(4)}@gmail.com"
+        elif id == 2:
+            user_id = "12210414"
+            name = "YichengXiao"
+            password = f"password"
+            email = f"test{generate_random_string(4)}@gmail.com"
+        elif id == 3:
+            user_id = "12212231"
+            name = "BenChen"
+            password = f"password"
+            email = f"test{generate_random_string(4)}@gmail.com"
+        elif id == 4:   
+            user_id = "12210532"
+            name = "ZhuoWang"
+            password = f"password"
+            email = f"test{generate_random_string(4)}@gmail.com"
     return {
         "user_id": user_id,
         "name": name,
@@ -205,9 +226,9 @@ def get_token(user_id):
     return Student_id_list[user_id]
 
 
-def setup_test_user(is_teacher=False):
+def setup_test_user(is_teacher=False, id = 0):
     """Set up a test user and return authentication token"""
-    user_data = generate_random_user_data(is_teacher)
+    user_data = generate_random_user_data(is_teacher, id)
 
     # Register user
     register_response = client.post("/api/register", json=user_data)
@@ -235,7 +256,11 @@ def setup_test_user(is_teacher=False):
 
 def test_create_courses():
     token, user_data = setup_test_user(is_teacher=True)
-    setup_test_user(is_teacher=False)
+    setup_test_user(is_teacher=False, id = 0)
+    setup_test_user(is_teacher=False, id = 1)
+    setup_test_user(is_teacher=False, id = 2)
+    setup_test_user(is_teacher=False, id = 3)
+    setup_test_user(is_teacher=False, id = 4)
     headers = {"Authorization": f"Bearer {token}"}
 
     created_courses = []
@@ -248,11 +273,15 @@ def test_create_courses():
         print(f"Successfully created course: {course_data['name']}")
 
     for course_data in created_courses:
-        add_student_data = {
-            "course_id": course_data["course_id"],
-            "user_id": Student_id_list[0]["user_id"],
-        }
-        response = client.post("/api/enroll", data=add_student_data, headers=headers)
+        # Add all 5 students to each course
+        for i in range(5):
+            add_student_data = {
+                "course_id": course_data["course_id"],
+                "user_id": Student_id_list[i]["user_id"],
+            }
+            response = client.post("/api/enroll", data=add_student_data, headers=headers)
+            assert response.status_code == 200 or response.status_code == 201
+            print(f"Successfully enrolled student {Student_id_list[i]['name']} in course {course_data['name']}")
 
     # Login as student
     student_token = Student_id_list[0]["token"]
@@ -267,7 +296,7 @@ def test_create_courses():
     response = client.get("/api/fetch_member/" + Course_id_list[0], headers=headers)
     assert response.status_code == 200
     members = response.json().get("users", [])
-    assert len(members) >= 2
+    assert len(members) >= 6  # 1 teacher + 5 students
 
 
 def test_course_listing():
