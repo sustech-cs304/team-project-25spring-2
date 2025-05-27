@@ -85,7 +85,11 @@ export default function Assignment({ courseId }: AssignmentProps) {
     }
   }, [courseId]);
 
+  const [envLoading, setEnvLoading] = useState(false);
+
   const handleStartAssignment = async (assignmentId: string) => {
+    setError(null);
+    setEnvLoading(true);
     var result: any;
     try {
       const formData = new FormData();
@@ -104,11 +108,13 @@ export default function Assignment({ courseId }: AssignmentProps) {
       result = await response.json();
       if (result.message == "Require group" && !(courseId in myGroups)) {
         setError('You need to join a group to start this assignment.');
+        setEnvLoading(false);
         return;
       }
     } catch (error) {
       console.error('Error starting assignment environment:', error);
       setError('Failed to start assignment environment. Please try again later.');
+      setEnvLoading(false);
       return;
     }
     const environmentId = result.environment_id;
@@ -121,7 +127,37 @@ export default function Assignment({ courseId }: AssignmentProps) {
         icon: "CodeXml"
       }
     ]);
+    setEnvLoading(false);
   };
+
+  // Loading popout overlay
+  if (envLoading) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <Card className="p-8 flex flex-col items-center gap-4 shadow-2xl">
+          <div className="animate-spin mb-2">
+            <svg className="h-10 w-10 text-primary" viewBox="0 0 24 24" fill="none">
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold">Preparing your coding environment...</h3>
+          <p className="text-muted-foreground text-center text-sm">This may take a few moments. Please wait.</p>
+        </Card>
+      </div>
+    );
+  }
 
   // Sort assignments: active ones by deadline (earliest first), then completed ones
   const sortedAssignments = data?.assignments
