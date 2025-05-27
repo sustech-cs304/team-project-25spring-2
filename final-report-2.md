@@ -18,9 +18,9 @@ SUM:                           104           1455            509          14546
 -------------------------------------------------------------------------------
 ```
 - Cyclomatic complexity:
-    > Backend Complexity: https://github.com/sustech-cs304/team-project-25spring-2/blob/final-report/backend_complexity.md
+    > Backend Complexity: https://github.com/sustech-cs304/team-project-25spring-2/blob/main/backend_complexity.md
 
-    > Frontend Complexity: https://github.com/sustech-cs304/team-project-25spring-2/blob/final-report/frontend_complexity.md
+    > Frontend Complexity: https://github.com/sustech-cs304/team-project-25spring-2/blob/main/frontend_complexity.md
 
     > Average Complexity: backend - **3.44**, frontend - **3.12**
 - Number of dependencies:
