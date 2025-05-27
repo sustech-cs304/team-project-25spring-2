@@ -20,7 +20,10 @@ import {
   ComponentIcon,
   Calendar,
   Trash2,
-  Edit3
+  Edit3,
+  CodeXml,
+  Eye,
+  ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,7 +39,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { SmartAvatar } from "@/components/ui/smart-avatar";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import debounce from 'lodash/debounce';
 
 // Student data type
@@ -248,6 +251,7 @@ const AddUserDialog = ({
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
+              title="Search by name..."
               placeholder="Search by name..."
               className="pl-10"
               value={searchTerm}
@@ -914,6 +918,7 @@ const SectionDialog = ({
               Section Name
             </label>
             <Input
+              title="Section Name"
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -931,6 +936,7 @@ const SectionDialog = ({
                 <div className="flex-1">
                   <label className="text-xs font-medium mb-1 block">Date</label>
                   <Input
+                    title="Select date"
                     type="date"
                     onChange={(e) => {
                       setSelectedDate(e.target.value);
@@ -1144,6 +1150,7 @@ const UploadMaterialDialog = ({
               Material Name
             </label>
             <Input
+              title="Material Name"
               id="material-name"
               value={materialName}
               onChange={(e) => setMaterialName(e.target.value)}
@@ -1244,6 +1251,19 @@ interface Assignment {
   description?: string;
 }
 
+// Environment interface for assignment environments
+interface AssignmentEnvironment {
+  env_id: string;
+  users: {
+    name: string;
+    avatar: string;
+    user_id: string;
+  }[];
+  is_group_assign: boolean;
+  create_time: string;
+  last_update_time: string;
+}
+
 // Uploaded file interface for assignment creation
 interface UploadedFile {
   file_id: string;
@@ -1252,15 +1272,253 @@ interface UploadedFile {
   original_file: File;
 }
 
+// Assignment Environments Dialog
+const AssignmentEnvironmentsDialog = ({
+  open,
+  onOpenChange,
+  assignment,
+  courseId
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  assignment: Assignment | null;
+  courseId: string;
+}) => {
+  const [environments, setEnvironments] = useState<AssignmentEnvironment[]>([]);
+  const [loading, setLoading] = useState(false);
+  const { token, setSidebarItems, sidebarItems } = useUserContext();
+  const router = useRouter();
+
+  const fetchEnvironments = async () => {
+    if (!assignment || !courseId) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/environment/${courseId}/${assignment.assignment_id}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          setEnvironments([]);
+          return;
+        }
+        throw new Error('Failed to fetch environments');
+      }
+
+      const data = await response.json();
+      setEnvironments(data.environments || []);
+    } catch (error) {
+      console.error('Error fetching environments:', error);
+      toast.error('Failed to fetch assignment environments');
+      // Mock data for development
+      setEnvironments([
+        {
+          env_id: 'env_1',
+          users: [
+            { name: 'John Doe', avatar: '', user_id: 'user1' },
+            { name: 'Jane Smith', avatar: '', user_id: 'user2' }
+          ],
+          is_group_assign: true,
+          create_time: '2025-01-15 10:30:00',
+          last_update_time: '2025-01-15 15:45:00'
+        },
+        {
+          env_id: 'env_2',
+          users: [
+            { name: 'Bob Wilson', avatar: '', user_id: 'user3' }
+          ],
+          is_group_assign: false,
+          create_time: '2025-01-15 11:00:00',
+          last_update_time: '2025-01-15 14:20:00'
+        }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (open && assignment) {
+      fetchEnvironments();
+    } else {
+      setEnvironments([]);
+    }
+  }, [open, assignment, courseId]);
+
+  const handleEnvironmentClick = (envId: string) => {
+    router.push(`/coding/${envId}`);
+    setSidebarItems([
+      ...sidebarItems,
+      {
+        title: `Coding ${envId}`,
+        url: `/coding/${envId}`,
+        icon: "CodeXml"
+      }
+    ]);
+    onOpenChange(false);
+  };
+
+  const formatDateTime = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
+  if (!assignment) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <CodeXml className="h-5 w-5 text-primary" />
+            Assignment Environments
+          </DialogTitle>
+          <DialogDescription>
+            View and access all student environments for "{assignment.name}"
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 mt-4">
+          {loading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map(i => (
+                <Skeleton key={i} className="h-20 w-full" />
+              ))}
+            </div>
+          ) : environments.length === 0 ? (
+            <div className="text-center py-12 border-2 border-dashed rounded-lg bg-muted/10">
+              <div className="mx-auto w-12 h-12 bg-muted/20 rounded-full flex items-center justify-center mb-4">
+                <CodeXml className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-medium">No environments found</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                No students have started working on this assignment yet.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-medium text-muted-foreground">
+                  {environments.length} {environments.length === 1 ? 'Environment' : 'Environments'} Found
+                </h4>
+                <Badge variant="outline" className="text-xs">
+                  {assignment.is_group_assign ? 'Group Assignment' : 'Individual Assignment'}
+                </Badge>
+              </div>
+
+              {environments.map((env, index) => (
+                <motion.div
+                  key={env.env_id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <Card
+                    className="cursor-pointer hover:shadow-md transition-all border-2 hover:border-primary/50"
+                    onClick={() => handleEnvironmentClick(env.env_id)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-2 flex-1">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-primary/10 p-2 rounded-lg">
+                              <CodeXml className="h-4 w-4 text-primary" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-sm">Environment {env.env_id}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Created: {formatDateTime(env.create_time)}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Users className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-xs font-medium text-muted-foreground">
+                                {env.users.length === 1 ? 'Student' : 'Students'}:
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {env.users.map(user => (
+                                <div
+                                  key={user.user_id}
+                                  className="flex items-center gap-1.5 bg-muted/50 rounded-full px-2 py-1"
+                                >
+                                  <SmartAvatar
+                                    name={user.name}
+                                    photo={user.avatar}
+                                    className="h-4 w-4 text-xs"
+                                  />
+                                  <span className="text-xs font-medium">{user.name}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>Last updated: {formatDateTime(env.last_update_time)}</span>
+                            <Badge variant={env.users.length > 1 ? "secondary" : "outline"} className="text-xs">
+                              {env.users.length > 1 ? 'Group' : 'Individual'}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <div className="ml-4 flex items-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="flex items-center gap-1 hover:gap-2 transition-all"
+                          >
+                            <span className="text-xs">Access</span>
+                            <ChevronRight className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="pt-4 flex justify-end">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 // Assignment Card Component
 const AssignmentCard = ({
   assignment,
   onEdit,
-  onDelete
+  onDelete,
+  onViewEnvironments
 }: {
   assignment: Assignment;
   onEdit: (assignment: Assignment) => void;
   onDelete: (assignmentId: string) => void;
+  onViewEnvironments: (assignment: Assignment) => void;
 }) => {
   const formatDeadline = (deadline: string) => {
     try {
@@ -1323,7 +1581,10 @@ const AssignmentCard = ({
       whileHover={{ scale: 1.02 }}
       transition={{ duration: 0.2 }}
     >
-      <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20">
+      <Card
+        className="overflow-hidden hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20 cursor-pointer"
+        onClick={() => onViewEnvironments(assignment)}
+      >
         <CardHeader className="pb-4 bg-gradient-to-r from-background to-muted/20">
           <div className="flex items-start justify-between">
             <div className="space-y-2 flex-1 min-w-0">
@@ -1348,29 +1609,49 @@ const AssignmentCard = ({
               </CardTitle>
             </div>
 
-            {/* Action buttons - only show for non-closed assignments */}
-            {!assignment.is_over && (
-              <div className="flex items-center gap-1 ml-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-primary"
-                  onClick={() => onEdit(assignment)}
-                  title="Edit assignment"
-                >
-                  <Edit3 size={16} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                  onClick={() => onDelete(assignment.assignment_id)}
-                  title="Delete assignment"
-                >
-                  <Trash2 size={16} />
-                </Button>
-              </div>
-            )}
+            {/* Action buttons */}
+            <div className="flex items-center gap-1 ml-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-primary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onViewEnvironments(assignment);
+                }}
+                title="View environments"
+              >
+                <Eye size={16} />
+              </Button>
+              {!assignment.is_over && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(assignment);
+                    }}
+                    title="Edit assignment"
+                  >
+                    <Edit3 size={16} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(assignment.assignment_id);
+                    }}
+                    title="Delete assignment"
+                  >
+                    <Trash2 size={16} />
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </CardHeader>
 
@@ -1410,6 +1691,25 @@ const AssignmentCard = ({
             </div>
           )}
         </CardContent>
+
+        <CardFooter className="bg-muted/20 pt-2 border-t flex justify-between items-center">
+          <div className="flex items-center text-xs text-muted-foreground">
+            <CodeXml size={12} className="mr-1" />
+            <span>Click to view environments</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex items-center gap-1 hover:gap-2 transition-all hover:text-primary"
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewEnvironments(assignment);
+            }}
+          >
+            <span className="text-xs">View Environments</span>
+            <ChevronRight size={12} />
+          </Button>
+        </CardFooter>
       </Card>
     </motion.div>
   );
@@ -1599,6 +1899,7 @@ const CreateAssignmentDialog = ({
             onClick={selectedFile && showPathInput ? undefined : () => fileInputRef.current?.click()}
           >
             <input
+              title="Choose file"
               type="file"
               className="hidden"
               ref={fileInputRef}
@@ -1917,7 +2218,7 @@ const CreateAssignmentDialog = ({
                     <option value="" disabled>Hour</option>
                     {Array.from({ length: 24 }, (_, i) => i).map(hour => (
                       <option key={hour} value={hour.toString().padStart(2, '0')}>
-                        {hour.toString().padStart(2, '0')}:00
+                        {hour.toString().padStart(2, '0')}
                       </option>
                     ))}
                   </select>
@@ -1935,7 +2236,7 @@ const CreateAssignmentDialog = ({
                     <option value="" disabled>Min</option>
                     {[0, 15, 30, 45].map(minute => (
                       <option key={minute} value={minute.toString().padStart(2, '0')}>
-                        :{minute.toString().padStart(2, '0')}
+                        {minute.toString().padStart(2, '0')}
                       </option>
                     ))}
                   </select>
@@ -2282,7 +2583,9 @@ const AssignmentsTab = ({ courseId }: { courseId: string }) => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [environmentsDialogOpen, setEnvironmentsDialogOpen] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null);
+  const [viewingAssignment, setViewingAssignment] = useState<Assignment | null>(null);
   const [deletingAssignmentId, setDeletingAssignmentId] = useState<string>('');
   const [isDeleting, setIsDeleting] = useState(false);
   const { token } = useUserContext();
@@ -2346,6 +2649,12 @@ const AssignmentsTab = ({ courseId }: { courseId: string }) => {
   const handleEditAssignment = (assignment: Assignment) => {
     setEditingAssignment(assignment);
     setEditDialogOpen(true);
+  };
+
+  // Handle view environments
+  const handleViewEnvironments = (assignment: Assignment) => {
+    setViewingAssignment(assignment);
+    setEnvironmentsDialogOpen(true);
   };
 
   // Handle delete assignment - open confirmation dialog
@@ -2470,6 +2779,7 @@ const AssignmentsTab = ({ courseId }: { courseId: string }) => {
                       assignment={assignment}
                       onEdit={handleEditAssignment}
                       onDelete={handleDeleteAssignment}
+                      onViewEnvironments={handleViewEnvironments}
                     />
                   ))}
                 </AnimatePresence>
@@ -2497,6 +2807,7 @@ const AssignmentsTab = ({ courseId }: { courseId: string }) => {
                       assignment={assignment}
                       onEdit={handleEditAssignment}
                       onDelete={handleDeleteAssignment}
+                      onViewEnvironments={handleViewEnvironments}
                     />
                   ))}
                 </AnimatePresence>
@@ -2536,6 +2847,13 @@ const AssignmentsTab = ({ courseId }: { courseId: string }) => {
         onOpenChange={setEditDialogOpen}
         assignment={editingAssignment}
         onAssignmentUpdated={fetchAssignments}
+      />
+
+      <AssignmentEnvironmentsDialog
+        open={environmentsDialogOpen}
+        onOpenChange={setEnvironmentsDialogOpen}
+        assignment={viewingAssignment}
+        courseId={courseId}
       />
 
       {/* Delete Confirmation Dialog */}

@@ -13,6 +13,7 @@ import { useUserContext } from "./UserEnvProvider";
 import { LogOut, Edit, Save, X, Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 export interface UserData {
   user_id: string;
@@ -26,7 +27,7 @@ export interface UserData {
 }
 
 export default function Home() {
-  const { userId, logout, isTeacher, setIsTeacher, userData, setUserData, token } = useUserContext();
+  const { userId, logout, isTeacher, setIsTeacher, userData, setUserData, token, fetchFailed, setFetchFailed } = useUserContext();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -39,8 +40,8 @@ export default function Home() {
     photo: null as File | null
   });
   const [previewPhoto, setPreviewPhoto] = useState<string>('');
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
 
-  // Initialize edit data when userData changes
   useEffect(() => {
     if (userData) {
       setEditData({
@@ -52,8 +53,16 @@ export default function Home() {
     }
   }, [userData]);
 
+  useEffect(() => {
+    if (fetchFailed) {
+      console.log("fetchFailed", fetchFailed);
+      setShowLoginDialog(true);
+    }
+  }, [fetchFailed]);
+
   const handleLogout = () => {
     logout();
+    setFetchFailed(false);
     router.push('/auth');
     toast.success('Logged out successfully');
   };
@@ -206,215 +215,229 @@ export default function Home() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="text-center mb-12"
-      >
-        <h1 className="text-4xl font-bold text-primary mb-2">Welcome to PeachIDE</h1>
-        <p className="text-xl text-muted-foreground">
-          Your comprehensive course management system
-        </p>
-      </motion.div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+    <>
+      <Dialog open={showLoginDialog} onOpenChange={open => setShowLoginDialog(open)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Relogin Required</DialogTitle>
+          </DialogHeader>
+          <p className="mb-4">Please relogin to continue.</p>
+          <DialogFooter>
+            <Button onClick={() => { setShowLoginDialog(false); handleLogout(); }}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <div className="container mx-auto px-4 py-8">
         <motion.div
-          initial={{ opacity: 0, x: -50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-12"
         >
-          <Card className="border shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xl">Your Profile</CardTitle>
-              <div className="flex items-center gap-2">
-                {!isEditing && (
-                  <Button variant="ghost" size="icon" onClick={handleEditToggle}>
-                    <Edit className="h-4 w-4" />
+          <h1 className="text-4xl font-bold text-primary mb-2">Welcome to PeachIDE</h1>
+          <p className="text-xl text-muted-foreground">
+            Your comprehensive course management system
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+          >
+            <Card className="border shadow-lg">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-xl">Your Profile</CardTitle>
+                <div className="flex items-center gap-2">
+                  {!isEditing && (
+                    <Button variant="ghost" size="icon" onClick={handleEditToggle}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <Button variant="ghost" size="icon" onClick={handleLogout}>
+                    <LogOut className="h-4 w-4" />
                   </Button>
-                )}
-                <Button variant="ghost" size="icon" onClick={handleLogout}>
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center pt-4">
-              {userData != null ? (
-                <>
-                  {/* Avatar Section */}
-                  <div className="relative group">
-                    {isEditing ? (
-                      <>
-                        <Avatar className="h-24 w-24 border-2 border-primary">
-                          <AvatarImage src={previewPhoto || userData.photo} alt={userData.name} />
-                          <AvatarFallback>{getInitials(userData.name)}</AvatarFallback>
-                        </Avatar>
-                        {/* Overlay */}
-                        <div
-                          className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center cursor-pointer hover:bg-black/60 transition-colors"
-                          onClick={() => fileInputRef.current?.click()}
-                        >
-                          <Camera className="h-6 w-6 text-white" />
-                        </div>
-                        {/* Change photo text */}
-                        <div
-                          className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 cursor-pointer"
-                          onClick={() => fileInputRef.current?.click()}
-                        >
-                          {/*<span className="text-xs text-primary hover:text-primary/80 font-medium">*/}
-                          {/*  Change Photo*/}
-                          {/*</span>*/}
-                        </div>
-                      </>
-                    ) : (
-                      <SmartAvatar
-                        name={userData.name}
-                        photo={userData.photo}
-                        className="h-24 w-24 border-2 border-primary"
-                      />
-                    )}
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handlePhotoChange}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                  </div>
-
-                  <h2 className="text-xl font-semibold mt-4">{userData.name}</h2>
-                  {userData.email && <p className="text-muted-foreground">{userData.email}</p>}
-
-                  <div className="flex flex-wrap gap-2 mt-2 justify-center">
-                    <span className={`px-3 py-1 rounded-full text-sm ${isTeacher ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                      }`}>
-                      {isTeacher ? 'Teacher' : 'Student'}
-                    </span>
-                    <span className="bg-primary/10 px-3 py-1 rounded-full text-sm">
-                      {userData.courses.length} Course{userData.courses.length !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-
-                  {/* Teacher Information Section */}
-                  {isTeacher && (
-                    <div className="w-full mt-4 space-y-3 border-t pt-4">
+                </div>
+              </CardHeader>
+              <CardContent className="flex flex-col items-center pt-4">
+                {userData != null ? (
+                  <>
+                    {/* Avatar Section */}
+                    <div className="relative group">
                       {isEditing ? (
                         <>
-                          <div className="space-y-2">
-                            <Label htmlFor="office_hour" className="text-sm font-medium">Office Hours</Label>
-                            <Input
-                              id="office_hour"
-                              value={editData.office_hour}
-                              onChange={(e) => setEditData(prev => ({ ...prev, office_hour: e.target.value }))}
-                              placeholder="e.g., Mon & Wed 2-4pm"
-                              className="w-full"
-                            />
+                          <Avatar className="h-24 w-24 border-2 border-primary">
+                            <AvatarImage src={previewPhoto || userData.photo} alt={userData.name} />
+                            <AvatarFallback>{getInitials(userData.name)}</AvatarFallback>
+                          </Avatar>
+                          {/* Overlay */}
+                          <div
+                            className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center cursor-pointer hover:bg-black/60 transition-colors"
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            <Camera className="h-6 w-6 text-white" />
                           </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="office_place" className="text-sm font-medium">Office Location</Label>
-                            <Input
-                              id="office_place"
-                              value={editData.office_place}
-                              onChange={(e) => setEditData(prev => ({ ...prev, office_place: e.target.value }))}
-                              placeholder="e.g., Room 101, CS Building"
-                              className="w-full"
-                            />
+                          {/* Change photo text */}
+                          <div
+                            className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 cursor-pointer"
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            {/*<span className="text-xs text-primary hover:text-primary/80 font-medium">*/}
+                            {/*  Change Photo*/}
+                            {/*</span>*/}
                           </div>
                         </>
                       ) : (
-                        <>
-                          {(userData.office_hour || isEditing) && (
-                            <p className="text-sm flex justify-between">
-                              <span className="font-medium">Office Hours:</span>
-                              <span>{userData.office_hour || 'Not set'}</span>
-                            </p>
-                          )}
-                          {(userData.office_place || isEditing) && (
-                            <p className="text-sm flex justify-between">
-                              <span className="font-medium">Office Location:</span>
-                              <span>{userData.office_place || 'Not set'}</span>
-                            </p>
-                          )}
-                        </>
+                        <SmartAvatar
+                          name={userData.name}
+                          photo={userData.photo}
+                          className="h-24 w-24 border-2 border-primary"
+                        />
                       )}
+                      <input
+                        title="Change Photo"
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handlePhotoChange}
+                        accept="image/*"
+                        className="hidden"
+                      />
                     </div>
-                  )}
 
-                  {/* Edit Actions */}
-                  {isEditing && (
-                    <div className="flex gap-2 mt-4 w-full">
-                      <Button
-                        onClick={handleSave}
-                        disabled={isLoading}
-                        className="flex-1"
-                      >
-                        {isLoading ? (
+                    <h2 className="text-xl font-semibold mt-4">{userData.name}</h2>
+                    {userData.email && <p className="text-muted-foreground">{userData.email}</p>}
+
+                    <div className="flex flex-wrap gap-2 mt-2 justify-center">
+                      <span className={`px-3 py-1 rounded-full text-sm ${isTeacher ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                        }`}>
+                        {isTeacher ? 'Teacher' : 'Student'}
+                      </span>
+                      <span className="bg-primary/10 px-3 py-1 rounded-full text-sm">
+                        {userData.courses.length} Course{userData.courses.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+
+                    {/* Teacher Information Section */}
+                    {isTeacher && (
+                      <div className="w-full mt-4 space-y-3 border-t pt-4">
+                        {isEditing ? (
                           <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Saving...
+                            <div className="space-y-2">
+                              <Label htmlFor="office_hour" className="text-sm font-medium">Office Hours</Label>
+                              <Input
+                                id="office_hour"
+                                value={editData.office_hour}
+                                onChange={(e) => setEditData(prev => ({ ...prev, office_hour: e.target.value }))}
+                                placeholder="e.g., Mon & Wed 2-4pm"
+                                className="w-full"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="office_place" className="text-sm font-medium">Office Location</Label>
+                              <Input
+                                id="office_place"
+                                value={editData.office_place}
+                                onChange={(e) => setEditData(prev => ({ ...prev, office_place: e.target.value }))}
+                                placeholder="e.g., Room 101, CS Building"
+                                className="w-full"
+                              />
+                            </div>
                           </>
                         ) : (
                           <>
-                            <Save className="mr-2 h-4 w-4" />
-                            Save Changes
+                            {(userData.office_hour || isEditing) && (
+                              <p className="text-sm flex justify-between">
+                                <span className="font-medium">Office Hours:</span>
+                                <span>{userData.office_hour || 'Not set'}</span>
+                              </p>
+                            )}
+                            {(userData.office_place || isEditing) && (
+                              <p className="text-sm flex justify-between">
+                                <span className="font-medium">Office Location:</span>
+                                <span>{userData.office_place || 'Not set'}</span>
+                              </p>
+                            )}
                           </>
                         )}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={handleEditToggle}
-                        disabled={isLoading}
-                        className="flex-1"
-                      >
-                        <X className="mr-2 h-4 w-4" />
-                        Cancel
-                      </Button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <p className="text-muted-foreground">Could not load user information</p>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
+                      </div>
+                    )}
 
-        <motion.div
-          initial={{ opacity: 0, x: 50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
-        >
-          <Card className="border shadow-lg">
-            <CardHeader>
-              <CardTitle>About PeachIDE</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="mb-4">
-                PeachIDE is a comprehensive course management system designed to enhance your learning experience.
-              </p>
-              <ul className="space-y-2">
-                <li className="flex items-center">
-                  <span className="bg-primary/20 p-1 rounded-full mr-2">✓</span>
-                  Track your course progress efficiently
-                </li>
-                <li className="flex items-center">
-                  <span className="bg-primary/20 p-1 rounded-full mr-2">✓</span>
-                  Access learning materials in one place
-                </li>
-                <li className="flex items-center">
-                  <span className="bg-primary/20 p-1 rounded-full mr-2">✓</span>
-                  Collaborate with classmates on projects
-                </li>
-                <li className="flex items-center">
-                  <span className="bg-primary/20 p-1 rounded-full mr-2">✓</span>
-                  Manage assignments and deadlines easily
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-        </motion.div>
+                    {/* Edit Actions */}
+                    {isEditing && (
+                      <div className="flex gap-2 mt-4 w-full">
+                        <Button
+                          onClick={handleSave}
+                          disabled={isLoading}
+                          className="flex-1"
+                        >
+                          {isLoading ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <Save className="mr-2 h-4 w-4" />
+                              Save Changes
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={handleEditToggle}
+                          disabled={isLoading}
+                          className="flex-1"
+                        >
+                          <X className="mr-2 h-4 w-4" />
+                          Cancel
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-muted-foreground">Could not load user information</p>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+          >
+            <Card className="border shadow-lg">
+              <CardHeader>
+                <CardTitle>About PeachIDE</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="mb-4">
+                  PeachIDE is a comprehensive course management system designed to enhance your learning experience.
+                </p>
+                <ul className="space-y-2">
+                  <li className="flex items-center">
+                    <span className="bg-primary/20 p-1 rounded-full mr-2">✓</span>
+                    Track your course progress efficiently
+                  </li>
+                  <li className="flex items-center">
+                    <span className="bg-primary/20 p-1 rounded-full mr-2">✓</span>
+                    Access learning materials in one place
+                  </li>
+                  <li className="flex items-center">
+                    <span className="bg-primary/20 p-1 rounded-full mr-2">✓</span>
+                    Collaborate with classmates on projects
+                  </li>
+                  <li className="flex items-center">
+                    <span className="bg-primary/20 p-1 rounded-full mr-2">✓</span>
+                    Manage assignments and deadlines easily
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

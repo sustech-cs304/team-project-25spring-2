@@ -232,7 +232,7 @@ export const PDFPart: React.FC<PDFPartProps> = ({ props, onFeedbackAction }) => 
                     </Page>
                 ))}
             </PDFDocument>
-            <div className="sticky bottom-0 left-0 z-[1000] flex items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="sticky bottom-0 left-0 z-[40] flex items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <div className="flex">
                     <Button variant="outline" size="icon" className="size-6 ml-2 mb-2 mt-2"
                         onClick={() => setScale(scale + 0.1)}>
