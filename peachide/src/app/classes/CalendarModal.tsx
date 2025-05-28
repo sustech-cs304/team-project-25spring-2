@@ -284,7 +284,7 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
         <div className="flex items-center gap-2">
           <h3 className="text-xl font-semibold tracking-tight">{monthName}</h3>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mr-8">
           <Button
             variant="ghost"
             size="sm"
@@ -301,9 +301,6 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
               <ChevronRight className="h-3.5 w-3.5" />
             </Button>
           </div>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onOpenChange(false)}>
-            <X className="h-4 w-4" />
-          </Button>
         </div>
       </div>
     );
