@@ -13,9 +13,16 @@ router = APIRouter()
 async def get_note(
     material_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    note = db.query(Note).filter(Note.material_id == material_id).first()
+    note = (
+        db.query(Note)
+        .filter(
+            Note.material_id == material_id,
+            Note.user_id == current_user.user_id,
+        )
+        .first()
+    )
     return {
         "note_id": note.note_id if note else None,
         "user_id": note.user_id if note else None,
@@ -32,7 +39,14 @@ async def create_note(
     content: str = Form(None),
     db: Session = Depends(get_db),
 ):
-    note = db.query(Note).filter(Note.note_id == note_id).first()
+    note = (
+        db.query(Note)
+        .filter(
+            Note.note_id == note_id,
+            Note.user_id == current_user.user_id,
+        )
+        .first()
+    )
     if note is None:
         note = Note(
             note_id=note_id,
@@ -74,9 +88,13 @@ async def create_note(
 async def delete_note(
     note_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    note = db.query(Note).filter(Note.note_id == note_id).first()
+    note = (
+        db.query(Note)
+        .filter(Note.note_id == note_id, Note.user_id == current_user.user_id)
+        .first()
+    )
     if note is None:
         return {"message": "Note not found"}
     else:

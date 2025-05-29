@@ -155,7 +155,20 @@ async def execute_code_snippet(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    snippet = db.query(CodeSnippet).filter(CodeSnippet.snippet_id == snippet_id).first()
+    own_snippet = (
+        db.query(CodeSnippet)
+        .filter(
+            CodeSnippet.snippet_id == snippet_id,
+            CodeSnippet.user_id == current_user.user_id,
+        )
+        .first()
+    )
+    if not own_snippet:
+        snippet = (
+            db.query(CodeSnippet).filter(CodeSnippet.snippet_id == snippet_id).first()
+        )
+    else:
+        snippet = own_snippet
     if not snippet:
         return {"error": "Snippet not found"}
 
