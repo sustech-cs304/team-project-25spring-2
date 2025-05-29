@@ -218,8 +218,14 @@ async def create_environment_file(
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     
-    if env.user_id != current_user.user_id:
-        raise HTTPException(status_code=403, detail="No privilege for creating the file.")
+    if env.is_collaborative:
+        group_id = env.group_id
+        group = db.query(Group).filter(Group.group_id == group_id).first()
+        if not group or current_user.user_id not in group.users:
+            raise HTTPException(status_code=403, detail="You are not a member of this group")
+    else:
+        if env.user_id != current_user.user_id:
+            raise HTTPException(status_code=403, detail="You are not the owner of this environment")
     
     env_path = f"/app/data/{env_id}/{file_path}"
     os.makedirs(os.path.dirname(env_path), exist_ok=True)
@@ -240,8 +246,14 @@ async def create_environment_directory(
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     
-    if current_user.user_id != env.user_id:
-        raise HTTPException(status_code=403, detail="No privilege for creating the directory.")
+    if env.is_collaborative:
+        group_id = env.group_id
+        group = db.query(Group).filter(Group.group_id == group_id).first()
+        if not group or current_user.user_id not in group.users:
+            raise HTTPException(status_code=403, detail="You are not a member of this group")
+    else:
+        if env.user_id != current_user.user_id:
+            raise HTTPException(status_code=403, detail="You are not the owner of this environment")
     
     env_path = f"/app/data/{env_id}"
     directory_path = os.path.join(env_path, directory_path.lstrip('/'))
@@ -264,9 +276,15 @@ async def update_environment_path(
     env = db.query(Environment).filter(Environment.environment_id == env_id).first()
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
-    
-    if current_user.user_id != env.user_id:
-        raise HTTPException(status_code=403, detail="No privilege for modifying the file.")
+
+    if env.is_collaborative:
+        group_id = env.group_id
+        group = db.query(Group).filter(Group.group_id == group_id).first()
+        if not group or current_user.user_id not in group.users:
+            raise HTTPException(status_code=403, detail="You are not a member of this group")
+    else:
+        if env.user_id != current_user.user_id:
+            raise HTTPException(status_code=403, detail="You are not the owner of this environment")
     
     env_path = f"/app/data/{env_id}"
     origin_path = os.path.join(env_path, from_uri.lstrip('/'))
@@ -304,8 +322,14 @@ async def delete_environment_path(
     if not env:
         raise HTTPException(status_code=404, detail="Environment not found")
     
-    if current_user.user_id != env.user_id:
-        raise HTTPException(status_code=403, detail="No privilege for deleting the file.")
+    if env.is_collaborative:
+        group_id = env.group_id
+        group = db.query(Group).filter(Group.group_id == group_id).first()
+        if not group or current_user.user_id not in group.users:
+            raise HTTPException(status_code=403, detail="You are not a member of this group")
+    else:
+        if env.user_id != current_user.user_id:
+            raise HTTPException(status_code=403, detail="You are not the owner of this environment")
     
     env_path = f"/app/data/{env_id}"
     file_path = os.path.join(env_path, uri.lstrip('/'))
