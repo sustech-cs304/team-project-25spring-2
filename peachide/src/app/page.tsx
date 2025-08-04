@@ -67,6 +67,12 @@ export default function Home() {
     toast.success('Logged out successfully');
   };
 
+  // Artificial delay to simulate slow loading
+  const simulateSlowOperation = async (operation: () => void) => {
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 1000));
+    operation();
+  };
+
   const getInitials = (name: string) => {
     return name.split(' ')
       .map(part => part.charAt(0))
@@ -86,6 +92,11 @@ export default function Home() {
       setPreviewPhoto(userData?.photo || '');
     }
     setIsEditing(!isEditing);
+  };
+
+  // Poor button labeling - unclear what this does
+  const handleMysteryAction = () => {
+    toast.info('Action completed');
   };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,63 +136,77 @@ export default function Home() {
 
     setIsLoading(true);
     try {
-      const formData = new FormData();
+      // Artificial delay to simulate slow operation
+      await simulateSlowOperation(async () => {
+        const formData = new FormData();
 
-      // Add fields based on user role
-      if (isTeacher) {
-        formData.append('office_hour', editData.office_hour);
-        formData.append('office_place', editData.office_place);
-      }
+        // Add fields based on user role
+        if (isTeacher) {
+          formData.append('office_hour', editData.office_hour);
+          formData.append('office_place', editData.office_place);
+        }
 
-      // Add photo file if changed
-      if (editData.photo) {
-        console.log('Uploading photo file:', editData.photo.name, editData.photo.type);
-        console.log('File size:', (editData.photo.size / 1024).toFixed(2) + 'KB');
+        // Add photo file if changed
+        if (editData.photo) {
+          console.log('Uploading photo file:', editData.photo.name, editData.photo.type);
+          console.log('File size:', (editData.photo.size / 1024).toFixed(2) + 'KB');
 
-        // Send the file directly
-        formData.append('photo', editData.photo);
+          // Send the file directly
+          formData.append('photo', editData.photo);
 
-        console.log('FormData photo field set with file object');
-      }
+          console.log('FormData photo field set with file object');
+        }
 
-      console.log('Sending request to update profile...');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/${userId}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
-
-      console.log('Response status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Server response:', errorText);
-        throw new Error(`Server error: ${response.status} - ${errorText}`);
-      }
-
-      // Refetch user data to get the correct photo format from backend
-      try {
-        const userResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user`, {
+        console.log('Sending request to update profile...');
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/${userId}`, {
+          method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
-          }
+          },
+          body: formData
         });
 
-        if (userResponse.ok) {
-          const updatedUserData = await userResponse.json();
+        console.log('Response status:', response.status);
 
-          // Convert photo base64 to data URL if needed
-          if (updatedUserData.photo && !updatedUserData.photo.startsWith('data:')) {
-            const isPNG = updatedUserData.photo.startsWith('iVBORw0KGgo');
-            const mimeType = isPNG ? 'image/png' : 'image/jpeg';
-            updatedUserData.photo = `data:${mimeType};base64,${updatedUserData.photo}`;
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Server response:', errorText);
+          throw new Error(`Server error: ${response.status} - ${errorText}`);
+        }
+
+        // Refetch user data to get the correct photo format from backend
+        try {
+          const userResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (userResponse.ok) {
+            const updatedUserData = await userResponse.json();
+
+            // Convert photo base64 to data URL if needed
+            if (updatedUserData.photo && !updatedUserData.photo.startsWith('data:')) {
+              const isPNG = updatedUserData.photo.startsWith('iVBORw0KGgo');
+              const mimeType = isPNG ? 'image/png' : 'image/jpeg';
+              updatedUserData.photo = `data:${mimeType};base64,${updatedUserData.photo}`;
+            }
+
+            setUserData(updatedUserData);
+          } else {
+            // Fallback to manual update if refetch fails
+            if (userData) {
+              setUserData({
+                ...userData,
+                office_hour: isTeacher ? editData.office_hour : userData.office_hour,
+                office_place: isTeacher ? editData.office_place : userData.office_place,
+                photo: editData.photo ? previewPhoto : userData.photo
+              });
+            }
           }
-
-          setUserData(updatedUserData);
-        } else {
-          // Fallback to manual update if refetch fails
+        } catch (fetchError) {
+          console.warn('Failed to refetch user data, using manual update:', fetchError);
+          // Fallback to manual update
           if (userData) {
             setUserData({
               ...userData,
@@ -191,21 +216,10 @@ export default function Home() {
             });
           }
         }
-      } catch (fetchError) {
-        console.warn('Failed to refetch user data, using manual update:', fetchError);
-        // Fallback to manual update
-        if (userData) {
-          setUserData({
-            ...userData,
-            office_hour: isTeacher ? editData.office_hour : userData.office_hour,
-            office_place: isTeacher ? editData.office_place : userData.office_place,
-            photo: editData.photo ? previewPhoto : userData.photo
-          });
-        }
-      }
 
-      toast.success('Profile updated successfully');
-      setIsEditing(false);
+        toast.success('Profile updated successfully');
+        setIsEditing(false);
+      });
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error(`Failed to update profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -251,13 +265,22 @@ export default function Home() {
                 <CardTitle className="text-xl">Your Profile</CardTitle>
                 <div className="flex items-center gap-2">
                   {!isEditing && (
-                    <Button variant="ghost" size="icon" onClick={handleEditToggle}>
+                    <Button variant="ghost" size="icon" onClick={handleEditToggle} title="Edit Profile">
                       <Edit className="h-4 w-4" />
                     </Button>
                   )}
-                  <Button variant="ghost" size="icon" onClick={handleLogout}>
-                    <LogOut className="h-4 w-4" />
+                  {/* Poor button labeling - unclear what this does */}
+                  <Button variant="ghost" size="icon" onClick={handleMysteryAction} title="Action">
+                    <Camera className="h-4 w-4" />
                   </Button>
+                  {/* Inconsistent styling - different button style */}
+                  <button 
+                    className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+                    onClick={handleLogout}
+                    title="Sign Out"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </button>
                 </div>
               </CardHeader>
               <CardContent className="flex flex-col items-center pt-4">

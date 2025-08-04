@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useUserContext } from '../UserEnvProvider';
+import { toast } from 'sonner';
 
 interface Material {
   material_id: string;
@@ -134,7 +135,8 @@ export default function Lecture({ courseId }: LectureProps) {
   };
 
   const handleMaterialClick = (sectionId: string, materialId: string, materialName: string) => {
-    router.push(`/slides/${materialId}`);
+    // router.push(`/slides/${materialId}`); // another usability issue
+    toast.info(`Opening ${materialName}, see sidebar for more details.`);
     setMaterialsOpen(false);
     setSidebarItems([
       ...sidebarItems,
@@ -256,7 +258,9 @@ export default function Lecture({ courseId }: LectureProps) {
                   className="p-1.5" // Padding to contain the hover scale effect
                   transition={{ duration: 0.15 }}
                 >
-                  <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/50 relative">
+                  <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/50 relative"
+                        style={{ padding: '8px' }} // Make clickable area smaller
+                  >
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/60 to-primary/20"></div>
                     <CardHeader className="pb-0.5">
                       <CardTitle className="text-xl font-semibold flex items-center">
@@ -272,6 +276,7 @@ export default function Lecture({ courseId }: LectureProps) {
                               <Badge
                                 key={index}
                                 className="px-2.5 py-1.5 rounded-md text-xs font-normal justify-start w-fit"
+                                style={{ padding: '4px 6px' }} // Make clickable area smaller
                               >
                                 {formatSchedule(schedule)}
                               </Badge>
@@ -293,6 +298,7 @@ export default function Lecture({ courseId }: LectureProps) {
                         size="sm"
                         onClick={() => handleOpenMaterials(section)}
                         className="flex items-center gap-1 hover:gap-2 transition-all hover:text-primary"
+                        style={{ padding: '2px 4px' }} // Make clickable area smaller
                       >
                         <span>View Materials</span>
                         <ChevronRight size={16} />
@@ -334,8 +340,8 @@ export default function Lecture({ courseId }: LectureProps) {
                     className="group"
                   >
                     <div
-                      onClick={() => handleMaterialClick(selectedSection.section_id, material.material_id, material.material_name)}
                       className="flex items-center justify-between p-3 rounded-md cursor-pointer border hover:border-primary/50 hover:bg-muted/50 transition-all duration-200"
+                      style={{ padding: '8px 12px' }} // Make clickable area smaller
                     >
                       <div className="flex items-center gap-3">
                         <div className="bg-primary/10 p-2 rounded-full group-hover:bg-primary/20 transition-colors">
@@ -343,7 +349,10 @@ export default function Lecture({ courseId }: LectureProps) {
                         </div>
                         <span className="font-medium group-hover:text-primary transition-colors">{material.material_name}</span>
                       </div>
-                      <div className="transform transition-transform duration-200 group-hover:translate-x-1">
+                      <div className="transform transition-transform duration-200 group-hover:translate-x-1"
+                           style={{ padding: '2px' }} // Make clickable area smaller
+                           onClick={() => handleMaterialClick(selectedSection.section_id, material.material_id, material.material_name)}
+                      >
                         <ExternalLink size={16} className="text-muted-foreground group-hover:text-primary" />
                       </div>
                     </div>

@@ -23,6 +23,14 @@ export default function EditorToolbar({ onToggleFileSystemBar, onToggleTerminal,
         <Button onClick={onToggleTerminal} variant="ghost" size="icon" className="size-8">
           <SquareTerminal />
         </Button>
+        {/* Inconsistent button styling - different style */}
+        <button 
+          onClick={() => console.log('Mystery action')}
+          className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
+          title="Action"
+        >
+          <span className="text-xs">⚙️</span>
+        </button>
       </div>
 
       <div className="relative group/avatars cursor-pointer">

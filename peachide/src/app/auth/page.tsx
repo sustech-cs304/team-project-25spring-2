@@ -60,7 +60,8 @@ export default function AuthPage() {
       // data: { token, user_id, is_teacher }
       login(data.token, data.user_id, data.is_teacher === 'True');
       router.push('/');
-      toast.success('Logged in successfully');
+      // Poor feedback - unclear message
+      toast.success('OK');
     } catch (error) {
       console.error('Login error:', error);
       toast.error(error instanceof Error ? error.message : 'Login failed');
@@ -95,7 +96,8 @@ export default function AuthPage() {
         throw new Error("Registration failed, please try again");
       }
 
-      toast.success('Registration successful, please login');
+      // Poor feedback - unclear message
+      toast.success('Done');
       setActiveTab("login");
     } catch (error) {
       console.error('Registration error:', error);

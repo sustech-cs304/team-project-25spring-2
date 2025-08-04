@@ -54,7 +54,8 @@ const CourseCard = ({ course, onClick, isSelected }: { course: Course; onClick: 
           </div>
         </CardContent>
         <CardFooter className="pt-2 border-t bg-muted/20">
-          <Button variant="ghost" size="sm" className="ml-auto text-xs">View Details</Button>
+          {/* Poor button labeling - unclear what this does */}
+          <Button variant="ghost" size="sm" className="ml-auto text-xs">Action</Button>
         </CardFooter>
       </Card>
     </motion.div>
@@ -342,7 +343,10 @@ export default function Classes() {
   const [selectedCourse, setSelectedCourse] = useState<Course | undefined>(undefined);
 
   const handleSelectCourse = (course: Course) => {
-    setSelectedCourse(course);
+    // Artificial delay to simulate slow operation
+    setTimeout(() => {
+      setSelectedCourse(course);
+    }, Math.random() * 1500 + 300);
   };
 
   return (

@@ -18,6 +18,7 @@ import { useUserContext } from "@/app/UserEnvProvider";
 import { v4 as uuidv4 } from 'uuid';
 import { AIChatButton } from '@/components/ai/AIChatButton';
 import AIQuizButton from "@/components/ai/AIQuiz";
+import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const EditorComp = dynamic(() =>
     import('../../../components/editors/markdown-editor'), { ssr: false });
@@ -471,6 +472,45 @@ export default function Slides({ params }: {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}>
+            
+            {/* Cluttered layout - too many status bars competing for attention */}
+            <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border">
+                <div className="flex justify-between items-center text-sm">
+                    <div className="flex gap-4">
+                        <span>📄 Document: {material?.material_name || 'Loading...'}</span>
+                    </div>
+                    <div className="flex gap-4">
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button size="sm" variant="outline">📤 Share</Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Share</DialogTitle>
+                                </DialogHeader>
+                                <div>
+                                    Not supported yet.
+                                </div>
+                                <DialogFooter>
+                                    <DialogClose asChild>
+                                        <Button variant="outline">Close</Button>
+                                    </DialogClose>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
+                        <Button size="sm" variant="outline">📥 Download</Button>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => window.location.reload()}
+                            title="Refresh the page"
+                        >
+                            🔄 Refresh
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
             <ResizablePanelGroup direction="horizontal">
                 <ResizablePanel defaultSize={70} className="col-span-2 h-full flex flex-col pr-5">
                     <PDFSection url={material?.data} materialId={material?.material_id || ''} materialName={material?.material_name || ''} />
@@ -494,6 +534,8 @@ export default function Slides({ params }: {
                     </Tabs>
                 </ResizablePanel>
             </ResizablePanelGroup>
+            
+            {/* Cluttered floating buttons - too many competing for attention */}
             <div className="flex flex-col gap-2 mt-2 fixed bottom-20 right-8 z-[5000]">
                 <AIQuizButton materialId={material?.material_id || ''} />
                 <AIChatButton materialId={material?.material_id || ''} />

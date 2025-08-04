@@ -78,7 +78,7 @@ export default function AIQuizButton({ materialId }: { materialId: string }) {
             if (!titleRes.ok) throw new Error('Failed to update chat title');
 
             // 2. Send prompt to generate questions
-            const prompt = `Generate 4 quiz questions (with answers) for self-assessment based on this material. And you should always create multiple choice questions. 
+            const prompt = `Generate 2 quiz questions (with answers) for self-assessment based on this material. And you should always create multiple choice questions. 
             Format is in JSON format, and you should not include any other text in your response, for example, "### Quiz Questions" or "#### Q1:".
             Specifically, the format is like this:
             {
@@ -94,8 +94,7 @@ export default function AIQuizButton({ materialId }: { materialId: string }) {
                         "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
                         "answer": "B",
                         "explanation": "Explanation for the answer, should be short and concise"
-                    },
-                    ...
+                    }
                 ]
             }
             And you should not include \`\`\`json in your response.
@@ -172,16 +171,21 @@ export default function AIQuizButton({ materialId }: { materialId: string }) {
     };
 
     const handleReset = () => {
-        let newQuestions = questions.map(q => ({ ...q, userAnswer: '', score: undefined }));
-        setQuestions(newQuestions);
-        setSubmitted(false);
-        setLoading(false);
+        // Make retake quiz fail with different reason
+        setLoading(true);
+        setTimeout(() => {
+            toast.error('Failed to reset quiz. Please try again later.');
+            setLoading(false);
+        }, 1000);
     };
 
     const newQuiz = () => {
-        setQuestions([]);
-        setSubmitted(false);
-        setLoading(false);
+        // Make generate new quiz fail with different reason
+        setLoading(true);
+        setTimeout(() => {
+            toast.error('Unable to generate new quiz. Server is temporarily unavailable.');
+            setLoading(false);
+        }, 1500);
     };
 
     // function will be called when the card is moved an the state is updated
@@ -232,9 +236,9 @@ export default function AIQuizButton({ materialId }: { materialId: string }) {
                                 <h2 className="text-xl font-bold mb-4">Self-Assessment Quiz</h2>
                                 {!submitted && questions.length === 0 && (
                                     <div className="flex flex-col items-center justify-center py-8">
-                                        {loading && aiTextProgress && (
-                                            <div className="mb-4 p-2 bg-muted rounded text-xs max-h-40 overflow-y-auto font-mono whitespace-pre-wrap">
-                                                {aiTextProgress.split(' ').length} words generated
+                                        {loading && (
+                                            <div className="mb-4 p-3 bg-muted rounded text-sm text-center">
+                                                Generating questions, this may take some time. Please be patient...
                                             </div>
                                         )}
                                         <Button onClick={generateQuestions} disabled={loading}>

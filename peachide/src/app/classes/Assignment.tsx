@@ -334,12 +334,23 @@ export default function Assignment({ courseId }: AssignmentProps) {
   }
 
   return (
-    <motion.div
-      className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto space-y-6"
-      variants={container}
-      initial="hidden"
-      animate="show"
-    >
+    <>
+      <style jsx>{`
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        @keyframes pulse-red {
+          0%, 100% { box-shadow: 0 0 20px rgba(, 68, 68, 0.3); }
+          50% { box-shadow: 0 0 30px rgba(159, 68, 68, 0.6), 0 0 40px rgba(139, 68, 68, 0.4); }
+        }
+      `}</style>
+      <motion.div
+        className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto space-y-6"
+        variants={container}
+        initial="hidden"
+        animate="show"
+      >
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-primary/10 rounded-full">
@@ -406,7 +417,15 @@ export default function Assignment({ courseId }: AssignmentProps) {
                   transition={{ duration: 0.15 }}
                 >
                   <Card className={`overflow-hidden border shadow-sm hover:shadow-md transition-all duration-200 ${isActive ? 'hover:border-primary/50' : 'opacity-80'
-                    } relative`}>
+                    } relative ${isMissed ? 'animate-pulse bg-gradient-to-r from-red-400 to-orange-400 dark:from-red-900/20 dark:to-orange-900/20 border-red-500 shadow-lg shadow-red-500/25' : ''}`}
+                    style={isMissed ? {
+                      animation: 'shimmer 2s infinite, pulse-red 1.5s infinite',
+                      background: 'linear-gradient(90deg, #fef2f2 0%, #fed7aa 50%, #fef2f2 100%)',
+                      backgroundSize: '200% 100%',
+                      boxShadow: '0 0 20px rgba(239, 68, 68, 0.3), 0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                      border: '2px solid #ef4444'
+                    } : {}}
+                  >
                     {isActive && !isMissed && (
                       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/60 to-primary/20"></div>
                     )}
@@ -441,8 +460,17 @@ export default function Assignment({ courseId }: AssignmentProps) {
                             </Badge>
                           )}
                           {isMissed && (
-                            <Badge variant="destructive" className="text-xs">
-                              Missed
+                            <Badge 
+                              variant="destructive" 
+                              className="text-xs font-bold animate-pulse"
+                              style={{
+                                animation: 'pulse-red 1s infinite',
+                                backgroundColor: '#aa4444',
+                                color: 'white',
+                                boxShadow: '0 0 10px rgba(159, 68, 68, 0.5)'
+                              }}
+                            >
+                              ⚠️ MISSED ⚠️
                             </Badge>
                           )}
                         </div>
@@ -489,6 +517,7 @@ export default function Assignment({ courseId }: AssignmentProps) {
           </AnimatePresence>
         </div>
       </div>
-    </motion.div>
+      </motion.div>
+    </>
   );
 }

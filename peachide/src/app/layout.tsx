@@ -7,6 +7,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "sonner";
 import { UserProvider } from "./UserEnvProvider";
 import AuthGuard from "@/components/auth-guard";
+import RatingPopup from "@/components/RatingPopup";
 import 'katex/dist/katex.min.css';
 import 'highlight.js/styles/github.css';
 
@@ -44,6 +45,7 @@ export default function RootLayout({
                     </UserProvider>
                 </ThemeProvider>
                 <Toaster />
+                <RatingPopup />
             </body>
         </html>
     );

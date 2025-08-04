@@ -69,20 +69,18 @@ function ReplyBox({ id, title, avatar, content, forPage, showPageNumber, childre
                         {content}
                     </div>
                     <div className="flex items-center">
-                        {type === 'comment' ?
-                            (<>
+                        <span className="text-xs opacity-50"
+                            suppressHydrationWarning>{new Date().toLocaleString()}</span>
                                 <ReplyDialog trigger={
-                                    <Button variant="ghost" size="icon" className="size-4 mr-2 text-muted-foreground">
+                            <Button variant="ghost" size="icon" className="size-4 ml-2 mr-2">
                                         <Reply />
                                     </Button>} props={{ page: forPage, type: "reply", id: id }} mutate={mutateReplies} />
                                 <span>·</span>
                                 <ExtraCommentDialog trigger={
                                     <Button variant="ghost" className="h-4 w-12 ml-1.5 flex items-center">
-                                        <span className="text-xs text-muted-foreground">Reply {comment?.replies?.length ? `${comment?.replies?.length}` : '0'}</span>
+                                        <span className="text-xs text-gray-200">Reply {comment?.replies?.length ? `${comment?.replies?.length}` : '0'}</span>
                                     </Button>} replies={comment?.replies} fromTitle={title}
                                     props={{ page: forPage, type: "comment", id: id }} />
-                            </>)
-                            : <></>}
                     </div>
                 </div>
             </div>
@@ -114,6 +112,9 @@ function ReplyDialog({ trigger, props, mutate }: { trigger: React.ReactNode, pro
             return;
         }
 
+        // Artificial delay to simulate slow operation
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
+
         const formData = new FormData();
         formData.append('content', content);
         formData.append('material_id', materialId);
@@ -141,12 +142,14 @@ function ReplyDialog({ trigger, props, mutate }: { trigger: React.ReactNode, pro
         }
 
         if (response.ok) {
-            toast("Reply sent! ");
+            // Poor feedback - unclear message
+            toast("Done");
             setContent('');
             setIsOpen(false);
             if (mutate) mutate();
         } else {
-            toast("Failed to send reply.");
+            // Poor feedback - generic error message
+            toast("Error occurred");
         }
     };
 
