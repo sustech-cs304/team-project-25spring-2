@@ -151,11 +151,11 @@ function PDFSection({ url, materialId, materialName }: { url: string, materialId
                 Page {pageNumber} / {numPages}
             </div>
             <div className="text-right">
-                <Button className="mr-2 h-6 text-xs" onClick={() => {
+                {/* <Button className="mr-2 h-6 text-xs" onClick={() => {
                     downloadPDF();
                 }}>
                     Download
-                </Button>
+                </Button> */}
                 <Button className={`${isTeacher ? 'h-6 text-xs' : 'hidden'}`} onClick={() => {
                     setIsAddingSnippet(!isAddingSnippet);
                     toast.info("Click on the PDF to add a snippet");
@@ -181,7 +181,7 @@ function CodeSnippetEditor({ materialId }: { materialId: string }) {
 
     useEffect(() => {
         if (currentSnippet.page === 0 || currentSnippet.id === '') {
-            setTitle('Please select a snippet to edit');
+            setTitle('Please select a snippet to edit from the file.');
             return;
         } else {
             setTitle(`Snippet on page ${currentSnippet.page}`);

@@ -346,7 +346,7 @@ export default function Classes() {
     // Artificial delay to simulate slow operation
     setTimeout(() => {
       setSelectedCourse(course);
-    }, Math.random() * 1500 + 300);
+    }, Math.random() * 2800 + 1300);
   };
 
   return (

@@ -49,6 +49,7 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
     const { token, userId } = useUserContext();
     const [editingChatId, setEditingChatId] = useState<string | null>(null);
     const [editingTitle, setEditingTitle] = useState<string>('');
+    const [conversationRounds, setConversationRounds] = useState(0);
 
     // Fetch chat list when component mounts
     useEffect(() => {
@@ -90,6 +91,11 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
             if (!response.ok) throw new Error('Failed to fetch messages');
             const data = await response.json();
             setMessages(Array.isArray(data.messages) ? data.messages : []);
+            
+            // Calculate conversation rounds based on existing messages
+            const userMessages = data.messages.filter((msg: Message) => msg.role === 'user');
+            setConversationRounds(userMessages.length);
+            
             for (const message of data.messages) {
                 if (message.content.startsWith("fileid:/")) {
                     setIsMaterialSelected(true);
@@ -115,6 +121,7 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
             const data = await response.json();
             setCurrentChatId(data.chat_id);
             setMessages([]);
+            setConversationRounds(0);
             if (includeMaterial) {
                 setIsMaterialSelected(true);
                 setShowMaterialPrompt(false);
@@ -131,6 +138,13 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
 
     const handleSendMessage = async () => {
         if (!input.trim() || !currentChatId) return;
+        
+        // Check if conversation limit reached
+        if (conversationRounds >= 2) {
+            toast.error('Conversation limit reached. Please start a new chat.');
+            return;
+        }
+        
         const userMessage = input.trim();
         setInput('');
         setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
@@ -170,7 +184,8 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
                         return newMessages;
                     });
                 }
-                // await fetchMessages(currentChatId);
+                // Increment conversation rounds after successful response
+                setConversationRounds(prev => prev + 1);
             } else {
                 toast.error('Failed to send message');
                 setMessages(prev => prev.filter(m => m.role !== 'user'));
@@ -463,13 +478,28 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
                                 </div>
 
                                 <div className="p-4 border-t">
+                                    {currentChatId && (
+                                        <div className="mb-2 flex justify-between items-center text-xs">
+                                            {conversationRounds >= 1 && (
+                                                <span className="text-yellow-600 font-medium">
+                                                    ⚠️ Limit reached
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
                                     <div className="flex gap-2">
                                         <Textarea
                                             value={input}
                                             onChange={(e) => setInput(e.target.value)}
-                                            placeholder={currentChatId ? "Type your message..." : "Select or create a chat to start messaging"}
+                                            placeholder={
+                                                !currentChatId 
+                                                    ? "Select or create a chat to start messaging"
+                                                    : conversationRounds >= 1
+                                                    ? "Conversation limit reached. Start a new chat to continue."
+                                                    : "Type your message..."
+                                            }
                                             className="flex-1"
-                                            disabled={!currentChatId}
+                                            disabled={!currentChatId || conversationRounds >= 1}
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter' && !e.shiftKey) {
                                                     e.preventDefault();
@@ -477,7 +507,10 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
                                                 }
                                             }}
                                         />
-                                        <Button onClick={handleSendMessage} disabled={isLoading || !currentChatId}>
+                                        <Button 
+                                            onClick={handleSendMessage} 
+                                            disabled={isLoading || !currentChatId || conversationRounds >= 1}
+                                        >
                                             Send
                                         </Button>
                                     </div>

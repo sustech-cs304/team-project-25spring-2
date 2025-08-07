@@ -106,10 +106,26 @@ export default function Assignment({ courseId }: AssignmentProps) {
         throw new Error(response.statusText);
       }
       result = await response.json();
+      console.log(result);
+      
       if (result.message == "Require group" && !(courseId in myGroups)) {
         setError('You need to join a group to start this assignment.');
         setEnvLoading(false);
         return;
+      }
+
+      // Find the assignment to check if it's past deadline
+      const assignment = data?.assignments.find(a => a.assignment_id === assignmentId);
+      if (assignment) {
+        const deadlineDate = new Date(assignment.deadline);
+        const now = new Date();
+        const isPastDeadline = deadlineDate < now;
+        
+        if (isPastDeadline && !assignment.isOver) {
+          setError('This assignment is already over. You cannot start it anymore.');
+          setEnvLoading(false);
+          return;
+        }
       }
     } catch (error) {
       console.error('Error starting assignment environment:', error);
