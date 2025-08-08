@@ -203,6 +203,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.removeItem('token');
     localStorage.removeItem('userId');
     localStorage.removeItem('isTeacher');
+    localStorage.removeItem('ratingPopupCount');
     // Reset sidebar items to default when logging out
     setSidebarItems(defaultSidebarItems);
     localStorage.setItem('sidebarItems', JSON.stringify(defaultSidebarItems));

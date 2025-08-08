@@ -5,28 +5,27 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Star, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useUserContext } from '@/app/UserEnvProvider';
 
 export default function RatingPopup() {
   const [isOpen, setIsOpen] = useState(false);
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [feedback, setFeedback] = useState('');
-  const [closeCount, setCloseCount] = useState(0);
 
   useEffect(() => {
-    // Show popup every 30 seconds
-    const interval = setInterval(() => {
-      if (closeCount >= 3) {
-        clearInterval(interval);
-        return;
-      } else {
-        setCloseCount(closeCount + 1);
-        setIsOpen(true);
+    if (!isOpen) {
+      let showCount = parseInt(localStorage.getItem('ratingPopupCount') || '0');
+      console.log("showCount", showCount);
+      if (showCount < 3) {
+        setTimeout(() => {
+          setIsOpen(true);
+          const newCount = showCount + 1;
+          localStorage.setItem('ratingPopupCount', newCount.toString());
+        }, 5000);
       }
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [closeCount]);
+    }
+  }, [isOpen]);
 
   const handleRatingClick = (selectedRating: number) => {
     // Broken rating system - only allows rating of 1 or 5, other ratings don't work
@@ -70,19 +69,19 @@ export default function RatingPopup() {
           {/* Broken rating stars - only 1 and 5 work */}
           <div className="flex justify-center gap-1">
             {[1, 2, 3, 4, 5].map((star) => (
-                              <button
-                  key={star}
-                  onClick={() => handleRatingClick(star)}
-                  onMouseEnter={() => setHoveredRating(star)}
-                  onMouseLeave={() => setHoveredRating(0)}
-                  className={`p-1 transition-colors ${
-                    (hoveredRating >= star || rating >= star) 
-                      ? 'text-yellow-500' 
-                      : 'text-gray-300'
-                  }`}
-                  disabled={star !== 1 && star !== 5} // Only 1 and 5 are enabled
-                  title={`Rate ${star} star${star !== 1 ? 's' : ''}`}
-                >
+              <button
+                key={star}
+                onClick={() => handleRatingClick(star)}
+                onMouseEnter={() => setHoveredRating(star)}
+                onMouseLeave={() => setHoveredRating(0)}
+                className={`p-1 transition-colors ${
+                  (hoveredRating >= star || rating >= star) 
+                    ? 'text-yellow-500' 
+                    : 'text-gray-300'
+                }`}
+                disabled={star !== 1 && star !== 5} // Only 1 and 5 are enabled
+                title={`Rate ${star} star${star !== 1 ? 's' : ''}`}
+              >
                 <Star 
                   size={24} 
                   fill={star !== 1 && star !== 5 ? 'none' : undefined}

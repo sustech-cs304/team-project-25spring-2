@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { use } from 'react'
 import FileSystemBar from "@/components/coding/FileSystemBar";
 import EditorLayout from "@/components/coding/EditorLayout";
+import AssignmentReminder from "@/components/coding/AssignmentReminder";
 import { TreeNode } from "@/components/data/CodeEnvType";
 
 export default function Coding({ params }: { params: Promise<{ id: string }> }) {
@@ -25,11 +26,16 @@ export default function Coding({ params }: { params: Promise<{ id: string }> }) 
         isVisible={isFileSystemBarVisible}
         onFileSelect={handleFileSelect}
       />
-      <EditorLayout 
-        environmentId={resolvedParams.id}
-        onToggleFileSystemBar={toggleFileSystemBar}
-        selectedFile={selectedFile}
-      />
+      <div className="flex-1 flex flex-col">
+        <AssignmentReminder environmentId={resolvedParams.id} />
+        <div className="flex-1">
+          <EditorLayout 
+            environmentId={resolvedParams.id}
+            onToggleFileSystemBar={toggleFileSystemBar}
+            selectedFile={selectedFile}
+          />
+        </div>
+      </div>
     </div>
   );
 }

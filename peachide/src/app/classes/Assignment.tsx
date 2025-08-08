@@ -135,14 +135,21 @@ export default function Assignment({ courseId }: AssignmentProps) {
     }
     const environmentId = result.environment_id;
     router.push(`/coding/${environmentId}`);
-    setSidebarItems([
-      ...sidebarItems,
-      {
-        title: "Coding " + environmentId,
-        url: `/coding/${environmentId}`,
-        icon: "CodeXml"
-      }
-    ]);
+    
+    // Check if this environment already exists in sidebar
+    const environmentExists = sidebarItems.some(item => item.url === `/coding/${environmentId}`);
+    
+    if (!environmentExists) {
+      setSidebarItems([
+        ...sidebarItems,
+        {
+          title: "Coding " + environmentId,
+          url: `/coding/${environmentId}`,
+          icon: "CodeXml"
+        }
+      ]);
+    }
+    
     setEnvLoading(false);
   };
 
