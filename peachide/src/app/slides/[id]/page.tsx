@@ -151,11 +151,11 @@ function PDFSection({ url, materialId, materialName }: { url: string, materialId
                 Page {pageNumber} / {numPages}
             </div>
             <div className="text-right">
-                {/* <Button className="mr-2 h-6 text-xs" onClick={() => {
+                <Button className="mr-2 h-6 text-xs" onClick={() => {
                     downloadPDF();
                 }}>
                     Download
-                </Button> */}
+                </Button>
                 <Button className={`${isTeacher ? 'h-6 text-xs' : 'hidden'}`} onClick={() => {
                     setIsAddingSnippet(!isAddingSnippet);
                     toast.info("Click on the PDF to add a snippet");
@@ -258,6 +258,12 @@ function CodeSnippetEditor({ materialId }: { materialId: string }) {
         try {
             setShowResults(true);
             setExecutionResult({ result: 'Executing...', error: null });
+
+            // Add a timeout before allowing execution (random time between 0.5s and 3s)
+            const minDelayMs = 500;
+            const maxDelayMs = 3000;
+            const randomDelay = Math.floor(Math.random() * (maxDelayMs - minDelayMs + 1)) + minDelayMs;
+            await new Promise(resolve => setTimeout(resolve, randomDelay));
 
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/execute/snippet/${currentSnippet.id}`, {
                 method: 'POST',
