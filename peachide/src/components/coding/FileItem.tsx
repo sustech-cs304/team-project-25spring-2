@@ -78,6 +78,7 @@ function FileItem(props: FileItemProps) {
             e.stopPropagation();
             onDelete(treeNode.uri);
           }}
+          title="Delete"
         >
           <Trash2 size={14} />
         </Button>

@@ -17,10 +17,10 @@ export default function EditorToolbar({ onToggleFileSystemBar, onToggleTerminal,
   return (
     <div className="flex justify-between items-center flex-none p-3">
       <div className="flex gap-1">
-        <Button onClick={onToggleFileSystemBar} variant="ghost" size="icon" className="size-8">
+        <Button onClick={onToggleFileSystemBar} variant="ghost" size="icon" className="size-8" title="Toggle file system">
           <BookCopy />
         </Button>
-        <Button onClick={onToggleTerminal} variant="ghost" size="icon" className="size-8">
+        <Button onClick={onToggleTerminal} variant="ghost" size="icon" className="size-8" title="Toggle terminal">
           <SquareTerminal />
         </Button>
         {/* Inconsistent button styling - different style */}

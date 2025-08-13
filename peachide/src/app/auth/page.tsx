@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { EyeIcon, EyeOffIcon, LogInIcon, UserPlusIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import userActionLogger from '@/lib/userActionLogger';
 
 export default function AuthPage() {
   const router = useRouter();
@@ -38,6 +39,7 @@ export default function AuthPage() {
     setIsLoading(true);
 
     try {
+      userActionLogger.logFormSubmit('登录表单', { user_id: formData.user_id });
       const response = await fetch(process.env.NEXT_PUBLIC_API_URL + "/login", {
         method: "POST",
         headers: {
@@ -64,6 +66,7 @@ export default function AuthPage() {
       toast.success('OK');
     } catch (error) {
       console.error('Login error:', error);
+      userActionLogger.logAction({ actionType: 'other', functionDescription: '页面错误: 登录失败', actionDetails: { error: String(error) } });
       toast.error(error instanceof Error ? error.message : 'Login failed');
     } finally {
       setIsLoading(false);
@@ -75,6 +78,7 @@ export default function AuthPage() {
     setIsLoading(true);
 
     try {
+      userActionLogger.logFormSubmit('注册表单', { name: formData.name, email: formData.email, user_id: formData.user_id });
       const response = await fetch(process.env.NEXT_PUBLIC_API_URL + "/register", {
         method: "POST",
         headers: {
@@ -101,6 +105,7 @@ export default function AuthPage() {
       setActiveTab("login");
     } catch (error) {
       console.error('Registration error:', error);
+      userActionLogger.logAction({ actionType: 'other', functionDescription: '页面错误: 注册失败', actionDetails: { error: String(error) } });
       toast.error(error instanceof Error ? error.message : 'Registration failed');
     } finally {
       setIsLoading(false);
@@ -148,7 +153,10 @@ export default function AuthPage() {
         <Tabs
           defaultValue="login"
           value={activeTab}
-          onValueChange={(value) => setActiveTab(value as "login" | "register")}
+          onValueChange={(value) => {
+            setActiveTab(value as "login" | "register");
+            userActionLogger.logAction({ actionType: 'click', functionDescription: `点击操作: 切换到${value === 'login' ? '登录' : '注册'}标签`, elementText: value });
+          }}
           className="w-full"
         >
           <motion.div variants={itemVariants}>
@@ -175,7 +183,7 @@ export default function AuthPage() {
                     </CardTitle>
                     <CardDescription>Enter your credentials to access your account</CardDescription>
                   </CardHeader>
-                  <form onSubmit={handleLogin}>
+                  <form onSubmit={handleLogin} name="loginForm" data-ua="登录表单">
                     <CardContent className="space-y-6">
                       <motion.div
                         className="space-y-2"
@@ -212,6 +220,7 @@ export default function AuthPage() {
                             type="button"
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                             onClick={() => setShowPassword(!showPassword)}
+                            title={showPassword ? "Hide password" : "Show password"}
                           >
                             {showPassword ? (
                               <EyeOffIcon className="h-5 w-5" />
@@ -226,6 +235,8 @@ export default function AuthPage() {
                       <Button
                         type="submit"
                         className="w-full mt-4 h-12 text-base transition-all"
+                        ua="点击操作: 登录"
+                        title="Login"
                         disabled={isLoading}
                       >
                         {isLoading ? (
@@ -257,7 +268,7 @@ export default function AuthPage() {
                     </CardTitle>
                     <CardDescription>Create a new account to get started</CardDescription>
                   </CardHeader>
-                  <form onSubmit={handleRegister}>
+                  <form onSubmit={handleRegister} name="registerForm" data-ua="注册表单">
                     <CardContent className="space-y-6">
                       <motion.div
                         className="space-y-2"
@@ -350,6 +361,7 @@ export default function AuthPage() {
                       <Button
                         type="submit"
                         className="w-full mt-4 h-12 text-base transition-all"
+                        ua="点击操作: 注册"
                         disabled={isLoading}
                       >
                         {isLoading ? (

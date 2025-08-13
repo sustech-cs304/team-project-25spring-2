@@ -40,16 +40,38 @@ function Button({
   variant,
   size,
   asChild = false,
+  ua,
+  uaText,
+  title,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
+    ua?: string
+    uaText?: string
+    title?: string
   }) {
   const Comp = asChild ? Slot : "button"
+
+  // Derive a sensible title if not provided
+  let resolvedTitle = title as string | undefined
+  if (!resolvedTitle) {
+    const child = (props as any).children
+    const textFromChildren = typeof child === 'string'
+      ? child
+      : Array.isArray(child)
+        ? child.filter((c) => typeof c === 'string').join(' ').trim()
+        : undefined
+    resolvedTitle = uaText || textFromChildren || (props as any)['aria-label'] || undefined
+  }
 
   return (
     <Comp
       data-slot="button"
+      {...(!asChild ? { type: (props as any).type ?? 'button' } : {})}
+      {...(ua ? { "data-ua": ua } : {})}
+      {...(uaText ? { "data-ua-text": uaText } : {})}
+      {...(resolvedTitle ? { title: resolvedTitle } : {})}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />

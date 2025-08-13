@@ -72,12 +72,12 @@ function ReplyBox({ id, title, avatar, content, forPage, showPageNumber, childre
                         <span className="text-xs opacity-50"
                             suppressHydrationWarning>{new Date().toLocaleString()}</span>
                                 <ReplyDialog trigger={
-                            <Button variant="ghost" size="icon" className="size-4 ml-2 mr-2">
+                            <Button variant="ghost" size="icon" className="size-4 ml-2 mr-2" title="Reply">
                                         <Reply />
                                     </Button>} props={{ page: forPage, type: "reply", id: id }} mutate={mutateReplies} />
                                 <span>·</span>
                                 <ExtraCommentDialog trigger={
-                                    <Button variant="ghost" className="h-4 w-12 ml-1.5 flex items-center">
+                    <Button variant="ghost" className="h-4 w-12 ml-1.5 flex items-center" title="View replies">
                                         <span className="text-xs text-gray-200">Reply {comment?.replies?.length ? `${comment?.replies?.length}` : '0'}</span>
                                     </Button>} replies={comment?.replies} fromTitle={title}
                                     props={{ page: forPage, type: "comment", id: id }} />

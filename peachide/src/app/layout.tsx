@@ -4,8 +4,9 @@ import { ThemeProvider } from "next-themes";
 import React from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 import { UserProvider } from "./UserEnvProvider";
+import UserActionLoggerProvider from "./UserActionLoggerProvider";
 import AuthGuard from "@/components/auth-guard";
 import RatingPopup from "@/components/RatingPopup";
 import 'katex/dist/katex.min.css';
@@ -33,6 +34,7 @@ export default function RootLayout({
                 >
                     <UserProvider>
                         <AuthGuard>
+                            <UserActionLoggerProvider>
                             <SidebarProvider style={{
                                 "--sidebar-width": "3rem"
                             } as React.CSSProperties} className="h-full">
@@ -41,6 +43,7 @@ export default function RootLayout({
                                     {children}
                                 </SidebarInset>
                             </SidebarProvider>
+                            </UserActionLoggerProvider>
                         </AuthGuard>
                     </UserProvider>
                 </ThemeProvider>

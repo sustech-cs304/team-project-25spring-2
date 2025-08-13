@@ -288,16 +288,17 @@ export default function CalendarModal({ open, onOpenChange }: CalendarModalProps
           <Button
             variant="ghost"
             size="sm"
+            title="Today"
             onClick={() => setCurrentDate(new Date())}
             className="text-xs font-medium px-3 h-7"
           >
             Today
           </Button>
           <div className="flex border rounded bg-card">
-            <Button variant="ghost" size="icon" className="rounded-none h-7 w-7 border-r" onClick={prevMonth}>
+            <Button variant="ghost" size="icon" className="rounded-none h-7 w-7 border-r" onClick={prevMonth} title="Previous Month">
               <ChevronLeft className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" className="rounded-none h-7 w-7" onClick={nextMonth}>
+            <Button variant="ghost" size="icon" className="rounded-none h-7 w-7" onClick={nextMonth} title="Next Month">
               <ChevronRight className="h-3.5 w-3.5" />
             </Button>
           </div>

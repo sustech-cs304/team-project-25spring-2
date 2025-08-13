@@ -7,6 +7,7 @@ import { X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Interactable, { dragMoveListener } from './interactable';
 import { useUserContext } from '@/app/UserEnvProvider';
+import userActionLogger from '@/lib/userActionLogger';
 
 interface QuizQuestion {
     question: string;
@@ -32,6 +33,7 @@ export default function AIQuizButton({ materialId }: { materialId: string }) {
             ...questions,
             { question: '', options: [], answer: '', userAnswer: '', explanation: '', score: undefined },
         ]);
+        userActionLogger.logDataOperation('add', 'Quiz Question');
     };
 
     // Update question content
@@ -59,6 +61,7 @@ export default function AIQuizButton({ materialId }: { materialId: string }) {
         setLoading(true);
         setAiTextProgress('');
         try {
+            userActionLogger.logAction({ actionType: 'submit', functionDescription: 'Generate quiz questions', actionDetails: { materialId } });
             // 1. Create a chat
             const chatRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat`, {
                 method: 'POST',
@@ -142,10 +145,12 @@ export default function AIQuizButton({ materialId }: { materialId: string }) {
             }
             if (parsed.length === 0) throw new Error('No questions found in AI response.');
             setQuestions(parsed);
+            userActionLogger.logAction({ actionType: 'other', functionDescription: 'Quiz questions generated', actionDetails: { count: parsed.length } });
             setSubmitted(false);
             toast.success('Questions generated!');
         } catch (err: any) {
             toast.error('Failed to generate questions: ' + err.message);
+            userActionLogger.logAction({ actionType: 'error', functionDescription: 'Quiz generation failed', actionDetails: { error: String(err) } });
         } finally {
             setLoading(false);
             setAiTextProgress('');
@@ -167,6 +172,7 @@ export default function AIQuizButton({ materialId }: { materialId: string }) {
             setSubmitted(true);
             setLoading(false);
             toast.success('Quiz graded!');
+            userActionLogger.logAction({ actionType: 'submit', functionDescription: 'Submit quiz for grading', actionDetails: { questions: questions.length } });
         }, 800);
     };
 
@@ -176,6 +182,7 @@ export default function AIQuizButton({ materialId }: { materialId: string }) {
         setTimeout(() => {
             toast.error('Failed to reset quiz. Please try again later.');
             setLoading(false);
+            userActionLogger.logAction({ actionType: 'edit', functionDescription: 'Attempted quiz reset' });
         }, 1000);
     };
 
@@ -185,6 +192,7 @@ export default function AIQuizButton({ materialId }: { materialId: string }) {
         setTimeout(() => {
             toast.error('Unable to generate new quiz. Server is temporarily unavailable.');
             setLoading(false);
+            userActionLogger.logAction({ actionType: 'add', functionDescription: 'Attempted to start new quiz' });
         }, 1500);
     };
 
@@ -209,7 +217,7 @@ export default function AIQuizButton({ materialId }: { materialId: string }) {
                     <Button
                         size="icon"
                         className="rounded-full w-10 h-10 shadow-lg"
-                        onClick={() => setIsOpen(true)}
+                        onClick={() => { userActionLogger.logButtonClick('Open Quiz', 'Open quiz floating button'); setIsOpen(true); }}
                         aria-label="Open Self-Assessment Quiz"
                     >
                         <span className="font-light text-lg">Q</span>
@@ -241,7 +249,7 @@ export default function AIQuizButton({ materialId }: { materialId: string }) {
                                                 Generating questions, this may take some time. Please be patient...
                                             </div>
                                         )}
-                                        <Button onClick={generateQuestions} disabled={loading}>
+                                        <Button onClick={generateQuestions} disabled={loading} ua="Generate Quiz Questions">
                                             {loading ? 'Generating...' : 'Generate Questions'}
                                         </Button>
                                     </div>
@@ -277,7 +285,7 @@ export default function AIQuizButton({ materialId }: { materialId: string }) {
                                             ))}
                                         </div>
                                         <div className="flex gap-2 mb-4">
-                                            <Button onClick={handleSubmit} disabled={loading}>Submit Quiz</Button>
+                                            <Button onClick={handleSubmit} disabled={loading} ua="Submit Quiz">Submit Quiz</Button>
                                         </div>
                                     </>
                                 )}
@@ -307,8 +315,8 @@ export default function AIQuizButton({ materialId }: { materialId: string }) {
                                             ))}
                                         </div>
                                         <div className="flex gap-2">
-                                            <Button onClick={handleReset} className="mt-2 mr-2">Retake Quiz</Button>
-                                            <Button onClick={newQuiz} className="mt-2">New Quiz</Button>
+                                            <Button onClick={handleReset} className="mt-2 mr-2" ua="Retake Quiz">Retake Quiz</Button>
+                                            <Button onClick={newQuiz} className="mt-2" ua="Start New Quiz">New Quiz</Button>
                                         </div>
                                     </div>
                                 )}

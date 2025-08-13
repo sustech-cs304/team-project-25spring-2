@@ -285,6 +285,7 @@ const AddUserDialog = ({
                     size="sm"
                     className="h-8 w-8"
                     disabled={isAdding}
+                    title="Add User"
                   >
                     {isAdding ?
                       <Loader2 className="h-4 w-4 animate-spin" /> :
@@ -411,7 +412,7 @@ const StudentsTab = ({ courseId }: { courseId: string }) => {
             {students.length} Students, {teachers.length} Teachers
           </p>
         </div>
-        <Button onClick={() => setAddDialogOpen(true)}>
+        <Button onClick={() => setAddDialogOpen(true)} title="Add User">
           <UserPlus className="mr-2 h-4 w-4" />
           Add User
         </Button>
@@ -475,7 +476,7 @@ const StudentsTab = ({ courseId }: { courseId: string }) => {
           <p className="mt-1 text-sm text-muted-foreground">
             Get started by adding students or teachers to this course.
           </p>
-          <Button className="mt-4" onClick={() => setAddDialogOpen(true)}>
+          <Button className="mt-4" onClick={() => setAddDialogOpen(true)} title="Add User">
             <UserPlus className="mr-2 h-4 w-4" />
             Add User
           </Button>
@@ -646,7 +647,7 @@ const SectionsTab = ({ courseId }: { courseId: string }) => {
             {sections.length} {sections.length === 1 ? 'Section' : 'Sections'}
           </p>
         </div>
-        <Button onClick={handleCreateSection}>
+        <Button onClick={handleCreateSection} title="Create Section">
           <FolderPlus className="mr-2 h-4 w-4" />
           Create Section
         </Button>
@@ -671,6 +672,7 @@ const SectionsTab = ({ courseId }: { courseId: string }) => {
                     <Button
                       variant="outline"
                       size="sm"
+                      title="Add Material"
                       onClick={() => handleUploadMaterial(section.section_id)}
                       className={"mt-2"}>
                       <FilePlus className="mr-1 h-3.5 w-3.5" />
@@ -679,6 +681,7 @@ const SectionsTab = ({ courseId }: { courseId: string }) => {
                     <Button
                       variant="outline"
                       size="sm"
+                      title="Edit Section"
                       onClick={() => handleEditSection(section)}
                       className={"mt-2"}
                     >
@@ -732,6 +735,7 @@ const SectionsTab = ({ courseId }: { courseId: string }) => {
                             size="icon"
                             className="h-8 w-8"
                             onClick={() => goToMaterial(material.material_id, material.material_name)}
+                            title="Go to Material"
                           >
                             <MousePointer className="h-4 w-4" />
                           </Button>
@@ -740,6 +744,7 @@ const SectionsTab = ({ courseId }: { courseId: string }) => {
                             size="icon"
                             className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                             onClick={() => handleDeleteMaterial(material.material_id)}
+                            title="Delete Material"
                           >
                             <X className="h-4 w-4" />
                           </Button>
@@ -776,7 +781,7 @@ const SectionsTab = ({ courseId }: { courseId: string }) => {
           <p className="mt-1 text-sm text-muted-foreground">
             Get started by creating your first section for this course.
           </p>
-          <Button className="mt-4" onClick={handleCreateSection}>
+          <Button className="mt-4" onClick={handleCreateSection} title="Create Section">
             <FolderPlus className="mr-2 h-4 w-4" />
             Create Section
           </Button>
@@ -987,6 +992,7 @@ const SectionDialog = ({
                 onClick={handleAddSchedule}
                 disabled={!selectedDate || !selectedHour || !selectedMinute}
                 className="self-end"
+                title="Add Schedule"
               >
                 Add Schedule
               </Button>
@@ -1013,6 +1019,7 @@ const SectionDialog = ({
                           size="icon"
                           className="h-4 w-4 rounded-full ml-1"
                           onClick={() => handleRemoveSchedule(schedule)}
+                          title="Remove Schedule"
                         >
                           <X className="h-3 w-3" />
                         </Button>
@@ -1029,12 +1036,14 @@ const SectionDialog = ({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              title="Cancel"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isSubmitting || !name || schedules.length === 0}
+              title={isEditMode ? 'Update Section' : 'Create Section'}
             >
               {isSubmitting ? (
                 <>
@@ -1216,12 +1225,14 @@ const UploadMaterialDialog = ({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              title="Cancel"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isUploading || !materialName || !file}
+              title="Upload Material"
             >
               {isUploading ? (
                 <>
@@ -1482,6 +1493,7 @@ const AssignmentEnvironmentsDialog = ({
                         <div className="ml-4 flex items-center">
                           <Button
                             variant="ghost"
+                            title="Access Environment"
                             size="sm"
                             className="flex items-center gap-1 hover:gap-2 transition-all"
                           >
@@ -1499,7 +1511,7 @@ const AssignmentEnvironmentsDialog = ({
         </div>
 
         <div className="pt-4 flex justify-end">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} title="Close Assignment Environments">
             Close
           </Button>
         </div>
@@ -1975,6 +1987,7 @@ const CreateAssignmentDialog = ({
                         }
                       }}
                       disabled={isUploading}
+                      title="Upload File"
                     >
                       {isUploading ? (
                         <>
@@ -1998,6 +2011,7 @@ const CreateAssignmentDialog = ({
                           fileInputRef.current.value = '';
                         }
                       }}
+                      title="Cancel"
                     >
                       Cancel
                     </Button>
@@ -2008,6 +2022,7 @@ const CreateAssignmentDialog = ({
                         e.stopPropagation();
                         fileInputRef.current?.click();
                       }}
+                      title="Choose Different File"
                     >
                       Choose Different File
                     </Button>
@@ -2084,6 +2099,7 @@ const CreateAssignmentDialog = ({
                 variant="ghost"
                 onClick={() => fileInputRef.current?.click()}
                 className="h-6 text-xs"
+                title="Add More Files"
               >
                 + Add More Files
               </Button>
@@ -2279,6 +2295,7 @@ const CreateAssignmentDialog = ({
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
+                title="Cancel"
               >
                 Cancel
               </Button>
@@ -2286,6 +2303,7 @@ const CreateAssignmentDialog = ({
                 type="button"
                 onClick={() => setShowConfirmDialog(true)}
                 disabled={!name || !selectedDate || !selectedHour || !selectedMinute || isDeadlineInPast()}
+                title="Create Assignment"
               >
                 Create Assignment
               </Button>
@@ -2307,12 +2325,14 @@ const CreateAssignmentDialog = ({
             <Button
               variant="outline"
               onClick={() => setShowConfirmDialog(false)}
+              title="Cancel"
             >
               Cancel
             </Button>
             <Button
               onClick={handleCreateAssignment}
               disabled={isCreating}
+              title="Confirm Create"
             >
               {isCreating ? (
                 <>
@@ -2552,6 +2572,7 @@ const EditAssignmentDialog = ({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              title="Cancel"
             >
               Cancel
             </Button>
@@ -2559,6 +2580,7 @@ const EditAssignmentDialog = ({
               type="button"
               onClick={handleUpdateAssignment}
               disabled={!name || !selectedDate || !selectedHour || !selectedMinute || isDeadlineInPast() || isUpdating}
+              title="Update Assignment"
             >
               {isUpdating ? (
                 <>
@@ -2737,7 +2759,7 @@ const AssignmentsTab = ({ courseId }: { courseId: string }) => {
             {activeAssignments.length} Active, {expiredAssignments.length} Completed
           </p>
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)} size="lg">
+        <Button onClick={() => setCreateDialogOpen(true)} size="lg" title="Create Assignment">
           <FilePlus className="mr-2 h-4 w-4" />
           Create Assignment
         </Button>
@@ -2752,7 +2774,7 @@ const AssignmentsTab = ({ courseId }: { courseId: string }) => {
           <p className="mt-1 text-sm text-muted-foreground max-w-sm mx-auto">
             Create your first assignment to start managing coursework and deadlines for your students.
           </p>
-          <Button className="mt-6" onClick={() => setCreateDialogOpen(true)} size="lg">
+          <Button className="mt-6" onClick={() => setCreateDialogOpen(true)} size="lg" title="Create Assignment">
             <FilePlus className="mr-2 h-4 w-4" />
             Create Your First Assignment
           </Button>
@@ -2825,7 +2847,7 @@ const AssignmentsTab = ({ courseId }: { courseId: string }) => {
                     Set deadlines, upload materials, and track student progress.
                   </p>
                 </div>
-                <Button onClick={() => setCreateDialogOpen(true)} variant="outline">
+                <Button onClick={() => setCreateDialogOpen(true)} variant="outline" title="New Assignment">
                   <FilePlus className="mr-2 h-4 w-4" />
                   New Assignment
                 </Button>
@@ -2876,6 +2898,7 @@ const AssignmentsTab = ({ courseId }: { courseId: string }) => {
                 setDeletingAssignmentId('');
               }}
               disabled={isDeleting}
+              title="Cancel"
             >
               Cancel
             </Button>
@@ -2883,6 +2906,7 @@ const AssignmentsTab = ({ courseId }: { courseId: string }) => {
               variant="destructive"
               onClick={confirmDeleteAssignment}
               disabled={isDeleting}
+              title='Delete Assignment'
             >
               {isDeleting ? (
                 <>
@@ -2907,11 +2931,13 @@ const AssignmentsTab = ({ courseId }: { courseId: string }) => {
 function TabButton({
   children,
   active,
-  onClick
+  onClick,
+  title = ""
 }: {
   children: React.ReactNode;
   active: boolean;
   onClick: () => void;
+  title?: string;
 }) {
   return (
     <button
@@ -2920,6 +2946,7 @@ function TabButton({
         ? 'bg-background text-foreground shadow-sm'
         : 'text-muted-foreground hover:text-foreground hover:bg-muted'
         }`}
+      title={title}
     >
       {children}
     </button>
@@ -2970,18 +2997,21 @@ export default function ManageRightBar({ isVisible, selectedCourse }: ManageRigh
             <TabButton
               active={activeTab === 'students'}
               onClick={() => setActiveTab('students')}
+              title="Students"
             >
               Students
             </TabButton>
             <TabButton
               active={activeTab === 'sections'}
               onClick={() => setActiveTab('sections')}
+              title="Sections"
             >
               Sections
             </TabButton>
             <TabButton
               active={activeTab === 'assignments'}
               onClick={() => setActiveTab('assignments')}
+              title="Assignments"
             >
               Assignments
             </TabButton>

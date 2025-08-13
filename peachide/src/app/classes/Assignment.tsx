@@ -516,6 +516,7 @@ export default function Assignment({ courseId }: AssignmentProps) {
                         <Button
                           variant="ghost"
                           size="sm"
+                          title="Start Assignment"
                           onClick={() => handleStartAssignment(assignment.assignment_id)}
                           className="flex items-center gap-1 hover:gap-2 transition-all hover:text-primary"
                         >
@@ -526,6 +527,7 @@ export default function Assignment({ courseId }: AssignmentProps) {
                         <Button
                           variant="outline"
                           size="sm"
+                          title="View Details"
                           onClick={() => handleStartAssignment(assignment.assignment_id)}
                           className="text-muted-foreground"
                         >

@@ -55,7 +55,7 @@ const CourseCard = ({ course, onClick, isSelected }: { course: Course; onClick: 
         </CardContent>
         <CardFooter className="pt-2 border-t bg-muted/20">
           {/* Poor button labeling - unclear what this does */}
-          <Button variant="ghost" size="sm" className="ml-auto text-xs">Action</Button>
+          <Button variant="ghost" size="sm" className="ml-auto text-xs" title="Action">Action</Button>
         </CardFooter>
       </Card>
     </motion.div>
@@ -163,6 +163,7 @@ function ClassesLeftBar({ props, isVisible, onSelectCourse, selectedCourseId }: 
           className="ml-auto"
           size="sm"
           onClick={() => setCalendarOpen(true)}
+          title="Open Calendar"
         >
           <Calendar size={16} />
           <span className="ml-1">Calendar</span>
@@ -269,30 +270,35 @@ function ClassesRightBar({
             <TabButton
               active={activeTab === 'course-info'}
               onClick={() => setActiveTab('course-info')}
+              title="Course Info"
             >
               Course Info
             </TabButton>
             <TabButton
               active={activeTab === 'instructors'}
               onClick={() => setActiveTab('instructors')}
+              title="Instructors"
             >
               Instructors
             </TabButton>
             <TabButton
               active={activeTab === 'lecture'}
               onClick={() => setActiveTab('lecture')}
+              title="Lecture"
             >
               Lecture
             </TabButton>
             <TabButton
               active={activeTab === 'assignment'}
               onClick={() => setActiveTab('assignment')}
+              title="Assignment"
             >
               Assignment
             </TabButton>
             <TabButton
               active={activeTab === 'group'}
               onClick={() => setActiveTab('group')}
+              title="Group"
             >
               Group
             </TabButton>
@@ -320,11 +326,13 @@ function ClassesRightBar({
 function TabButton({
   children,
   active,
-  onClick
+  onClick,
+  title = ""
 }: {
   children: React.ReactNode;
   active: boolean;
   onClick: () => void;
+  title?: string;
 }) {
   return (
     <button
@@ -333,6 +341,7 @@ function TabButton({
         ? 'bg-background text-foreground shadow-sm'
         : 'text-muted-foreground hover:text-foreground hover:bg-muted'
         }`}
+      title={title}
     >
       {children}
     </button>

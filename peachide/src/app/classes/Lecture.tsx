@@ -296,6 +296,7 @@ export default function Lecture({ courseId }: LectureProps) {
                       <Button
                         variant="ghost"
                         size="sm"
+                        title="View Materials"
                         onClick={() => handleOpenMaterials(section)}
                         className="flex items-center gap-1 hover:gap-2 transition-all hover:text-primary"
                         style={{ padding: '2px 4px' }} // Make clickable area smaller
@@ -351,7 +352,7 @@ export default function Lecture({ courseId }: LectureProps) {
                       </div>
                       <div className="transform transition-transform duration-200 group-hover:translate-x-1"
                            style={{ padding: '2px' }} // Make clickable area smaller
-                           onClick={() => handleMaterialClick(selectedSection.section_id, material.material_id, material.material_name)}
+                           onClick={() => handleMaterialClick(selectedSection.section_id, material.material_id, material.material_name)} title={"Open " + material.material_name + " in new tab"}
                       >
                         <ExternalLink size={16} className="text-muted-foreground group-hover:text-primary" />
                       </div>

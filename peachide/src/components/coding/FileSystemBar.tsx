@@ -189,6 +189,7 @@ export default function FileSystemBar({ projectId, isVisible, onFileSelect }: Fi
             setShowFolderInput(false);
             setNewItemName("");
           }}
+          title="New file"
         >
           <FilePlus />
         </Button>
@@ -201,6 +202,7 @@ export default function FileSystemBar({ projectId, isVisible, onFileSelect }: Fi
             setShowFileInput(false);
             setNewItemName("");
           }}
+          title="New folder"
         >
           <FolderPlus />
         </Button>
@@ -221,7 +223,7 @@ export default function FileSystemBar({ projectId, isVisible, onFileSelect }: Fi
             }}
             autoFocus
           />
-          <Button size="sm" onClick={createNewFile}>Create</Button>
+          <Button size="sm" onClick={createNewFile} title="Create file">Create</Button>
         </div>
       )}
 
@@ -240,7 +242,7 @@ export default function FileSystemBar({ projectId, isVisible, onFileSelect }: Fi
             }}
             autoFocus
           />
-          <Button size="sm" onClick={createNewFolder}>Create</Button>
+          <Button size="sm" onClick={createNewFolder} title="Create folder">Create</Button>
         </div>
       )}
 

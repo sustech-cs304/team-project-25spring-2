@@ -16,6 +16,7 @@ import { chatPresets } from './presets';
 import { useUserContext } from '@/app/UserEnvProvider';
 import MarkdownRenderer from '@/components/ai/MarkdownRenderer';
 import Interactable, { dragMoveListener } from "@/components/ai/interactable";
+import userActionLogger from '@/lib/userActionLogger';
 
 interface Message {
     role: 'user' | 'assistant' | 'system';
@@ -111,6 +112,11 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
 
     const createNewChat = async (includeMaterial: boolean = false) => {
         try {
+            userActionLogger.logAction({
+                actionType: 'add',
+                functionDescription: 'Create new chat',
+                actionDetails: { includeMaterial },
+            });
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat`, {
                 method: 'POST',
                 headers: {
@@ -151,6 +157,11 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
         setIsLoading(true);
 
         try {
+            userActionLogger.logAction({
+                actionType: 'submit',
+                functionDescription: 'AI chat send message',
+                actionDetails: { chatId: currentChatId, length: input.trim().length, materialId },
+            });
             const formData = new FormData();
             formData.append('message', userMessage);
             if (materialId && isMaterialSelected) {
@@ -319,6 +330,7 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
                                             variant="outline"
                                             size="sm"
                                             className="h-6 text-xs"
+                                             ua="Toggle Chat List"
                                             onClick={() => setShowChatList(!showChatList)}
                                         >
                                             {currentChatId ? 'Switch Chat' : 'Select Chat'}
@@ -327,6 +339,7 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
                                     <Button
                                         variant="ghost"
                                         size="icon"
+                                         ua="Close AI Chat"
                                         onClick={() => setIsOpen(false)}
                                     >
                                         <X className="h-4 w-4" />
@@ -339,6 +352,7 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
                                             <Button
                                                 variant="ghost"
                                                 className="w-full justify-start"
+                                                ua="Open New Chat Presets"
                                                 onClick={() => {
                                                     setShowPresetDialog(true);
                                                     setShowChatList(false);
@@ -364,6 +378,7 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
                                                             <Button
                                                                 variant="ghost"
                                                                 className="flex-1 justify-start"
+                                                                ua="Select Chat"
                                                                 onClick={() => {
                                                                     setCurrentChatId(chat.chat_id);
                                                                     setShowChatList(false);
@@ -402,6 +417,7 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
                                             <Button
                                                 variant="outline"
                                                 className="w-full justify-start"
+                                                ua="Start Empty Chat"
                                                 onClick={() => {
                                                     createNewChat();
                                                     setShowPresetDialog(false);
@@ -414,6 +430,8 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
                                                     key={index}
                                                     variant="outline"
                                                     className="w-full justify-start"
+                                                    ua="Start Preset Chat"
+                                                    uaText={preset.title}
                                                     onClick={() => {
                                                         createNewChat(true);
                                                         handlePresetSelect(preset.prompt);
@@ -436,7 +454,7 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
                                                 <p className="text-sm text-muted-foreground mb-4">
                                                     Start a new chat or select an existing one to continue.
                                                 </p>
-                                                <Button onClick={() => setShowPresetDialog(true)}>
+                                                <Button onClick={() => setShowPresetDialog(true)} ua="Open New Chat Presets">
                                                     Start New Chat
                                                 </Button>
                                             </div>
@@ -509,6 +527,7 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
                                         />
                                         <Button 
                                             onClick={handleSendMessage} 
+                                            ua="Send AI Chat Message"
                                             disabled={isLoading || !currentChatId || conversationRounds >= 1}
                                         >
                                             Send
@@ -527,6 +546,7 @@ export function AIChatButton({ materialId, className = '' }: AIChatButtonProps) 
                         <Button
                             size="icon"
                             className="rounded-full w-10 h-10 shadow-lg"
+                            ua="Open AI Chat"
                             onClick={() => setIsOpen(true)}
                         >
                             <MessageSquare className="h-6 w-6" />

@@ -212,6 +212,7 @@ const CourseFormDialog = ({
               variant="outline"
               type="button"
               className="mr-2"
+              title="Cancel"
               onClick={() => onOpenChange(false)}
             >
               Cancel
@@ -219,6 +220,7 @@ const CourseFormDialog = ({
             <Button
               type="submit"
               disabled={isSubmitting}
+              title={isNewCourse ? 'Create Course' : 'Update Course'}
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isNewCourse ? 'Create Course' : 'Update Course'}
@@ -263,6 +265,7 @@ const CourseCard = ({
               variant="ghost"
               size="icon"
               className="h-8 w-8"
+              title="Edit Course"
               onClick={(e) => {
                 e.stopPropagation();
                 onEdit();
@@ -281,7 +284,7 @@ const CourseCard = ({
           </div>
         </CardContent>
         <CardFooter className="pt-2 border-t bg-muted/20">
-          <Button variant="ghost" size="sm" className="ml-auto text-xs">Manage Course</Button>
+          <Button variant="ghost" size="sm" title="Manage Course" className="ml-auto text-xs">Manage Course</Button>
         </CardFooter>
       </Card>
     </motion.div>
@@ -396,6 +399,7 @@ export default function ManageLeftBar({ isVisible, onSelectCourse, selectedCours
           className="ml-auto"
           size="sm"
           onClick={handleAddCourse}
+          title="Add Course"
         >
           <PlusCircle size={16} />
           <span className="ml-1">Add Course</span>
@@ -429,7 +433,7 @@ export default function ManageLeftBar({ isVisible, onSelectCourse, selectedCours
               <p className="text-sm text-muted-foreground mt-1">
                 You haven't created any courses yet
               </p>
-              <Button className="mt-4" size="sm" onClick={handleAddCourse}>
+              <Button className="mt-4" size="sm" onClick={handleAddCourse} title="Create your first course">
                 <PlusCircle size={16} className="mr-2" />
                 Create your first course
               </Button>

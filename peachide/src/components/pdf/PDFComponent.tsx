@@ -86,11 +86,11 @@ export const PDFComponent: React.FC<PDFComponentProps> = ({ env_id, file_path })
                 </PDFDocument>
             )}
             <div className="sticky bottom-0 left-0 z-[1000]">
-                <Button variant="outline" size="icon" className="size-6 ml-2 mb-2"
+                <Button variant="outline" size="icon" className="size-6 ml-2 mb-2" title="Zoom in"
                     onClick={() => setScale(scale + 0.1)}>
                     <Plus />
                 </Button>
-                <Button variant="outline" size="icon" className="size-6 ml-1.5 mb-2"
+                <Button variant="outline" size="icon" className="size-6 ml-1.5 mb-2" title="Zoom out"
                     onClick={() => setScale(scale - 0.1)}>
                     <Minus />
                 </Button>

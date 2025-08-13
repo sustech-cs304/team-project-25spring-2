@@ -19,6 +19,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { AIChatButton } from '@/components/ai/AIChatButton';
 import AIQuizButton from "@/components/ai/AIQuiz";
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import userActionLogger from '@/lib/userActionLogger';
 
 const EditorComp = dynamic(() =>
     import('../../../components/editors/markdown-editor'), { ssr: false });
@@ -45,6 +46,10 @@ function PDFSection({ url, materialId, materialName }: { url: string, materialId
         link.href = pdfUrl;
         link.download = `${materialName}.pdf`;
         console.log(materialName, pdfUrl);
+        userActionLogger.logButtonClick('Download PDF', 'Download current material PDF', 'pdf-download', {
+            materialId,
+            materialName,
+        });
         link.click();
     };
 
@@ -53,6 +58,11 @@ function PDFSection({ url, materialId, materialName }: { url: string, materialId
             setPageNumber(feedback.pageNumber);
             if (feedback.numPages)
                 setNumPages(feedback.numPages);
+            userActionLogger.logAction({
+                actionType: 'other',
+                functionDescription: 'PDF page change',
+                actionDetails: { pageNumber: feedback.pageNumber, numPages: feedback.numPages },
+            });
         }
         if (feedback.snippets) {
             setSnippets(feedback.snippets);
@@ -82,6 +92,7 @@ function PDFSection({ url, materialId, materialName }: { url: string, materialId
                 formData.append('position_y', String(newSnippet.position.y));
 
                 try {
+                    userActionLogger.logDataOperation('add', 'Snippet', newSnippet.id);
                     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/snippet/${materialId}/page/${newSnippet.page}`, {
                         method: 'POST',
                         body: formData,
@@ -120,6 +131,7 @@ function PDFSection({ url, materialId, materialName }: { url: string, materialId
                     setSnippets(snippets.filter(s => s.id !== feedback.deleteSnippet.id));
                     setCurrentSnippet({ text: '', position: { x: 0, y: 0 }, page: 0, id: '', lang: '' });
                     toast.success("Snippet deleted successfully");
+                    userActionLogger.logDataOperation('delete', 'Snippet', feedback.deleteSnippet.id);
                 } else {
                     toast.error("Failed to delete snippet");
                 }
@@ -151,14 +163,15 @@ function PDFSection({ url, materialId, materialName }: { url: string, materialId
                 Page {pageNumber} / {numPages}
             </div>
             <div className="text-right">
-                <Button className="mr-2 h-6 text-xs" onClick={() => {
+                <Button className="mr-2 h-6 text-xs" data-ua="PDF Download" onClick={() => {
                     downloadPDF();
                 }}>
                     Download
                 </Button>
-                <Button className={`${isTeacher ? 'h-6 text-xs' : 'hidden'}`} onClick={() => {
+                <Button className={`${isTeacher ? 'h-6 text-xs' : 'hidden'}`} data-ua="Toggle Add Snippet" onClick={() => {
                     setIsAddingSnippet(!isAddingSnippet);
                     toast.info("Click on the PDF to add a snippet");
+                    userActionLogger.logButtonClick('Add Snippet', 'Toggle add snippet mode');
                 }}>
                     Add Snippet
                 </Button>
@@ -308,7 +321,16 @@ function CodeSnippetEditor({ materialId }: { materialId: string }) {
                         <select
                             className="w-full h-6 px-2 rounded border border-gray-300 bg-background text-xs"
                             value={selectedLanguage}
-                            onChange={(e) => setSelectedLanguage(e.target.value)}
+                            onChange={(e) => {
+                                setSelectedLanguage(e.target.value);
+                                if (currentSnippet.id) {
+                                    userActionLogger.logAction({
+                                        actionType: 'edit',
+                                        functionDescription: 'Change snippet language',
+                                        actionDetails: { snippetId: currentSnippet.id, language: e.target.value },
+                                    });
+                                }
+                            }}
                             aria-label="Programming language"
                             id="snippet-language-selector"
                         >
@@ -324,7 +346,12 @@ function CodeSnippetEditor({ materialId }: { materialId: string }) {
                         size="icon"
                         className="ml-2 size-4"
                         disabled={editor == null || !currentSnippet.id}
-                        onClick={saveSnippet}
+                        data-ua="Save Snippet"
+                        title="Save snippet"
+                        onClick={() => {
+                            userActionLogger.logButtonClick('Save Snippet', 'Save snippet content', 'snippet-save', { snippetId: currentSnippet.id, language: selectedLanguage });
+                            saveSnippet();
+                        }}
                     >
                         <Save />
                     </Button>
@@ -333,7 +360,16 @@ function CodeSnippetEditor({ materialId }: { materialId: string }) {
                         size="icon"
                         className="ml-2 size-4"
                         disabled={editor == null || !currentSnippet.id}
-                        onClick={executeSnippet}
+                        data-ua="Execute Snippet"
+                        title="Execute snippet"
+                        onClick={() => {
+                            userActionLogger.logAction({
+                                actionType: 'submit',
+                                functionDescription: 'Execute snippet',
+                                actionDetails: { snippetId: currentSnippet.id, language: selectedLanguage },
+                            });
+                            executeSnippet();
+                        }}
                     >
                         <Play />
                     </Button>
@@ -439,6 +475,7 @@ export default function Slides({ params }: {
         });
         if (response.ok) {
             console.log("Note saved!");
+            userActionLogger.logDataOperation('edit', 'Note', noteId);
         } else {
             toast("Failed to save note.");
         }
@@ -448,6 +485,11 @@ export default function Slides({ params }: {
         const { token } = useUserContext();
 
         try {
+            userActionLogger.logAction({
+                actionType: 'submit',
+                functionDescription: 'AI chat message',
+                actionDetails: { messageLength: message?.length || 0, materialId: material?.material_id },
+            });
             const formData = new FormData();
             formData.append('message', message);
             if (material?.material_id) {
@@ -466,9 +508,19 @@ export default function Slides({ params }: {
             }
 
             const data = await response.json();
+            userActionLogger.logAction({
+                actionType: 'other',
+                functionDescription: 'AI chat response received',
+                actionDetails: { responseLength: (data?.response || '').length, materialId: material?.material_id },
+            });
             return data.response;
         } catch (error) {
             console.error('Error in AI chat:', error);
+            userActionLogger.logAction({
+                actionType: 'other',
+                functionDescription: 'AI chat error',
+                actionDetails: { error: String(error) },
+            });
             throw error;
         }
     };
@@ -488,7 +540,7 @@ export default function Slides({ params }: {
                     <div className="flex gap-4">
                         <Dialog>
                             <DialogTrigger asChild>
-                                <Button size="sm" variant="outline">📤 Share</Button>
+                                <Button size="sm" variant="outline" data-ua="Share">📤 Share</Button>
                             </DialogTrigger>
                             <DialogContent>
                                 <DialogHeader>
@@ -499,15 +551,16 @@ export default function Slides({ params }: {
                                 </div>
                                 <DialogFooter>
                                     <DialogClose asChild>
-                                        <Button variant="outline">Close</Button>
+                                        <Button variant="outline" data-ua="Close Share Dialog">Close</Button>
                                     </DialogClose>
                                 </DialogFooter>
                             </DialogContent>
                         </Dialog>
-                        <Button size="sm" variant="outline">📥 Download</Button>
+                        <Button size="sm" variant="outline" data-ua="Toolbar Download">📥 Download</Button>
                         <Button
                             size="sm"
                             variant="outline"
+                            data-ua="Refresh Page"
                             onClick={() => window.location.reload()}
                             title="Refresh the page"
                         >
@@ -526,8 +579,8 @@ export default function Slides({ params }: {
                 <ResizablePanel defaultSize={30} className="pl-5 h-full">
                     <Tabs defaultValue="snippets" className="w-full h-full">
                         <TabsList>
-                            <TabsTrigger value="snippets">Code Snippets</TabsTrigger>
-                            <TabsTrigger value="notes">Notes</TabsTrigger>
+                            <TabsTrigger value="snippets" data-ua="Switch to Snippets">Code Snippets</TabsTrigger>
+                            <TabsTrigger value="notes" data-ua="Switch to Notes">Notes</TabsTrigger>
                         </TabsList>
                         <TabsContent value="snippets" className="h-full">
                             <CodeSnippetEditor materialId={material?.material_id || ''} />

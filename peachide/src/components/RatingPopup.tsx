@@ -110,11 +110,11 @@ export default function RatingPopup() {
         </div>
         
         <DialogFooter className="flex gap-2">
-          <Button variant="outline" onClick={handleClose}>
+          <Button variant="outline" onClick={handleClose} title="Close Rating Popup">
             <X className="h-4 w-4 mr-1" />
             Close
           </Button>
-          <Button onClick={handleSubmit} disabled={rating === 0}>
+          <Button onClick={handleSubmit} disabled={rating === 0} title="Submit Rating">
             Submit Rating
           </Button>
         </DialogFooter>

@@ -16,6 +16,7 @@ import React, { useEffect } from "react";
 import { useUserContext } from "@/app/UserEnvProvider";
 import { useRouter } from 'next/navigation';
 import { iconMap } from "@/app/UserEnvProvider"; // adjust path as needed
+import userActionLogger from '@/lib/userActionLogger';
 
 function PeachSidebarHeader() {
     return (
@@ -61,7 +62,8 @@ function FirstSidebar({ userInfo }: { userInfo: any }) {
                                 <SidebarMenuItem key={item.title}>
                                     <div className="relative flex items-center justify-center">
                                         <SidebarMenuButton asChild className="hover:bg-border mb-2">
-                                            <a href={item.url} className="flex items-center justify-center">
+                                            <a href={item.url} className="flex items-center justify-center" data-ua="Sidebar Nav" data-ua-text={item.title}
+                                               onClick={() => userActionLogger.logNavigation(window.location.pathname + window.location.search, item.url, item.title)}>
                                                 {IconComponent && <IconComponent />}
                                                 {isClosable && (
                                                     <span
@@ -80,6 +82,7 @@ function FirstSidebar({ userInfo }: { userInfo: any }) {
                                                 onClick={e => {
                                                     e.preventDefault();
                                                     e.stopPropagation();
+                                                    userActionLogger.logDataOperation('delete', 'Sidebar Item', item.url);
                                                     handleCloseSidebarItem(item.url);
                                                 }}
                                                 title="Close"

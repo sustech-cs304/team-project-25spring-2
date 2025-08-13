@@ -130,6 +130,7 @@ export default function Group({ courseId }: GroupProps) {
                     className="bg-red-300"
                     onClick={() => handleLeave(group.group_id)}
                     disabled={leaving === group.group_id}
+                    title="Leave Group"
                   >
                     {leaving === group.group_id ? 'Leaving...' : 'Leave Group'}
                   </Button>
@@ -137,6 +138,7 @@ export default function Group({ courseId }: GroupProps) {
                   <Button
                     onClick={() => handleJoin(group.group_id)}
                     disabled={joining === group.group_id}
+                    title="Join Group"
                   >
                     {joining === group.group_id ? 'Joining...' : 'Join Group'}
                   </Button>

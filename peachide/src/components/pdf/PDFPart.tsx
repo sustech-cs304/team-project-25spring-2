@@ -46,7 +46,7 @@ const DeleteSnippetButton: React.FC<{
         <>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
-                    <Button variant="outline" size="icon" className={buttonClassName}>
+                    <Button variant="outline" size="icon" className={buttonClassName} title="Delete snippet">
                         <Minus />
                     </Button>
                 </DialogTrigger>
@@ -90,6 +90,7 @@ const BookmarkButton: React.FC<{
             size="icon"
             className={buttonClassName}
             onClick={existingBookmark?.bookmark_list.includes(pageNumber) ? handleRemoveBookmark : handleAddBookmark}
+            title={existingBookmark?.bookmark_list.includes(pageNumber) ? 'Remove bookmark' : 'Add bookmark'}
         >
             {existingBookmark?.bookmark_list.includes(pageNumber) ? (
                 <BookmarkCheck className="text-yellow-500" />
@@ -205,6 +206,7 @@ export const PDFPart: React.FC<PDFPartProps> = ({ props, onFeedbackAction }) => 
                                         pointerEvents: 'auto',
                                     }}>
                                     <Button variant="outline" size="icon" className="size-6 ml-2 mb-2"
+                                        title={"Select code snippet " + snippet.id}
                                         onClick={() => onFeedbackAction({
                                             ...props,
                                             currentSnippet: snippet
@@ -234,11 +236,11 @@ export const PDFPart: React.FC<PDFPartProps> = ({ props, onFeedbackAction }) => 
             </PDFDocument>
             <div className="sticky bottom-0 left-0 z-[1000] flex items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <div className="flex">
-                    <Button variant="outline" size="icon" className="size-6 ml-2 mb-2 mt-2"
+                    <Button variant="outline" size="icon" className="size-6 ml-2 mb-2 mt-2" title="Zoom in"
                         onClick={() => setScale(scale + 0.1)}>
                         <Plus />
                     </Button>
-                    <Button variant="outline" size="icon" className="size-6 ml-1.5 mb-2 mt-2"
+                    <Button variant="outline" size="icon" className="size-6 ml-1.5 mb-2 mt-2" title="Zoom out"
                         onClick={() => setScale(scale - 0.1)}>
                         <Minus />
                     </Button>
