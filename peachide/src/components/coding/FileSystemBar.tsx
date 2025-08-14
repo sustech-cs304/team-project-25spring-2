@@ -7,7 +7,7 @@ import { TreeNode } from "@/components/data/CodeEnvType";
 import { FileTreeProps, FileTree } from "@/components/coding/FileStructure";
 import { assignTreeNode } from "@/components/coding/FileUtils";
 import { Input } from "@/components/ui/input";
-import { useTree, removeNode, addNodeToTarget, addFolderToDir, addFileToDir, fileExists, folderExists, deleteNode, findNode, rmPath, mvPath, createDirectory, createFile } from "../data/FileSystemBarData";
+import { useTree, removeNode, addNodeToTarget, addFolderToDir, addFileToDir, fileExists, folderExists, deleteNode, findNode, rmPath, mvPath, createDirectory, createFile, saveTree } from "../data/FileSystemBarData";
 import { useUserContext } from "@/app/UserEnvProvider";
 
 interface FileSystemBarProps {
@@ -54,6 +54,7 @@ export default function FileSystemBar({ projectId, isVisible, onFileSelect }: Fi
       const newTree = JSON.parse(JSON.stringify(currentTree));
       addFileToDir(newTree, targetDir, newFileNode);
       createFile(targetDir, newItemName, token, projectId);
+      saveTree(projectId, newTree);
       return newTree;
     });
 
@@ -84,6 +85,7 @@ export default function FileSystemBar({ projectId, isVisible, onFileSelect }: Fi
       const newTree = JSON.parse(JSON.stringify(currentTree));
       addFolderToDir(newTree, targetDir, newFolderNode);
       createDirectory(newFolderUri, token, projectId);
+      saveTree(projectId, newTree);
       return newTree;
     });
 
@@ -93,11 +95,13 @@ export default function FileSystemBar({ projectId, isVisible, onFileSelect }: Fi
 
   const handleItemClick: FileTreeProps["onItemClick"] = (treeNode) => {
     if (treeNode.type === "directory") {
-      setTree((tree) =>
-        assignTreeNode(tree, treeNode.uri, {
-          expanded: !treeNode.expanded
-        })
-      );
+      setTree((tree) => {
+        const newTree = assignTreeNode(tree, treeNode.uri, { expanded: !treeNode.expanded });
+        if (newTree) {
+          saveTree(projectId, newTree);
+        }
+        return newTree;
+      });
       setSelectedDirectory(treeNode.uri);
     } else if (onFileSelect) {
       onFileSelect(treeNode);
@@ -155,6 +159,7 @@ export default function FileSystemBar({ projectId, isVisible, onFileSelect }: Fi
       removeNode(newTree, fromUri);
       addNodeToTarget(newTree, toUri, sourceNode, fromUri, newUri);
       mvPath(fromUri, toUri, token, projectId);
+      saveTree(projectId, newTree);
       return newTree;
     });
 
@@ -169,7 +174,9 @@ export default function FileSystemBar({ projectId, isVisible, onFileSelect }: Fi
         if (!currentTree) return currentTree;
         const newTree = JSON.parse(JSON.stringify(currentTree));
         rmPath(uri, token, projectId);
-        return deleteNode(newTree, uri);
+        const updatedTree = deleteNode(newTree, uri);
+        saveTree(projectId, updatedTree);
+        return updatedTree;
       });
     }
   };

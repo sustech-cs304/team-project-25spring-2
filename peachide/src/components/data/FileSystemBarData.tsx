@@ -1,23 +1,87 @@
 import { TreeNode } from "@/components/data/CodeEnvType";
-import useSWR from 'swr';
+import { useEffect, useState } from 'react';
 
-const fetcher = (url: string, token: string | null) => {
-  return fetch(url, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  }).then((res) => res.json());
+const STORAGE_PREFIX = 'codefs:';
+const CONTENT_PREFIX = 'codecontent:';
+
+const getStorageKey = (projectId: string) => `${STORAGE_PREFIX}${projectId}`;
+
+const defaultRootTree = (): TreeNode => ({
+  type: "directory",
+  uri: "/",
+  expanded: true,
+  children: []
+});
+
+const readTreeFromLocalStorage = (projectId: string): TreeNode => {
+  try {
+    const key = getStorageKey(projectId);
+    const raw = typeof window !== 'undefined' ? window.localStorage.getItem(key) : null;
+    if (!raw) {
+      const tree = defaultRootTree();
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(key, JSON.stringify(tree));
+      }
+      return tree;
+    }
+    const parsed = JSON.parse(raw);
+    return parsed as TreeNode;
+  } catch (e) {
+    return defaultRootTree();
+  }
+};
+
+const writeTreeToLocalStorage = (projectId: string, tree: TreeNode) => {
+  try {
+    const key = getStorageKey(projectId);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(key, JSON.stringify(tree));
+    }
+  } catch (e) {
+    // swallow
+  }
+};
+
+export const saveTree = (env_id: string, tree: TreeNode) => {
+  writeTreeToLocalStorage(env_id, tree);
 };
 
 export function useTree(projectId: string, token: string | null) {
-  const { data, error, isLoading } = useSWR(
-    process.env.NEXT_PUBLIC_API_URL + `/environment/${projectId}/files`, 
-    (url) => fetcher(url, token),
-    { refreshInterval: 3000 }
-  );
-  return {
-    fileTree: data,
-    isLoading: isLoading,
-    isError: error
-  };
+  const [fileTree, setFileTree] = useState<TreeNode | undefined>();
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isError, setIsError] = useState<unknown>(null);
+
+  useEffect(() => {
+    try {
+      setIsLoading(true);
+      const tree = readTreeFromLocalStorage(projectId);
+      setFileTree(tree);
+      setIsError(null);
+    } catch (e) {
+      setIsError(e);
+    } finally {
+      setIsLoading(false);
+    }
+
+    const onStorage = (event: StorageEvent) => {
+      const key = getStorageKey(projectId);
+      if (event.key === key && event.newValue) {
+        try {
+          const next = JSON.parse(event.newValue) as TreeNode;
+          setFileTree(next);
+        } catch {
+          // ignore
+        }
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', onStorage);
+      return () => window.removeEventListener('storage', onStorage);
+    }
+  }, [projectId]);
+
+  return { fileTree, isLoading, isError };
 }
 
 export const fileExists = (node: TreeNode, uri: string): boolean => {
@@ -147,111 +211,95 @@ export const deleteNode = (node: TreeNode, uri: string): TreeNode => {
 };
 
 export const createFile = (file_path: string, file_name: string, token: string | null, env_id: string) => {
-  const formData = new FormData();
-  formData.append("file_path", file_path);
-  formData.append("file_name", file_name);
-
-  fetch(process.env.NEXT_PUBLIC_API_URL + `/environment/${env_id}/file`, {
-      method: "POST",
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-      body: formData
-    })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error("Failed to create file");
-        }
-        return response.json();
-      })
-      .then(data => {
-        console.log("File created successfully:", data.message);
+  const tree = readTreeFromLocalStorage(env_id);
+  const newFileNode: TreeNode = { type: "file", uri: file_path + (file_path.endsWith("/") ? "" : "/") + file_name };
+  addFileToDir(tree, file_path, newFileNode);
+  writeTreeToLocalStorage(env_id, tree);
+  // initialize empty content for new file
+  try {
+    if (typeof window !== 'undefined') {
+      const key = `${CONTENT_PREFIX}${env_id}:${newFileNode.uri}`;
+      if (window.localStorage.getItem(key) === null) {
+        window.localStorage.setItem(key, "");
       }
-      )
-      .catch(error => {
-        console.error("Error creating file:", error);
-      }
-    );
+    }
+  } catch {}
 }
 
 export const createDirectory = (uri: string, token: string | null, env_id: string) => {
-  const formData = new FormData();
-  formData.append("directory_path", uri);
-
-  fetch(process.env.NEXT_PUBLIC_API_URL + `/environment/${env_id}/directory`, {
-      method: "POST",
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-      body: formData
-    })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error("Failed to create directory");
-        }
-        return response.json();
-      })
-      .then(data => {
-        console.log("Directory created successfully:", data.message);
-      }
-      )
-      .catch(error => {
-        console.error("Error creating directory:", error);
-      }
-    );
+  const tree = readTreeFromLocalStorage(env_id);
+  const newFolderNode: TreeNode = { type: "directory", uri, children: [], expanded: true };
+  addFolderToDir(tree, uri.substring(0, uri.lastIndexOf("/")) || "/", newFolderNode);
+  writeTreeToLocalStorage(env_id, tree);
 }
 
 export const mvPath = (fromUri: string, toUri: string, token: string | null, env_id: string) => {
-  const formData = new FormData();
-  formData.append("from_uri", fromUri);
-  formData.append("to_uri", toUri);
-
-  fetch(process.env.NEXT_PUBLIC_API_URL + `/environment/${env_id}/move`, {
-      method: "POST",
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-      body: formData
-    })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error("Failed to move file");
+  const tree = readTreeFromLocalStorage(env_id);
+  const sourceNode = findNode(tree, fromUri);
+  if (!sourceNode) {
+    writeTreeToLocalStorage(env_id, tree);
+    return;
+  }
+  const fileName = fromUri.split('/').pop() || "";
+  const newUri = toUri + '/' + fileName;
+  removeNode(tree, fromUri);
+  addNodeToTarget(tree, toUri, sourceNode, fromUri, newUri);
+  // migrate content in localStorage if any
+  try {
+    if (typeof window !== 'undefined') {
+      const envPrefix = `${CONTENT_PREFIX}${env_id}:`;
+      if (sourceNode.type === 'file') {
+        const oldKey = envPrefix + fromUri;
+        const newKey = envPrefix + newUri;
+        const content = window.localStorage.getItem(oldKey);
+        if (content !== null) {
+          window.localStorage.setItem(newKey, content);
+          window.localStorage.removeItem(oldKey);
         }
-        return response.json();
-      })
-      .then(data => {
-        console.log("File moved successfully:", data.message);
+      } else if (sourceNode.type === 'directory') {
+        const keysToMove: string[] = [];
+        for (let i = 0; i < window.localStorage.length; i++) {
+          const key = window.localStorage.key(i);
+          if (!key || !key.startsWith(envPrefix)) continue;
+          const path = key.slice(envPrefix.length);
+          if (path === fromUri || path.startsWith(fromUri + '/')) {
+            keysToMove.push(key);
+          }
+        }
+        keysToMove.forEach((oldKey) => {
+          const oldPath = oldKey.slice(envPrefix.length);
+          const newPath = oldPath.replace(fromUri, newUri);
+          const newKey = envPrefix + newPath;
+          const content = window.localStorage.getItem(oldKey);
+          if (content !== null) {
+            window.localStorage.setItem(newKey, content);
+            window.localStorage.removeItem(oldKey);
+          }
+        });
       }
-      )
-      .catch(error => {
-        console.error("Error moving file:", error);
-      }
-    );
+    }
+  } catch {}
+  writeTreeToLocalStorage(env_id, tree);
 }
 
 export const rmPath = (uri: string, token: string | null, env_id: string) => {
-  const formData = new FormData();
-  formData.append("uri", uri);
-
-  fetch(process.env.NEXT_PUBLIC_API_URL + `/environment/${env_id}/delete`, {
-      method: "DELETE",
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-      body: formData
-    })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error("Failed to delete item");
+  const tree = readTreeFromLocalStorage(env_id);
+  const updated = deleteNode(tree, uri);
+  writeTreeToLocalStorage(env_id, updated);
+  // remove content for file or directory subtree
+  try {
+    if (typeof window !== 'undefined') {
+      const envPrefix = `${CONTENT_PREFIX}${env_id}:`;
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const key = window.localStorage.key(i);
+        if (!key || !key.startsWith(envPrefix)) continue;
+        const path = key.slice(envPrefix.length);
+        if (path === uri || path.startsWith(uri + '/')) {
+          keysToRemove.push(key);
         }
-        return response.json();
-      })
-      .then(data => {
-        console.log("Item deleted successfully:", data.message);
       }
-      )
-      .catch(error => {
-        console.error("Error deleting item:", error);
-      }
-    );
+      keysToRemove.forEach(key => window.localStorage.removeItem(key));
+    }
+  } catch {}
 }

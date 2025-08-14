@@ -58,7 +58,7 @@ const EditorLayout = ({ environmentId, onToggleFileSystemBar, selectedFile }: Ed
     }
   };
 
-  const factory = useCallback((node: TabNode) => {
+    const factory = useCallback((node: TabNode) => {
     const component = node.getComponent();
     const config = node.getConfig() || {};
     const filePath = config.filePath || node.getName();
@@ -69,6 +69,7 @@ const EditorLayout = ({ environmentId, onToggleFileSystemBar, selectedFile }: Ed
         return <CollaboratedEditorComponent
           wsUrl={wsUrl}
           language={language}
+            environmentId={environmentId}
           roomName={filePath}
           onUsersChange={handleEditorUsersChange}
         />;

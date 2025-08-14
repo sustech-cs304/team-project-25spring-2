@@ -8,12 +8,21 @@ import { toast } from 'sonner';
 import { useUserContext } from '@/app/UserEnvProvider';
 
 export default function RatingPopup() {
+  const { token } = useUserContext();
   const [isOpen, setIsOpen] = useState(false);
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [feedback, setFeedback] = useState('');
 
   useEffect(() => {
+    if (!token && !localStorage.getItem('token')) {
+      setIsOpen(false);
+      console.log("not authenticated, not showing popup");
+      return;
+    } else {
+      console.log("authenticated, planning to show popup");
+    }
+
     if (!isOpen) {
       let showCount = parseInt(localStorage.getItem('ratingPopupCount') || '0');
       console.log("showCount", showCount);
@@ -22,10 +31,10 @@ export default function RatingPopup() {
           setIsOpen(true);
           const newCount = showCount + 1;
           localStorage.setItem('ratingPopupCount', newCount.toString());
-        }, 5000);
+        }, 20000);
       }
     }
-  }, [isOpen]);
+  }, [isOpen, token]);
 
   const handleRatingClick = (selectedRating: number) => {
     // Broken rating system - only allows rating of 1 or 5, other ratings don't work

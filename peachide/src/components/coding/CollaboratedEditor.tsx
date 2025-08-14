@@ -27,13 +27,20 @@ interface CollaboratedEditorProps {
     language?: string;
     onUsersChange?: (roomName: string, users: UserInfo[]) => void;
     roomName?: string;
+    environmentId?: string;
 }
+
+const STORAGE_PREFIX = 'codecontent:';
+
+const getContentStorageKey = (envId: string | undefined, roomName: string) =>
+    `${STORAGE_PREFIX}${envId || 'default'}:${roomName}`;
 
 const CollaboratedEditorComponent: React.FC<CollaboratedEditorProps> = ({
     wsUrl,
     language = 'javascript',
     onUsersChange,
     roomName = 'monaco-react-2',
+    environmentId,
 }) => {
     const monacoRef = useRef<any>(null);
     const { theme } = useTheme();
@@ -55,6 +62,8 @@ const CollaboratedEditorComponent: React.FC<CollaboratedEditorProps> = ({
         let yDoc: Y.Doc | null = null;
         let provider: WebsocketProvider | null = null;
         let binding: MonacoBinding | null = null;
+        let yText: Y.Text | null = null;
+        let saveTimer: any = null;
 
         const awarenessChangeHandler = () => {
             if (!provider) return;
@@ -74,29 +83,64 @@ const CollaboratedEditorComponent: React.FC<CollaboratedEditorProps> = ({
         
         if (editorRef) {
             yDoc = new Y.Doc();
-            const yText = yDoc.getText("content");
-            provider = new WebsocketProvider(wsUrl, roomName, yDoc);
+            yText = yDoc.getText("content");
+
+            // Load initial content from localStorage
+            try {
+                const key = getContentStorageKey(environmentId, roomName);
+                const raw = typeof window !== 'undefined' ? window.localStorage.getItem(key) : null;
+                if (raw && yText.length === 0) {
+                    yText.insert(0, raw);
+                }
+            } catch {}
+
+            // Setup websocket provider (collaboration) but allow offline usage
+            try {
+                provider = new WebsocketProvider(wsUrl, roomName, yDoc);
+            } catch (e) {
+                provider = null;
+            }
             providerRef.current = provider;
             
-            const userColor = getRandomUserColor();
-            provider.awareness.setLocalStateField('user', {
-                name: userData?.name || 'User ' + Math.floor(Math.random() * 100),
-                color: userColor,
-                avatar: userData?.photo
-            });
-            provider.awareness.on('change', awarenessChangeHandler);
+            if (provider) {
+                const userColor = getRandomUserColor();
+                provider.awareness.setLocalStateField('user', {
+                    name: userData?.name || 'User ' + Math.floor(Math.random() * 100),
+                    color: userColor,
+                    avatar: userData?.photo
+                });
+                provider.awareness.on('change', awarenessChangeHandler);
+            }
             
             binding = new MonacoBinding(
                 yText,
                 editorRef.getModel() as editor.ITextModel,
                 new Set([editorRef]),
-                provider.awareness
+                provider ? provider.awareness : undefined
             );
             bindingRef.current = binding;
+
+            // Persist to localStorage on content changes (debounced)
+            const persistContent = () => {
+                if (!yText) return;
+                const key = getContentStorageKey(environmentId, roomName);
+                try {
+                    if (typeof window !== 'undefined') {
+                        window.localStorage.setItem(key, yText.toString());
+                    }
+                } catch {}
+            };
+
+            const observer = () => {
+                if (saveTimer) clearTimeout(saveTimer);
+                saveTimer = setTimeout(persistContent, 250);
+            };
+            yText.observe(observer as any);
         }
 
         const currentProvider = providerRef.current;
         const currentYDoc = yDoc;
+        const currentYText = yText;
 
         return () => {
             if (currentProvider) {
@@ -113,6 +157,15 @@ const CollaboratedEditorComponent: React.FC<CollaboratedEditorProps> = ({
                  providerRef.current = null;
             }
 
+            if (currentYText) {
+                try {
+                    const key = getContentStorageKey(environmentId, roomName);
+                    if (typeof window !== 'undefined') {
+                        window.localStorage.setItem(key, currentYText.toString());
+                    }
+                } catch {}
+            }
+
             if (currentYDoc) {
                 currentYDoc.destroy();
             }
@@ -120,7 +173,7 @@ const CollaboratedEditorComponent: React.FC<CollaboratedEditorProps> = ({
             onUsersChange?.(roomName, []);
             cleanupCursorStyles();
         };
-    }, [editorRef, roomName, wsUrl, onUsersChange, userData?.name, userData?.photo]);
+    }, [editorRef, roomName, wsUrl, onUsersChange, userData?.name, userData?.photo, environmentId]);
 
     return (
         <div style={{ height: '100%' }}>
