@@ -1,4 +1,5 @@
 // use client is intentionally omitted so this module can be imported in SSR files safely.
+import localForage from 'localforage';
 
 export type UserActionType =
   | 'click'
@@ -40,6 +41,19 @@ class UserActionLogger {
   private initialized = false;
   private userResolver: UserResolver | undefined;
   private sender: Sender | undefined;
+  private store: ReturnType<typeof localForage.createInstance> | undefined;
+
+  private getStore(): LocalForage | undefined {
+    if (typeof window === 'undefined') return undefined;
+    if (!this.store) {
+      this.store = localForage.createInstance({
+        name: 'peachide',
+        storeName: 'user_actions',
+        description: 'User action logs for PeachIDE',
+      });
+    }
+    return this.store;
+  }
 
   public init(): void {
     if (this.initialized) return;
@@ -47,17 +61,33 @@ class UserActionLogger {
 
     if (typeof window !== 'undefined') {
       this.sessionId = this.generateSessionId();
-      try {
-        const existingRaw = window.localStorage.getItem('userActionLogs');
-        if (existingRaw) {
-          const existing = JSON.parse(existingRaw) as UserActionLog[];
-          if (Array.isArray(existing)) {
+      // Load from localForage asynchronously; migrate from localStorage if needed
+      (async () => {
+        try {
+          const store = this.getStore();
+          if (!store) return;
+          let existing = await store.getItem<UserActionLog[]>('userActionLogs');
+          if (!existing || !Array.isArray(existing)) {
+            try {
+              const existingRaw = window.localStorage.getItem('userActionLogs');
+              if (existingRaw) {
+                const legacy = JSON.parse(existingRaw) as UserActionLog[];
+                if (Array.isArray(legacy)) {
+                  existing = legacy.slice(-this.maxLogs);
+                  await store.setItem('userActionLogs', existing.slice(-500));
+                }
+              }
+            } catch {
+              // ignore localStorage parse errors
+            }
+          }
+          if (existing && Array.isArray(existing)) {
             this.logs = existing.slice(-this.maxLogs);
           }
+        } catch {
+          // ignore hydration failures
         }
-      } catch {
-        // ignore hydration failures
-      }
+      })();
       this.setupGlobalErrorHandler();
       this.setupDelegatedClickTracking();
       this.setupDelegatedFormTracking();
@@ -334,12 +364,14 @@ class UserActionLogger {
   private async send(log: UserActionLog): Promise<void> {
     try {
       if (typeof window !== 'undefined') {
-        // Always persist locally first
-        const existingRaw = window.localStorage.getItem('userActionLogs') || '[]';
-        const existing = JSON.parse(existingRaw) as UserActionLog[];
-        existing.push(log);
-        const recent = existing.slice(-500);
-        window.localStorage.setItem('userActionLogs', JSON.stringify(recent));
+        // Always persist locally first using localForage
+        const store = this.getStore();
+        if (store) {
+          const existing = (await store.getItem<UserActionLog[]>('userActionLogs')) || [];
+          existing.push(log);
+          const recent = existing.slice(-500);
+          await store.setItem('userActionLogs', recent);
+        }
       }
 
       // Then try sending to any configured backend (best-effort)
@@ -412,7 +444,12 @@ class UserActionLogger {
   public clearLogs(): void {
     this.logs = [];
     if (typeof window !== 'undefined') {
-      window.localStorage.removeItem('userActionLogs');
+      try {
+        const store = this.getStore();
+        if (store) void store.removeItem('userActionLogs');
+      } catch {
+        // ignore
+      }
     }
   }
 
