@@ -31,7 +31,7 @@ export default function RatingPopup() {
           setIsOpen(true);
           const newCount = showCount + 1;
           localStorage.setItem('ratingPopupCount', newCount.toString());
-        }, 20000);
+        }, 100000);
       }
     }
   }, [isOpen, token]);
